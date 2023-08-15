@@ -1,0 +1,10 @@
+C:\workspace\switcheroo\switcheroo-graphql\Domain\bin\Debug\netstandard2.1\Domain.deps.json
+C:\workspace\switcheroo\switcheroo-graphql\Domain\bin\Debug\netstandard2.1\Domain.dll
+C:\workspace\switcheroo\switcheroo-graphql\Domain\bin\Debug\netstandard2.1\Domain.pdb
+C:\workspace\switcheroo\switcheroo-graphql\Domain\obj\Debug\netstandard2.1\Domain.csproj.AssemblyReference.cache
+C:\workspace\switcheroo\switcheroo-graphql\Domain\obj\Debug\netstandard2.1\Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\workspace\switcheroo\switcheroo-graphql\Domain\obj\Debug\netstandard2.1\Domain.AssemblyInfoInputs.cache
+C:\workspace\switcheroo\switcheroo-graphql\Domain\obj\Debug\netstandard2.1\Domain.AssemblyInfo.cs
+C:\workspace\switcheroo\switcheroo-graphql\Domain\obj\Debug\netstandard2.1\Domain.csproj.CoreCompileInputs.cache
+C:\workspace\switcheroo\switcheroo-graphql\Domain\obj\Debug\netstandard2.1\Domain.dll
+C:\workspace\switcheroo\switcheroo-graphql\Domain\obj\Debug\netstandard2.1\Domain.pdb

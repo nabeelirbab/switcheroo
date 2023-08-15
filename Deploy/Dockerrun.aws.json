@@ -1,0 +1,53 @@
+{
+    "AWSEBDockerrunVersion": "2",
+    "volumes": [{
+      "name": "nginx-proxy-conf",
+      "host": {
+        "sourcePath": "/var/app/current/conf.d"
+      }
+    }],
+    "containerDefinitions": [{
+      "name": "nginx-proxy",
+      "image": "nginx",
+      "essential": true,
+      "memory": 500,
+      "portMappings": [{
+        "hostPort": 80,
+        "containerPort": 80
+      }],
+      "links": ["tusd", "switcheroo"],
+      "mountPoints": [{
+        "sourceVolume": "nginx-proxy-conf",
+        "containerPath": "/etc/nginx/conf.d",
+        "readOnly": true
+      }]
+    }, {
+      "name": "switcheroo",
+      "image": "169183210049.dkr.ecr.ap-southeast-2.amazonaws.com/switcheroo:latest",
+      "essential": true,
+      "memory": 500,
+      "portMappings": [{
+        "hostPort": 5002,
+        "containerPort": 5002
+      }]
+    }, {
+      "name": "tusd",
+      "image": "tusproject/tusd",
+      "essential": true,
+      "memory": 500,
+      "portMappings": [{
+        "hostPort": 1080,
+        "containerPort": 1080
+      }],
+      "entryPoint": [
+        "tusd",
+        "-max-size",
+        "20000000",
+        "-behind-proxy",
+        "-max-size",
+        "20000000",
+        "-s3-bucket",
+        "switchy"
+      ]
+    }]
+  }

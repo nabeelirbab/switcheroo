@@ -1,0 +1,3 @@
+is_global = true
+build_property.RootNamespace = Domain
+build_property.ProjectDir = C:\workspace\switcheroo\switcheroo-graphql\Domain\

@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "n3mf/8S80LcrWA0UNBNejN2bVhj0jWIo9tWtxesw22L16I2UfJmtbNt61I+W5w6nh2unN24ShRfQlcrcHC/yww==",
+  "success": true,
+  "projectFilePath": "C:\\workspace\\switcheroo\\switcheroo-graphql\\Domain\\Domain.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\DEll\\.nuget\\packages\\system.componentmodel.annotations\\4.7.0\\system.componentmodel.annotations.4.7.0.nupkg.sha512"
+  ],
+  "logs": []
+}

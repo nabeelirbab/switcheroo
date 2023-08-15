@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+  server:
+    image: switcheroo-server
+    restart: always
+    ports:
+      - ${SERVER_PORT}:80
+    environment:
+      SERVER_PORT: ${SERVER_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # SMTP_HOST: smtp4dev
+      # SMTP_PORT: 25
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS}
+      EMAIL_API_KEY: ${EMAIL_API_KEY}
+      # SMTP_UI_PORT: ${SMTP_UI_PORT}
+      POSTGRES_HOST: db
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
+      TUS_DIR: /files
+    networks:
+      - roonet
+    volumes:
+      - roodbvol:/files
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - ${POSTGRES_PORT}:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - roonet
+    volumes:
+      - roodbvol:/var/lib/postgresql/data
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - ${ADMINER_PORT}:8080
+    networks:
+      - roonet
+  # smtp4dev:
+  #   image: rnwood/smtp4dev:v3
+  #   restart: always
+  #   ports:
+  #     - ${SMTP_UI_PORT}:80
+  #     - ${SMTP_PORT}:25
+  #   networks:
+  #     - roonet
+networks:
+  roonet:
+volumes:
+  roodbvol:
+    external: true
