@@ -178,7 +178,7 @@ namespace API
                 {
                     FileProvider = new PhysicalFileProvider(
                         System.IO.Path.Combine(Directory.GetCurrentDirectory(),
-                            Environment.IsProduction() ? "/app/Assets" : "Assets")),
+                            "Assets")),
                     RequestPath = "/Assets"
                 });
 

@@ -8,14 +8,14 @@ namespace Infrastructure.Database.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<decimal>("Latitude", "Items", nullable: true);
-            migrationBuilder.AddColumn<decimal>("Longitude", "Items", nullable: true);
+            // migrationBuilder.AddColumn<decimal>("Latitude", "Items", nullable: true);
+            // migrationBuilder.AddColumn<decimal>("Longitude", "Items", nullable: true);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn("Latitude", "Items");
-            migrationBuilder.DropColumn("Longitude", "Items");
+            // migrationBuilder.DropColumn("Latitude", "Items");
+            // migrationBuilder.DropColumn("Longitude", "Items");
         }
     }
 }

@@ -1,15 +1,34 @@
 ﻿﻿using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore;
+ using Infrastructure.Database;
+ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+ using Microsoft.EntityFrameworkCore;
+ using Microsoft.Extensions.DependencyInjection;
 
-namespace API
+ namespace API
 {
     public class Program
     {
-        public static Task Main(string[] args) =>
-            CreateWebHostBuilder(args).Build().RunAsync();
-        
+        public static async Task Main(string[] args)
+        {
+            var app = CreateWebHostBuilder(args).Build();
+            try
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<SwitcherooContext>();
+                    await db.Database.MigrateAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            await app.RunAsync();
+        }
+
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
             var port = Environment.GetEnvironmentVariable("SERVER_PORT") ?? "5002";
             
