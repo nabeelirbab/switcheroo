@@ -29,7 +29,7 @@ namespace Infrastructure.Database
         public DbSet<Offer> Offers { get; set; } = null!;
         public DbSet<DismissedItem> DismissedItem { get; set; } = null!;
         public DbSet<Message> Messages { get; set; } = null!;
-
+        public DbSet<Location>  Location { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
