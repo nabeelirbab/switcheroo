@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Domain.Offers;
 using Infrastructure.Database;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Offers
@@ -14,12 +13,6 @@ namespace Infrastructure.Offers
     {
         private readonly SwitcherooContext db;
         private readonly Func<Database.Schema.Message, DateTime> _messageOrderingExpression = z => z.CreatedAt.Date;
-        private readonly IHubContext<ChatHub> _hubContext;
-
-        public MessageRepository(IHubContext<ChatHub> hubContext)
-        {
-            _hubContext = hubContext;
-        }
 
         public MessageRepository(SwitcherooContext db)
         {
@@ -62,7 +55,6 @@ namespace Infrastructure.Offers
             await db.Messages.AddAsync(newDbItem);
 
             await db.SaveChangesAsync();
-            await _hubContext.Clients.All.SendAsync("ReceiveMessage", newDbItem);
 
             return await GetMessageById(newDbItem.Id);
         }

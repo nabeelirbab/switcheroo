@@ -10,6 +10,9 @@ using Domain.Users;
 using Infrastructure.Database;
 using Infrastructure.Database.Schema;
 using Microsoft.EntityFrameworkCore;
+using Amazon.S3;
+using Amazon.S3.Transfer;
+using System.IO;
 
 namespace Infrastructure.Items
 {
@@ -70,6 +73,11 @@ namespace Infrastructure.Items
         public async Task<Domain.Items.Item> CreateItemAsync(Domain.Items.Item item)
         {
             var now = DateTime.UtcNow;
+            var credentials = new Amazon.Runtime.BasicAWSCredentials("AKIA6EM2LZWU3ULXZ32E", "skgJAOA7bXo6aWe74nuP1UZuCbyO4UVB7t4zMei9");
+            var config = new AmazonS3Config { RegionEndpoint = Amazon.RegionEndpoint.EUNorth1 };
+            var s3Client = new AmazonS3Client(credentials, config);
+
+            var transferUtility = new TransferUtility(s3Client);
 
             if (!item.CreatedByUserId.HasValue)
                 throw new InfrastructureException("No createdByUserId provided");
@@ -102,6 +110,14 @@ namespace Infrastructure.Items
             newDbItem.ItemImages.AddRange(item.ImageUrls
                 .Select(url => new Database.Schema.ItemImage(url, newDbItem.Id))
                 .ToList());
+
+            string bucketName = "switcheroofiles";  
+            string localImagePath = item.ImageUrls[0]; 
+            string keyName = "https://switcheroofiles.s3.eu-north-1.amazonaws.com/" + Path.GetFileName(localImagePath); 
+
+            transferUtility.Upload(localImagePath, bucketName, keyName);
+
+            newDbItem.ItemImages[0].Url = keyName;
 
             await db.SaveChangesAsync();
 

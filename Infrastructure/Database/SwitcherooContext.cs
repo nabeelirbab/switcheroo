@@ -24,7 +24,6 @@ namespace Infrastructure.Database
         public DbSet<UserVerificationCode> UserVerificationCodes { get; set; } = null!;
         public DbSet<Category> Categories { get; set; } = null!;
         public DbSet<Item> Items { get; set; } = null!;
-        public DbSet<Location> Location { get; set; } = null!;
         public DbSet<ItemCategory> ItemCategories { get; set; } = null!;
         public DbSet<ItemImage> ItemImages { get; set; } = null!;
         public DbSet<Offer> Offers { get; set; } = null!;
@@ -44,7 +43,6 @@ namespace Infrastructure.Database
             // This will ensure that any query will exclude entities that are archived.
             // to explicitly get archivedAt, you can disable it by: .IgnoreQueryFilters()
             modelBuilder.Entity<Item>().HasQueryFilter(z => !z.ArchivedAt.HasValue);
-            modelBuilder.Entity<Location>().HasQueryFilter(z => !z.ArchivedAt.HasValue);
             modelBuilder.Entity<User>().HasQueryFilter(z => !z.ArchivedAt.HasValue);
             modelBuilder.Entity<Offer>().HasQueryFilter(z => !z.ArchivedAt.HasValue);
             modelBuilder.Entity<Message>().HasQueryFilter(z => !z.ArchivedAt.HasValue);
@@ -56,7 +54,7 @@ namespace Infrastructure.Database
             modelBuilder.Entity<UserVerificationCode>()
                 .HasIndex(x => new { x.EmailConfirmationToken })
                 .IsUnique();
-
+            
             // Category Indexes
             modelBuilder.Entity<Category>()
                 .HasIndex(x => new { x.Name })
@@ -87,12 +85,6 @@ namespace Infrastructure.Database
                 .HasOne(x => x.Category)
                 .WithMany(x => x.ItemCategories)
                 .HasForeignKey(x => x.CategoryId);
-
-            // one to many relationships
-            modelBuilder.Entity<Location>()
-                .HasOne(x => x.Item)
-                .WithMany(x => x.Locations)
-                .HasForeignKey(x => x.ItemsId);
 
             // Some table name clean up
             modelBuilder.Entity<User>(entity => { entity.ToTable("Users"); });

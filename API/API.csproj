@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="7.2.0" />
+    <PackageReference Include="DotEnv" Version="0.0.1.1" />
+    <PackageReference Include="DotNetEnv" Version="2.5.0" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="10.4.2" />
     <PackageReference Include="HotChocolate.AspNetCore.Playground" Version="10.4.2" />
     <PackageReference Include="HotChocolate.AspNetCore.Voyager" Version="10.4.2" />
@@ -49,10 +51,5 @@
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="Assets\SwitcherooLogoWhite.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>

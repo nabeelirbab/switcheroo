@@ -77,8 +77,6 @@ namespace API
             services.AddTransient<IOfferRepository, OfferRepository>();
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IMessageRepository, MessageRepository>();
-            services.AddTransient<ILocationRepository, LocationRepository>();
-            services.AddSignalR();
         }
 
         private void AddUserManagement(IServiceCollection services)
@@ -165,12 +163,7 @@ namespace API
                 .UseAuthentication()
                 .UseRouting()
                 .UseWebSockets()
-                .UseEndpoints(endpoints =>
-                {
-                    endpoints.MapControllers();
-                    endpoints.MapHub<ChatHub>("/chathub");
-                })
-                
+                .UseEndpoints(endpoints => endpoints.MapControllers())
                 .UseGraphQL()
                 .UsePlayground()
                 .UseVoyager()
@@ -186,7 +179,7 @@ namespace API
             if (true || Environment.IsDevelopment())
             {
                 var tusDir = System.Environment.GetEnvironmentVariable("TUS_DIR");
-
+            
                 var tusdConfig = new DefaultTusConfiguration
                 {
                     Store = new TusDiskStore(tusDir),
