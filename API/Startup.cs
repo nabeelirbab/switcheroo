@@ -32,7 +32,6 @@ using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Domain.Locations;
-using Infrastructure.Locations;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Infrastructure;
 
