@@ -111,13 +111,16 @@ namespace Infrastructure.Items
                 .Select(url => new Database.Schema.ItemImage(url, newDbItem.Id))
                 .ToList());
 
+            var uploadedFile = item.ImageUrls.FirstOrDefault();
+
             string bucketName = "switcheroofiles";  
-            string localImagePath = item.ImageUrls[0]; 
+            string localImagePath = uploadedFile; 
             string keyName = "https://switcheroofiles.s3.eu-north-1.amazonaws.com/" + Path.GetFileName(localImagePath); 
 
             transferUtility.Upload(localImagePath, bucketName, keyName);
 
-            newDbItem.ItemImages[0].Url = keyName;
+            string imageName = Path.GetFileName(localImagePath);
+            newDbItem.ItemImages[0].Url = imageName;
 
             await db.SaveChangesAsync();
 
