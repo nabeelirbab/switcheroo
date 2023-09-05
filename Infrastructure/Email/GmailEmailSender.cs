@@ -29,34 +29,30 @@ namespace Infrastructure.Email
             {
                 throw new InfrastructureException($"Invalid port {smtpOptions.SMTP_PORT}");
             }
-
-            return Task.Run(() =>
+            using var client = new SmtpClient()
             {
-                using var client = new SmtpClient()
-                {
-                    Host = "smtp.gmail.com",
-                    Port = 465,
-                    EnableSsl = true,
-                    Credentials = new NetworkCredential(smtpOptions.SMTP_FROM_ADDRESS, smtpOptions.SMTP_PASSWORD)
-                };
+                Host = smtpOptions.SMTP_HOST,
+                Port = int.Parse(smtpOptions.SMTP_PORT),
+                EnableSsl = true,
+                Credentials = new NetworkCredential(smtpOptions.SMTP_FROM_ADDRESS, smtpOptions.SMTP_PASSWORD)
+            };
 
-                var mailMessage = new MailMessage(smtpOptions.SMTP_FROM_ADDRESS, email, subject, message)
-                {
-                    IsBodyHtml = true
-                };
+            var mailMessage = new MailMessage(smtpOptions.SMTP_FROM_ADDRESS, email, subject, message)
+            {
+                IsBodyHtml = true
+            };
 
-                try
-                {
-                    client.Send(mailMessage);
-                    logger.LogInformation("Email sent successfully to: {Email}", email);
-                }
-                catch (SmtpException ex)
-                {
-                    // Handle and log the exception
-                    logger.LogError(ex, "Failed to send email to: {Email}", email);
-                    throw;
-                }
-            });
+            try
+            {
+                client.Send(mailMessage);
+                logger.LogInformation("Email sent successfully to: {Email}", email);
+            }
+            catch (SmtpException ex)
+            {
+                // Handle and log the exception
+                logger.LogError(ex, "Failed to send email to: {Email}", email);
+            }
+            return Task.CompletedTask;
         }
     }
 }

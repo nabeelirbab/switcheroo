@@ -108,9 +108,9 @@ namespace API
 
             // For now we are always using the dev email sender, which will send to localhost
             // and expect an SMTP server to be present
-            // services.AddTransient<IEmailSender, GmailEmailSender>();
+            services.AddTransient<IEmailSender, GmailEmailSender>();
             // services.AddTransient<IEmailSender, DevEmailSender>();
-            services.AddTransient<IEmailSender, SendGridEmailSender>();
+            // services.AddTransient<IEmailSender, SendGridEmailSender>();
 
             // if (Environment.IsDevelopment())
             // {

@@ -28,7 +28,7 @@ namespace Infrastructure.Email
                 var msg = MailHelper.CreateSingleEmail(from, to, subject, htmlMessage, htmlMessage);
                 try
                 {
-                    await client.SendEmailAsync(msg);
+                    var response = await client.SendEmailAsync(msg);
                     logger.LogInformation("Email sent successfully to: {Email}", email);
                 }
                 catch (SmtpException ex)
