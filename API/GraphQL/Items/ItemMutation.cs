@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using API.GraphQL.Items.Models;
 using Domain.Items;
 using Domain.Users;
 using HotChocolate;
 using Microsoft.AspNetCore.Http;
+using Npgsql.Replication.PgOutput.Messages;
 
 namespace API.GraphQL
 {
@@ -74,6 +77,7 @@ namespace API.GraphQL
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IItemRepository itemRepository,
             Guid userId,
+            List<Guid> itemIds,
             decimal? latitude,
             decimal? longitude
         )
@@ -85,9 +89,24 @@ namespace API.GraphQL
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
 
-            string updateMessage = await itemRepository.UpdateItemLocation(userId, latitude, longitude);
-
-            return updateMessage;
+            var updateMessages = new List<string>();
+            foreach (var itemId in itemIds)
+            {
+                var updateMessage = await itemRepository.UpdateItemLocation(userId, itemId, latitude, longitude);
+                updateMessages.Add(updateMessage);
+            }
+            if (updateMessages.Contains("Item locations updated successfully."))
+            {
+                return "Items' locations updated successfully.";
+            }
+            else if (updateMessages.All(message => message == "No items found for the specified user."))
+            {
+                return "No items found for the specified user.";
+            }
+            else
+            {
+                return "Some items updated, and others may not exist or encountered errors.";
+            }
         }
 
 

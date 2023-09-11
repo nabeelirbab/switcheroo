@@ -285,7 +285,7 @@ namespace Infrastructure.Items
             return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
         }
 
-        public async Task<string> UpdateItemLocation(Guid userId, decimal? latitude, decimal? longitude)
+        public async Task<string> UpdateItemLocation(Guid userId, Guid itemId, decimal? latitude, decimal? longitude)
         {
             var items = await db.Items
                 .Where(item => item.CreatedByUserId == userId)
@@ -297,12 +297,15 @@ namespace Infrastructure.Items
             }
             foreach (var item in items)
             {
-                // Update the latitude and longitude of each item
-                item.Latitude = latitude;
-                item.Longitude = longitude;
+                if (item.Id == itemId)
+                {
+                    // Update the latitude and longitude of each item
+                    item.Latitude = latitude;
+                    item.Longitude = longitude;
 
-                // Mark the item as modified in the context
-                db.Entry(item).State = EntityState.Modified;
+                    // Mark the item as modified in the context
+                    db.Entry(item).State = EntityState.Modified;
+                }
             }
 
             try
@@ -317,6 +320,5 @@ namespace Infrastructure.Items
                 return $"An error occurred: {ex.Message}";
             }
         }
-
     }
 }

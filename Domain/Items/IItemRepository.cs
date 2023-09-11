@@ -9,7 +9,7 @@ namespace Domain.Items
          Task<Item> CreateItemAsync(Item item);
 
          Task<Item> UpdateItemAsync(Item item);
-         Task<string> UpdateItemLocation(Guid userId, decimal? latitude, decimal? longitude);
+         Task<string> UpdateItemLocation(Guid userId, Guid itemId, decimal? latitude, decimal? longitude);
 
          Task<bool> ArchiveItemAsync(Guid itemId, Guid updatedByUserId);
 
