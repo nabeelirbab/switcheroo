@@ -73,7 +73,7 @@ namespace Infrastructure.Items
         public async Task<Domain.Items.Item> CreateItemAsync(Domain.Items.Item item)
         {
             var now = DateTime.UtcNow;
-            
+
             if (!item.CreatedByUserId.HasValue)
                 throw new InfrastructureException("No createdByUserId provided");
 
@@ -193,7 +193,7 @@ namespace Infrastructure.Items
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             double distanceKm = earthRadiusKm * c;
             double distanceMiles = distanceKm * milesPerKm;
-            
+
             Console.Write($"What is a: {a}, c: {c} dKm: {distanceKm} dM: {distanceMiles}");
 
 
@@ -218,7 +218,7 @@ namespace Infrastructure.Items
             var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.80);
             var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.20);
 
-            Expression<Func<Database.Schema.Item, bool>> searchPredicate =
+            /*Expression<Func<Database.Schema.Item, bool>> searchPredicate =
                 x =>
                 // If there is an amount it must be within the range of the item in question
                 (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
@@ -241,7 +241,16 @@ namespace Infrastructure.Items
                 .OrderBy(x => x.Id)
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new {x.Id, x.Latitude, x.Longitude})
-                .ToListAsync();
+                .ToListAsync();*/
+
+            var filteredItems = await db.Items
+    .Where(item =>
+        item.AskingPrice >= lowerAmountLimit &&
+        item.AskingPrice <= upperAmountBound &&
+        !myDismissedItems.Contains(item.Id) && // Skip dismissed items
+        !item.IsHidden || // Skip hidden items
+        item.ItemCategories.Any(ic => categories.Contains(ic.Category.Name))) // Match specified category names
+    .ToListAsync();
 
             // Check distance if latitude, longitude, and distance values are provided
             if (latitude.HasValue && longitude.HasValue && distance.HasValue)
