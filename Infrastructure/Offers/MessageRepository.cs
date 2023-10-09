@@ -25,10 +25,11 @@ namespace Infrastructure.Offers
                 .Where(z => z.OfferId == offerId)
                 .ToListAsync();
 
-            return messages
+            var msg =  messages
                 .OrderByDescending(_messageOrderingExpression)
                 .Select(message => new Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt))
                 .ToList();
+            return msg;
         }
 
         public async Task<Message> GetMessageById(Guid messageId)
