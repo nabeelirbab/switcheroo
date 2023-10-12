@@ -30,7 +30,7 @@ namespace Infrastructure.UserManagement
                 user.Mobile,
                 user.Gender,
                 user.DateOfBirth,
-                user.Distance,
+                user.Distance ?? 25,
                 user.Blurb,
                 user.AvatarUrl,
                 user.Email,
