@@ -244,13 +244,14 @@ namespace Infrastructure.Items
                 .ToListAsync();*/
 
             var filteredItems = await db.Items
-    .Where(item =>
-        item.AskingPrice >= lowerAmountLimit &&
-        item.AskingPrice <= upperAmountBound &&
-        !myDismissedItems.Contains(item.Id) && // Skip dismissed items
-        !item.IsHidden || // Skip hidden items
-        item.ItemCategories.Any(ic => categories.Contains(ic.Category.Name))) // Match specified category names
-    .ToListAsync();
+                .Where(item =>
+                item.AskingPrice >= lowerAmountLimit &&
+                item.AskingPrice <= upperAmountBound &&
+                item.CreatedByUserId != userId &&
+                !myDismissedItems.Contains(item.Id) && // Skip dismissed items
+                !item.IsHidden || // Skip hidden items
+                item.ItemCategories.Any(ic => categories.Contains(ic.Category.Name))) // Match specified category names
+                .ToListAsync();
 
             // Check distance if latitude, longitude, and distance values are provided
             if (latitude.HasValue && longitude.HasValue && distance.HasValue)
