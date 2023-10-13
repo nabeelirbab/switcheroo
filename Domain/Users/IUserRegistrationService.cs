@@ -11,6 +11,8 @@ namespace Domain.Users
 
         Task<string> GenerateConfirmationCodeAsync(Guid userId);
 
+        Task<string> GetSixDigitCodeByUserIdAsync(Guid userId);
+
         Task<string> GeneratePasswordResetConfirmationCodeAsync(string email);
         
         Task<string?> RetrieveResetPasswordTokenAsync(string email, string verificationCode);        

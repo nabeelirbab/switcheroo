@@ -74,7 +74,33 @@ namespace API.GraphQL
 
             return true;
         }
-        
+
+        public async Task<bool> ResendPassword(
+            [Service] IUserRegistrationService userRegistrationService,
+            [Service] IUserRepository userRepository,
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IEmailSender emailSender,
+            Guid userId,
+            string email
+            )
+        {
+            var httpContext = httpContextAccessor.HttpContext;
+            if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
+
+            var user = await userRepository.GetByEmail(email);
+            if (user == null) throw new ApiException("Invalid email address");
+
+            var request = httpContext.Request;
+            var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
+
+            var emailConfirmationCode = await userRegistrationService.GetSixDigitCodeByUserIdAsync(userId);
+            var resetEmail = new PasswordResetConfirmationEmail(basePath, emailConfirmationCode, email, $"{user.FirstName} {user.LastName}");
+
+            await emailSender.SendEmailAsync(user.Email, "Switcheroo Password Reset", resetEmail.GetHtmlString());
+
+            return true;
+        }
+
         public async Task<string?> RetrieveResetPasswordToken(
             [Service] IUserRegistrationService userRegistrationService,
             string email,

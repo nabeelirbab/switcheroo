@@ -79,6 +79,29 @@ namespace Infrastructure.UserManagement
             return retVal.Entity.SixDigitCode;
         }
 
+        public async Task<string> GetSixDigitCodeByUserIdAsync(Guid userId)
+        {
+            var user = await userManager.FindByIdAsync(userId.ToString());
+            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            var userVerificationCode = await db.UserVerificationCodes
+                .Where(x => x.Email == user.Email)
+                .FirstOrDefaultAsync();
+
+            if (userVerificationCode == null)
+            {
+                throw new Exception("Verification code not found for the user.");
+            }
+
+            return userVerificationCode.SixDigitCode;
+        }
+
+
         public async Task<string> GeneratePasswordResetConfirmationCodeAsync(string email)
         {
             var user = await userManager.FindByEmailAsync(email);
