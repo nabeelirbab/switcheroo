@@ -292,8 +292,7 @@ namespace Infrastructure.Items
                 .ToListAsync();
 
             var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
-
-            Console.WriteLine("data", data);
+            Console.WriteLine($"\nnewCursor:, {newCursor}");
 
             return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
         }
