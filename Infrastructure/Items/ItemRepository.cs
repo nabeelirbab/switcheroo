@@ -206,7 +206,7 @@ namespace Infrastructure.Items
             return Math.PI * angle / 180.0;
         }
 
-        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
+        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? isSwap, bool? inMiles = false)
         {
             Console.Clear();
             var myDismissedItems = await db.DismissedItem
@@ -248,6 +248,7 @@ namespace Infrastructure.Items
                 item.AskingPrice >= lowerAmountLimit &&
                 item.AskingPrice <= upperAmountBound &&
                 item.CreatedByUserId != userId &&
+                item.IsSwapOnly == isSwap &&
                 !myDismissedItems.Contains(item.Id) && // Skip dismissed items
                 !item.IsHidden || // Skip hidden items
                 item.ItemCategories.Any(ic => categories.Contains(ic.Category.Name))) // Match specified category names
@@ -265,6 +266,53 @@ namespace Infrastructure.Items
                     (bool)inMiles));
 
             }
+
+            var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
+            IEnumerable<Guid> requiredIds;
+
+            if (cursor != null)
+            {
+                requiredIds = itemIdsSorted
+                .SkipWhile(x => cursor != "" && x.ToString() != cursor)
+                .Skip(1)
+                .Take(limit);
+            }
+            else
+            {
+                requiredIds = itemIdsSorted.Take(limit);
+            }
+
+            var totalCount = itemIdsSorted.Count();
+
+            var data = await db.Items
+                .AsNoTracking()
+                .Where(x => requiredIds.Contains(x.Id))
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(Database.Schema.Item.ToDomain)
+                .ToListAsync();
+
+            var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
+
+            Console.WriteLine("data", data);
+
+            return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
+        }
+
+        public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor, bool? isSwap)
+        {
+            var myDismissedItems = await db.DismissedItem
+                .Where(z => z.CreatedByUserId == userId)
+                .Select(z => z.TargetItemId)
+                .ToListAsync();
+
+
+            var filteredItems = await db.Items
+                .Where(item =>
+                item.CreatedByUserId != userId &&
+                item.IsSwapOnly == isSwap &&
+                !myDismissedItems.Contains(item.Id) && // Skip dismissed items
+                !item.IsHidden) // Skip hidden items
+                .ToListAsync();
 
             var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
             IEnumerable<Guid> requiredIds;

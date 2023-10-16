@@ -34,6 +34,7 @@ namespace API.GraphQL
             decimal? latitude,
             decimal? longitude,
             decimal? distance,
+            bool? isSwap,
             bool? inMiles = false
         )
         {
@@ -43,15 +44,30 @@ namespace API.GraphQL
             if (user == null) throw new ApiException("Not logged in");
             if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
 
-            var paginatedItems = await itemRepository.GetItems(user.Id.Value, amount, categories, limit, cursor, latitude, longitude, distance, inMiles);
+            if (amount.HasValue)
+            {
+                var paginatedItemsResult = await itemRepository.GetItems(user.Id.Value, amount, categories, limit, cursor, latitude, longitude, distance, isSwap, inMiles);
 
-            return new Paginated<Items.Models.Item>(
-                paginatedItems.Data
-                    .Select(Items.Models.Item.FromDomain)
-                    .ToList(),
-                paginatedItems.Cursor,
-                paginatedItems.TotalCount,
-                paginatedItems.HasNextPage);
+                return new Paginated<Items.Models.Item>(
+                    paginatedItemsResult.Data
+                        .Select(Items.Models.Item.FromDomain)
+                        .ToList(),
+                    paginatedItemsResult.Cursor,
+                    paginatedItemsResult.TotalCount,
+                    paginatedItemsResult.HasNextPage);
+            }
+            else
+            {
+                var paginatedItems = await itemRepository.GetAllItems(user.Id.Value, limit, cursor, isSwap);
+
+                return new Paginated<Items.Models.Item>(
+                    paginatedItems.Data
+                        .Select(Items.Models.Item.FromDomain)
+                        .ToList(),
+                    paginatedItems.Cursor,
+                    paginatedItems.TotalCount,
+                    paginatedItems.HasNextPage);
+            }
         }
     }
 }
