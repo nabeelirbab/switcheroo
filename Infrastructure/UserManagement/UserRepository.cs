@@ -168,6 +168,10 @@ namespace Infrastructure.UserManagement
             {
                 Console.Write($"user deleted {checkUser}");
             }
+            else
+            {
+                Console.Write($"user not deleted {checkUser}");
+            }
             return true;
         }
     }
