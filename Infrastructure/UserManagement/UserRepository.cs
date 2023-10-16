@@ -144,5 +144,21 @@ namespace Infrastructure.UserManagement
 
             return await GetById(id);
         }
+
+        public async Task<bool> DeleteUser(Guid id)
+        {
+            var user = await db.Users
+        .Where(u => u.Id == id)
+        .SingleOrDefaultAsync();
+
+            if (user == null)
+            {
+                throw new InfrastructureException($"Couldn't find user {id}");
+            }
+
+            db.Users.Remove(user);
+            await db.SaveChangesAsync();
+            return true;
+        }
     }
 }

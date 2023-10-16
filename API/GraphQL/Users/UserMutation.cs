@@ -266,5 +266,18 @@ namespace API.GraphQL
 
             return true;
         }
+
+        public async Task<bool> DeleteUser(
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IHttpContextAccessor httpContextAccessor
+        )
+        {
+            var user = httpContextAccessor?.HttpContext?.User;
+
+            if (user == null) return false;
+            await userAuthenticationService.DeleteUserAsync(user);
+
+            return true;
+        }
     }
 }

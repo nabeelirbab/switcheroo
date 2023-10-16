@@ -23,5 +23,8 @@ namespace Domain.Users
         Task<User> UpdateUserDateOfBirth(Guid id, DateTime? dateOfBirth);
 
         Task<User> UpdateUserDistance(Guid id, int? distance);
+
+        Task<bool> DeleteUser(Guid id);
+
     }
 }
