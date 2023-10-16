@@ -158,6 +158,16 @@ namespace Infrastructure.UserManagement
 
             db.Users.Remove(user);
             await db.SaveChangesAsync();
+
+            var checkUser = await db.Users
+                .AsNoTracking()
+                .Where(user => user.Id == id)
+                .Select(Database.Schema.User.ToDomain)
+                .SingleOrDefaultAsync();
+            if (checkUser == null)
+            {
+                Console.Write($"user deleted {checkUser}");
+            }
             return true;
         }
     }
