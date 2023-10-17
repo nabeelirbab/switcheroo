@@ -70,7 +70,7 @@ namespace Infrastructure.UserManagement
 
             var user = await userManager.GetUserAsync(principal);
             if (user == null) throw new InfrastructureException("Unauthenticated");
-
+            Console.WriteLine($"UserAuthentication {user.Id}");
             await userRepository.DeleteUser(user.Id);
 
             return user.Id;

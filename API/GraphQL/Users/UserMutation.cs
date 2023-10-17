@@ -275,6 +275,7 @@ namespace API.GraphQL
             var user = httpContextAccessor?.HttpContext?.User;
 
             if (user == null) return false;
+            Console.WriteLine($"user in mutation {user}");
             await userAuthenticationService.DeleteUserAsync(user);
 
             return true;
