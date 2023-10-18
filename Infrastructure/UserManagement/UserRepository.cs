@@ -12,13 +12,13 @@ namespace Infrastructure.UserManagement
     public class UserRepository : IUserRepository
     {
         private readonly SwitcherooContext db;
-        private readonly ILogger<UserRepository> logger;
+        private readonly ILogger<UserRepository> _logger;
 
         public UserRepository(SwitcherooContext db, ILogger<UserRepository> logger)
         {
             this.db = db;
-            this.logger = logger;
-            logger.LogDebug("Nlog is integrated to User repository");
+            _logger = logger;
+            _logger.LogDebug("Nlog is integrated to User repository");
         }
 
         public async Task<User> GetByEmail(string email)
@@ -153,15 +153,16 @@ namespace Infrastructure.UserManagement
         {
             try
             {
-                Console.WriteLine($"DeleteUser {id}");
                 var user = await db.Users
-                .Where(u => u.Id == id)
-                .SingleOrDefaultAsync();
+                    .Where(u => u.Id == id)
+                    .SingleOrDefaultAsync();
                 if (user == null)
                 {
-                    throw new InfrastructureException($"Couldn't find user {id}");
+                    _logger.LogWarning($"DeleteUser: User with ID {id} not found.");
+                    return false;
                 }
-                Console.WriteLine($"find user  {user.Id}");
+
+                _logger.LogInformation($"DeleteUser: Deleting user {user.Id}");
                 db.Users.Remove(user);
                 await db.SaveChangesAsync();
 
@@ -170,24 +171,21 @@ namespace Infrastructure.UserManagement
                     .Where(user => user.Id == id)
                     .Select(Database.Schema.User.ToDomain)
                     .SingleOrDefaultAsync();
+
                 if (checkUser == null)
                 {
-                    Console.Write($"user deleted {checkUser}");
-                    logger.LogDebug($"success logger {user}");
-
+                    _logger.LogInformation($"DeleteUser: User {user.Id} deleted successfully.");
                 }
                 else
                 {
-                    logger.LogError($"user not deleted logger: {checkUser} ");
-                    Console.WriteLine($"user not deleted = {checkUser}");
+                    _logger.LogError($"DeleteUser: User {user.Id} deletion failed.");
                 }
+
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                logger.LogError($"Error logger= {ex.Message} ");
-                Console.WriteLine($"Exception user not deleted = {ex}");
-                Console.WriteLine($"Exception user not deleted = {ex.Message}");
+                _logger.LogError($"DeleteUser: An error occurred while deleting the user {ex.Message}");
                 return false;
             }
         }

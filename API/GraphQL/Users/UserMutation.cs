@@ -18,12 +18,11 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
-        private readonly ILogger<UserRepository> logger;
+        private readonly ILogger<Mutation> _logger;
 
-        public Mutation(ILogger<UserRepository> logger)
+        public Mutation(ILogger<Mutation> logger)
         {
-            this.logger = logger;
-            logger.LogDebug("Nlog is integrated to Mutation");
+            _logger = logger;
         }
 
         public async Task<Guid> RegisterUser(
@@ -285,20 +284,22 @@ namespace API.GraphQL
             [Service] IHttpContextAccessor httpContextAccessor
         )
         {
+            var user = httpContextAccessor?.HttpContext?.User;
+            if (user == null)
+            {
+                _logger.LogWarning("DeleteUser: User not found.");
+                return false;
+            }
+
             try
             {
-                var user = httpContextAccessor?.HttpContext?.User;
-
-                if (user == null) return false;
-                logger.LogInformation($"success {user}");
-                logger.LogDebug($"success {user}");
                 await userAuthenticationService.DeleteUserAsync(user);
-
+                _logger.LogInformation($"DeleteUser: User {user.Identity.Name} deleted.");
                 return true;
             }
             catch (Exception ex)
             {
-                logger.LogError($"Error logger= {ex.Message} ");
+                _logger.LogError(ex, "DeleteUser: An error occurred while deleting the user.");
                 return false;
             }
         }
