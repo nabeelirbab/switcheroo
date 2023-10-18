@@ -61,12 +61,11 @@ namespace API
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
             var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
-
             logger.Debug("init main");
             try
             {
-                
 
+                logger.Debug("in try");
                 var builder = WebApplication.CreateBuilder();
 
                 builder.Logging.ClearProviders();
@@ -85,7 +84,7 @@ namespace API
             }
             catch(Exception ex)
             {
-                logger.Error(ex);
+                logger.Error($"Exception in startup{ex}");
             }
         }
 
