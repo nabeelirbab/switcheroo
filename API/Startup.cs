@@ -61,12 +61,6 @@ namespace API
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
 
-            var builder = WebApplication.CreateBuilder();
-
-            builder.Logging.ClearProviders();
-            builder.Host.UseNLog();
-
-
             services.AddControllers();
 
             // Infastructure
