@@ -60,32 +60,23 @@ namespace API
 
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
-            var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
-            logger.Debug("init main");
-            try
-            {
 
-                logger.Debug("in try");
-                var builder = WebApplication.CreateBuilder();
+            var builder = WebApplication.CreateBuilder();
 
-                builder.Logging.ClearProviders();
-                builder.Host.UseNLog();
+            builder.Logging.ClearProviders();
+            builder.Host.UseNLog();
 
 
-                services.AddControllers();
+            services.AddControllers();
 
-                // Infastructure
-                AddDatabase(services);
-                AddEmail(services);
-                AddGraphQL(services);
-                AddUserManagement(services);
+            // Infastructure
+            AddDatabase(services);
+            AddEmail(services);
+            AddGraphQL(services);
+            AddUserManagement(services);
 
-                AddRepositories(services);
-            }
-            catch(Exception ex)
-            {
-                logger.Error($"Exception in startup{ex}");
-            }
+            AddRepositories(services);
+
         }
 
         private void AddRepositories(IServiceCollection services)
@@ -197,7 +188,7 @@ namespace API
             if (true || Environment.IsDevelopment())
             {
                 var tusDir = System.Environment.GetEnvironmentVariable("TUS_DIR");
-            
+
                 var tusdConfig = new DefaultTusConfiguration
                 {
                     Store = new TusDiskStore(tusDir),

@@ -178,13 +178,16 @@ namespace Infrastructure.UserManagement
                 }
                 else
                 {
-                    logger.LogError($"user not deleted: {checkUser} ");
+                    logger.LogError($"user not deleted logger: {checkUser} ");
+                    Console.WriteLine($"user not deleted = {checkUser}");
                 }
                 return true;
             }
             catch(Exception ex)
             {
                 logger.LogError($"Error logger= {ex.Message} ");
+                Console.WriteLine($"Exception user not deleted = {ex}");
+                Console.WriteLine($"Exception user not deleted = {ex.Message}");
                 return false;
             }
         }

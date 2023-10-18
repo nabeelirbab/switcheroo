@@ -299,6 +299,7 @@ namespace API.GraphQL
             catch (Exception ex)
             {
                 logger.LogError($"Error logger= {ex.Message} ");
+                Console.WriteLine($"Exception ex = {ex}");
                 return false;
             }
         }
