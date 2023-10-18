@@ -22,6 +22,7 @@
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="7.2.0" />
     <PackageReference Include="DotEnv" Version="0.0.1.1" />
     <PackageReference Include="DotNetEnv" Version="2.5.0" />
+    <PackageReference Include="GraphQL" Version="7.6.1" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="10.4.2" />
     <PackageReference Include="HotChocolate.AspNetCore.Playground" Version="10.4.2" />
     <PackageReference Include="HotChocolate.AspNetCore.Voyager" Version="10.4.2" />
@@ -35,6 +36,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="NLog" Version="5.2.5" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.5" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0007" />
     <PackageReference Include="tusdotnet" Version="2.3.0" />

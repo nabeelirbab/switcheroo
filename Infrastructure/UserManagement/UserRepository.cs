@@ -5,16 +5,20 @@ using System.Threading.Tasks;
 using Domain.Users;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.UserManagement
 {
     public class UserRepository : IUserRepository
     {
         private readonly SwitcherooContext db;
+        private readonly ILogger<UserRepository> logger;
 
-        public UserRepository(SwitcherooContext db)
+        public UserRepository(SwitcherooContext db, ILogger<UserRepository> logger)
         {
             this.db = db;
+            this.logger = logger;
+            logger.LogDebug("Nlog is integrated to User repository");
         }
 
         public async Task<User> GetByEmail(string email)
@@ -147,32 +151,42 @@ namespace Infrastructure.UserManagement
 
         public async Task<bool> DeleteUser(Guid id)
         {
-            Console.WriteLine($"DeleteUser {id}");
-            var user = await db.Users
-        .Where(u => u.Id == id)
-        .SingleOrDefaultAsync();
-            if (user == null)
+            try
             {
-                throw new InfrastructureException($"Couldn't find user {id}");
-            }
-            Console.WriteLine($"find user  {user.Id}");
-            db.Users.Remove(user);
-            await db.SaveChangesAsync();
-
-            var checkUser = await db.Users
-                .AsNoTracking()
-                .Where(user => user.Id == id)
-                .Select(Database.Schema.User.ToDomain)
+                Console.WriteLine($"DeleteUser {id}");
+                var user = await db.Users
+                .Where(u => u.Id == id)
                 .SingleOrDefaultAsync();
-            if (checkUser == null)
-            {
-                Console.Write($"user deleted {checkUser}");
+                if (user == null)
+                {
+                    throw new InfrastructureException($"Couldn't find user {id}");
+                }
+                Console.WriteLine($"find user  {user.Id}");
+                db.Users.Remove(user);
+                await db.SaveChangesAsync();
+
+                var checkUser = await db.Users
+                    .AsNoTracking()
+                    .Where(user => user.Id == id)
+                    .Select(Database.Schema.User.ToDomain)
+                    .SingleOrDefaultAsync();
+                if (checkUser == null)
+                {
+                    Console.Write($"user deleted {checkUser}");
+                    logger.LogDebug($"success logger {user}");
+
+                }
+                else
+                {
+                    logger.LogError($"user not deleted: {checkUser} ");
+                }
+                return true;
             }
-            else
+            catch(Exception ex)
             {
-                Console.Write($"user not deleted {checkUser}");
+                logger.LogError($"Error logger= {ex.Message} ");
+                return false;
             }
-            return true;
         }
     }
 }

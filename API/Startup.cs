@@ -34,6 +34,9 @@ using Microsoft.Extensions.Hosting;
 using Domain.Locations;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Infrastructure;
+using NLog;
+using NLog.Web;
+using Microsoft.Extensions.Logging;
 
 namespace API
 {
@@ -57,16 +60,33 @@ namespace API
 
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
+            var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 
-            services.AddControllers();
+            logger.Debug("init main");
+            try
+            {
+                
 
-            // Infastructure
-            AddDatabase(services);
-            AddEmail(services);
-            AddGraphQL(services);
-            AddUserManagement(services);
+                var builder = WebApplication.CreateBuilder();
 
-            AddRepositories(services);
+                builder.Logging.ClearProviders();
+                builder.Host.UseNLog();
+
+
+                services.AddControllers();
+
+                // Infastructure
+                AddDatabase(services);
+                AddEmail(services);
+                AddGraphQL(services);
+                AddUserManagement(services);
+
+                AddRepositories(services);
+            }
+            catch(Exception ex)
+            {
+                logger.Error(ex);
+            }
         }
 
         private void AddRepositories(IServiceCollection services)
