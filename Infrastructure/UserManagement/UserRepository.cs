@@ -12,6 +12,14 @@ namespace Infrastructure.UserManagement
     public class UserRepository : IUserRepository
     {
         private readonly SwitcherooContext db;
+        private readonly ILogger<UserRepository> logger;
+
+        public UserRepository(SwitcherooContext db, ILogger<UserRepository> logger)
+        {
+            this.db = db;
+            this.logger = logger;
+            logger.LogDebug("Nlog is integrated to User repository");
+        }
 
         public async Task<User> GetByEmail(string email)
         {
@@ -165,16 +173,19 @@ namespace Infrastructure.UserManagement
                 if (checkUser == null)
                 {
                     Console.Write($"user deleted {checkUser}");
+                    logger.LogDebug($"success logger {user}");
 
                 }
                 else
                 {
+                    logger.LogError($"user not deleted logger: {checkUser} ");
                     Console.WriteLine($"user not deleted = {checkUser}");
                 }
                 return true;
             }
             catch(Exception ex)
             {
+                logger.LogError($"Error logger= {ex.Message} ");
                 Console.WriteLine($"Exception user not deleted = {ex}");
                 Console.WriteLine($"Exception user not deleted = {ex.Message}");
                 return false;

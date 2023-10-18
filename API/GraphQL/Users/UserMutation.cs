@@ -18,6 +18,14 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
+        private readonly ILogger<UserRepository> logger;
+
+        public Mutation(ILogger<UserRepository> logger)
+        {
+            this.logger = logger;
+            logger.LogDebug("Nlog is integrated to Mutation");
+        }
+
         public async Task<Guid> RegisterUser(
             [Service] IUserRegistrationService userRegistrationService,
             [Service] IHttpContextAccessor httpContextAccessor,
@@ -282,14 +290,15 @@ namespace API.GraphQL
                 var user = httpContextAccessor?.HttpContext?.User;
 
                 if (user == null) return false;
-                Console.WriteLine($"success = {user}");
+                logger.LogInformation($"success {user}");
+                logger.LogDebug($"success {user}");
                 await userAuthenticationService.DeleteUserAsync(user);
 
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception ex = {ex}");
+                logger.LogError($"Error logger= {ex.Message} ");
                 return false;
             }
         }
