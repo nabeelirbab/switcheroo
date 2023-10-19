@@ -149,7 +149,48 @@ namespace Infrastructure.UserManagement
             return await GetById(id);
         }
 
-        public async Task<bool> DeleteUser(Guid id)
+        /*public async Task<bool> DeleteUser(Guid id)
+        {
+            try
+            {
+                var user = await db.Users
+                    .Where(u => u.Id == id)
+                    .SingleOrDefaultAsync();
+                if (user == null)
+                {
+                    _logger.LogWarning($"DeleteUser: User with ID {id} not found.");
+                    return false;
+                }
+
+                _logger.LogInformation($"DeleteUser: Deleting user {user.Id}");
+                db.Users.Remove(user);
+                await db.SaveChangesAsync();
+
+                var checkUser = await db.Users
+                    .AsNoTracking()
+                    .Where(user => user.Id == id)
+                    .Select(Database.Schema.User.ToDomain)
+                    .SingleOrDefaultAsync();
+
+                if (checkUser == null)
+                {
+                    _logger.LogInformation($"DeleteUser: User {user.Id} deleted successfully.");
+                }
+                else
+                {
+                    _logger.LogError($"DeleteUser: User {user.Id} deletion failed.");
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"DeleteUser: An error occurred while deleting the user {ex.Message}");
+                return false;
+            }
+        }
+*/
+        public async Task<bool> Delete(Guid id)
         {
             try
             {

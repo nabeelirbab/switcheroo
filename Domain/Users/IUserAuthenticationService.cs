@@ -9,7 +9,7 @@ namespace Domain.Users
         Task<Guid> SignInAsync(string email, string password);
 
         Task<Guid> SignOutAsync(ClaimsPrincipal principal);
-        Task<Guid> DeleteUserAsync(ClaimsPrincipal principal);
+        /*Task<Guid> DeleteUserAsync(ClaimsPrincipal principal);*/
 
         Task<User> GetCurrentlySignedInUserAsync(ClaimsPrincipal principal);
     }

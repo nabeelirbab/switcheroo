@@ -60,7 +60,7 @@ namespace Infrastructure.UserManagement
             return user.Id;
         }
 
-        public async Task<Guid> DeleteUserAsync(ClaimsPrincipal principal)
+        /*public async Task<Guid> DeleteUserAsync(ClaimsPrincipal principal)
         {
             var isAuthenticated = principal?.Identity?.IsAuthenticated;
             if (isAuthenticated == null || isAuthenticated == false)
@@ -75,5 +75,6 @@ namespace Infrastructure.UserManagement
 
             return user.Id;
         }
+*/
     }
 }

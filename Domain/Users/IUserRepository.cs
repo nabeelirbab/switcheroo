@@ -24,7 +24,8 @@ namespace Domain.Users
 
         Task<User> UpdateUserDistance(Guid id, int? distance);
 
-        Task<bool> DeleteUser(Guid id);
+        /*Task<bool> DeleteUser(Guid id);*/
+        Task<bool> Delete(Guid id);
 
     }
 }

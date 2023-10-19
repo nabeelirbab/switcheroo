@@ -279,7 +279,7 @@ namespace API.GraphQL
             return true;
         }
 
-        public async Task<bool> DeleteUser(
+        /*public async Task<bool> DeleteUser(
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IHttpContextAccessor httpContextAccessor
         )
@@ -295,6 +295,32 @@ namespace API.GraphQL
             {
                 await userAuthenticationService.DeleteUserAsync(user);
                 _logger.LogInformation($"DeleteUser: User {user.Identity.Name} deleted.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DeleteUser: An error occurred while deleting the user.");
+                return false;
+            }
+        }
+*/
+        public async Task<bool> Delete(
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IUserRepository userRepository,
+            Guid userId
+        )
+        {
+            var user = await userRepository.GetById(userId);
+
+            if (user == null)
+            {
+                _logger.LogWarning("DeleteUser: User not found.");
+                return false;
+            }
+
+            try
+            {
+                await userRepository.Delete(userId);
                 return true;
             }
             catch (Exception ex)
