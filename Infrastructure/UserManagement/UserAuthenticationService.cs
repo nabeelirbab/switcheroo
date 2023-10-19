@@ -59,22 +59,5 @@ namespace Infrastructure.UserManagement
 
             return user.Id;
         }
-
-        /*public async Task<Guid> DeleteUserAsync(ClaimsPrincipal principal)
-        {
-            var isAuthenticated = principal?.Identity?.IsAuthenticated;
-            if (isAuthenticated == null || isAuthenticated == false)
-            {
-                throw new InfrastructureException("Unauthenticated");
-            }
-
-            var user = await userManager.GetUserAsync(principal);
-            if (user == null) throw new InfrastructureException("Unauthenticated");
-            Console.WriteLine($"UserAuthentication {user.Id}");
-            await userRepository.DeleteUser(user.Id);
-
-            return user.Id;
-        }
-*/
     }
 }
