@@ -63,11 +63,6 @@ namespace API.GraphQL
 
             await offerRepository.DeleteOffer(id);
 
-            if (id == Guid.Empty)
-            {
-                return false;
-            }
-
             return true;
         }
     }
