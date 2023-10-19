@@ -11,5 +11,6 @@ namespace Domain.Offers
         Task<Offer> GetOfferById(Guid userId, Guid offerId);
         Task<Offer> MarkMessagesAsRead(Guid userId, Guid offerId);
         Task<Offer> CreateOffer(Offer offer);
+        Task<bool> DeleteOffer(Guid Id);
     }
 }

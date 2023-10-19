@@ -47,5 +47,28 @@ namespace API.GraphQL
             
             return Offer.FromDomain(domainOffer);
         }
+
+        public async Task<bool> DeleteOffer(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IOfferRepository offerRepository,
+            Guid id
+        )
+        {
+            var userCp = httpContextAccessor?.HttpContext?.User;
+
+            if (userCp == null) throw new ApiException("Not authenticated");
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            if (!user.Id.HasValue) throw new ApiException("Database failure");
+
+            await offerRepository.DeleteOffer(id);
+
+            if (id == Guid.Empty)
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

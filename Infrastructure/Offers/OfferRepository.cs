@@ -55,6 +55,28 @@ namespace Infrastructure.Offers
 
         }
 
+        public async Task<bool> DeleteOffer(Guid Id)
+        {
+            try
+            {
+                var offer = await db.Offers
+                    .Where(u => u.Id == Id)
+                    .SingleOrDefaultAsync();
+                if (offer == null)
+                {
+                    return false;
+                }
+
+                db.Offers.Remove(offer);
+                await db.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"offer no delete successfully {ex}");
+            }
+        }
+
         public async Task<IEnumerable<Offer>> GetAllOffers(Guid userId)
         {
             var myItems = await db.Items
