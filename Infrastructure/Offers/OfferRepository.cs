@@ -91,17 +91,37 @@ namespace Infrastructure.Offers
 
         public async Task<IEnumerable<Offer>> GetAllOffers(Guid userId)
         {
-            var myItems = await db.Items
-                .Where(z => z.CreatedByUserId == userId)
-                .Select(z => z.Id)
-                .ToArrayAsync();
+            try
+            {
+                // Step 1: Retrieve myItems
+                var myItems = await db.Items
+                   .Where(z => z.CreatedByUserId == userId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
 
-            var offers = await db.Offers
-                .Where(z => myItems.Contains(z.SourceItemId) || myItems.Contains(z.TargetItemId))
-                .Select(offer => new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date,(int)offer.SourceStatus,(int)offer.TargetStatus))
-                .ToListAsync();
+                // Step 2: Retrieve offers using myItems
+                var offers = await db.Offers
+                    .Where(z => myItems.Contains(z.SourceItemId) || myItems.Contains(z.TargetItemId))
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus))
+                    .ToListAsync();
 
-            return offers;
+                return offers;
+            }
+
+            catch (Exception ex)
+            {
+                _logger.LogError($"An unhandled exception occurred:{ex}");
+                return Enumerable.Empty<Offer>();
+            }
         }
 
         public async Task<Offer> GetOfferById(Guid userId, Guid offerId)
