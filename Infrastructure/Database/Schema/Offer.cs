@@ -33,7 +33,7 @@ namespace Infrastructure.Database.Schema
         [Required]
         public OfferStatus TargetStatus {get; set;}
 
-        public int? Cash { get; private set; }
+        public int? Cash { get; set; }
 
         public List<Message> Messages { get; private set; } = new List<Message>();
     }

@@ -39,9 +39,9 @@ namespace Domain.Offers
         public int SourceStatus { get; set; }
         public int? TargeteStatus { get; set; }
 
-        public static Offer CreateNewOffer(Guid sourceItemId, Guid targetItemId, Guid createdByUserId, int sourceStatus, int? targeteStatus)
+        public static Offer CreateNewOffer(Guid sourceItemId, Guid targetItemId,int? cash, Guid createdByUserId, int sourceStatus, int? targeteStatus)
         {
-            return new Offer(null, sourceItemId, targetItemId, null, createdByUserId, createdByUserId, DateTime.Now, sourceStatus, targeteStatus);
+            return new Offer(null, sourceItemId, targetItemId, cash, createdByUserId, createdByUserId, DateTime.Now, sourceStatus, targeteStatus);
         }
     }
 }

@@ -3,28 +3,14 @@ using System.Threading.Tasks;
 using API.GraphQL.Users.Models;
 using API.HtmlTemplates;
 using Domain.Users;
-using GraphQL;
 using HotChocolate;
-using Infrastructure.Database;
-using Infrastructure.UserManagement;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Logging;
-using NLog;
 
 namespace API.GraphQL
 {
     public partial class Mutation
     {
-        private readonly ILogger<Mutation> _logger;
-
-        public Mutation(ILogger<Mutation> logger)
-        {
-            _logger = logger;
-        }
-
         public async Task<Guid> RegisterUser(
             [Service] IUserRegistrationService userRegistrationService,
             [Service] IHttpContextAccessor httpContextAccessor,

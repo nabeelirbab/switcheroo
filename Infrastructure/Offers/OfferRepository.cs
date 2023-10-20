@@ -6,53 +6,64 @@ using System.Threading.Tasks;
 using Domain.Categories;
 using Domain.Offers;
 using Infrastructure.Database;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
     {
         private readonly SwitcherooContext db;
+        private readonly ILogger<ExceptionHandlerMiddleware> _logger;
 
-        public OfferRepository(SwitcherooContext db)
+
+        public OfferRepository(SwitcherooContext db, ILogger<ExceptionHandlerMiddleware> logger)
         {
             this.db = db;
+            _logger = logger;
         }
 
         public async Task<Offer>? CreateOffer(Offer offer)
         {
             var now = DateTime.UtcNow;
-            Offer? myoffer = null; 
-
-            if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
-                throw new InfrastructureException("No createdByUserId provided");
-
-            var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
-            if (match != null)
+            Offer? myoffer = null;
+            try
             {
-                match.TargetStatus = Database.Schema.OfferStatus.Initiated;
-                await db.SaveChangesAsync();
-                myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
-            }
-            else
-            {
-                var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
+                    throw new InfrastructureException("No createdByUserId provided");
+
+                var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
+                if (match != null)
                 {
-                    CreatedByUserId = offer.CreatedByUserId.Value,
-                    UpdatedByUserId = offer.UpdatedByUserId.Value,
-                    CreatedAt = now,
-                    UpdatedAt = now,
-                    SourceStatus = Database.Schema.OfferStatus.Initiated
-                };
+                    match.TargetStatus = Database.Schema.OfferStatus.Initiated;
+                    await db.SaveChangesAsync();
+                    myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
+                }
+                else
+                {
+                    var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                    {
+                        CreatedByUserId = offer.CreatedByUserId.Value,
+                        UpdatedByUserId = offer.UpdatedByUserId.Value,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        Cash = offer.Cash,
+                        SourceStatus = Database.Schema.OfferStatus.Initiated
+                    };
 
-                await db.Offers.AddAsync(newDbOffer);
-                await db.SaveChangesAsync();
+                    await db.Offers.AddAsync(newDbOffer);
+                    await db.SaveChangesAsync();
 
-                myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                    myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                }
+                return myoffer;
             }
-            return myoffer;
-
-
+            catch (Exception ex)
+            {
+                _logger.LogError($"An unhandled exception occurred: {ex}");
+                return myoffer;
+            }
         }
 
         public async Task<bool> DeleteOffer(Guid Id)
@@ -73,7 +84,8 @@ namespace Infrastructure.Offers
             }
             catch (Exception ex)
             {
-                throw new Exception($"offer no delete successfully {ex}");
+                _logger.LogError($"An unhandled exception occurred: {ex}");
+                return false;
             }
         }
 

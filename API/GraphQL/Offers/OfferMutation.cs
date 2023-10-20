@@ -34,6 +34,7 @@ namespace API.GraphQL
             Guid sourceItemId,
             Guid targetItemId,
             int sourceStatus,
+            int? cash,
             int? targeteStatus
         )
         {
@@ -43,7 +44,7 @@ namespace API.GraphQL
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
 
-            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId, targetItemId, user.Id.Value, sourceStatus, targeteStatus));
+            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId, targetItemId, cash, user.Id.Value, sourceStatus, targeteStatus));
             
             return Offer.FromDomain(domainOffer);
         }

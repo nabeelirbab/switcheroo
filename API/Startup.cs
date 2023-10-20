@@ -31,9 +31,9 @@ using Microsoft.Extensions.FileProviders;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
-using Domain.Locations;
+using Domain.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Infrastructure;
+using Infrastructure.Services;
 using NLog;
 using NLog.Web;
 using Microsoft.Extensions.Logging;
@@ -55,6 +55,8 @@ namespace API
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            // ADD LOGGER SERVICE
+            services.AddSingleton<ILoggerManager, LoggerManager>();
             // If you need dependency injection with your query object add your query type as a services.
             // services.AddSingleton<Query>();
 
@@ -177,6 +179,10 @@ namespace API
                             "Assets")),
                     RequestPath = "/Assets"
                 });
+
+            // CONFIGURE LOGGING SERVICE TO LOG ERRORS TO /logs IN APP ROOT FOLDER
+            var logger = app.ApplicationServices.GetRequiredService<ILoggerManager>();
+            app.ConfigureExceptionHandler(logger);
 
             // For now we are always using tus, for prod otherwise we wont be doing this
             if (true || Environment.IsDevelopment())
