@@ -47,7 +47,7 @@ namespace Infrastructure.Offers
                         // For 20% limit
                         var lowerAmountLimit = Decimal.Multiply((decimal)offer.Cash, (decimal)0.80);
                         var upperAmountBound = Decimal.Multiply((decimal)offer.Cash, (decimal)1.20);
-                        if(lowerAmountLimit< offer.Cash && offer.Cash > upperAmountBound)
+                        if(lowerAmountLimit > offer.Cash && offer.Cash > upperAmountBound)
                         {
                             var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                             {
@@ -87,13 +87,13 @@ namespace Infrastructure.Offers
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
-                return myoffer;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An unhandled exception occurred: {ex}");
+                _logger.LogError($"An unhandled exception occurred: {ex.Message}");
                 throw;
             }
+            return myoffer;
         }
 
         public async Task<bool> DeleteOffer(Guid Id)
