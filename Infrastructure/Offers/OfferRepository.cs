@@ -62,7 +62,7 @@ namespace Infrastructure.Offers
             catch (Exception ex)
             {
                 _logger.LogError($"An unhandled exception occurred: {ex}");
-                return myoffer;
+                throw;
             }
         }
 
