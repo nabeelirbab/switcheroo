@@ -42,20 +42,50 @@ namespace Infrastructure.Offers
                 }
                 else
                 {
-                    var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                    if (offer.Cash != null)
                     {
-                        CreatedByUserId = offer.CreatedByUserId.Value,
-                        UpdatedByUserId = offer.UpdatedByUserId.Value,
-                        CreatedAt = now,
-                        UpdatedAt = now,
-                        Cash = offer.Cash,
-                        SourceStatus = Database.Schema.OfferStatus.Initiated
-                    };
+                        // For 20% limit
+                        var lowerAmountLimit = Decimal.Multiply((decimal)offer.Cash, (decimal)0.80);
+                        var upperAmountBound = Decimal.Multiply((decimal)offer.Cash, (decimal)1.20);
+                        if(lowerAmountLimit< offer.Cash && offer.Cash > upperAmountBound)
+                        {
+                            var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                            {
+                                CreatedByUserId = offer.CreatedByUserId.Value,
+                                UpdatedByUserId = offer.UpdatedByUserId.Value,
+                                CreatedAt = now,
+                                UpdatedAt = now,
+                                Cash = offer.Cash,
+                                SourceStatus = Database.Schema.OfferStatus.Initiated
+                            };
 
-                    await db.Offers.AddAsync(newDbOffer);
-                    await db.SaveChangesAsync();
+                            await db.Offers.AddAsync(newDbOffer);
+                            await db.SaveChangesAsync();
 
-                    myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                            myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"you can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
+                        }
+                    }
+                    else
+                    {
+                        var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                        {
+                            CreatedByUserId = offer.CreatedByUserId.Value,
+                            UpdatedByUserId = offer.UpdatedByUserId.Value,
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Cash = offer.Cash,
+                            SourceStatus = Database.Schema.OfferStatus.Initiated
+                        };
+
+                        await db.Offers.AddAsync(newDbOffer);
+                        await db.SaveChangesAsync();
+
+                        myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                    }
                 }
                 return myoffer;
             }
