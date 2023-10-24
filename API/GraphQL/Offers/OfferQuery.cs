@@ -31,7 +31,7 @@ namespace API.GraphQL
         }
 
         [Authorize]
-        public async Task<IEnumerable<Offer>> GetAllOffers(
+        public async Task<IEnumerable<Offer>> GetCreatedOffers(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IOfferRepository offerRepository)
@@ -42,7 +42,24 @@ namespace API.GraphQL
 
             if (user == null) throw new ApiException("Not logged in");
 
-            var offers = await offerRepository.GetAllOffers(user.Id.Value);
+            var offers = await offerRepository.GetCreatedOffers(user.Id.Value);
+
+            return offers.Select(Offer.FromDomain).ToList();
+        }
+
+        [Authorize]
+        public async Task<IEnumerable<Offer>> GetReceivedOffers(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IOfferRepository offerRepository)
+        {
+            var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+            if (!user.Id.HasValue) throw new ApiException("Fatal.");
+
+            if (user == null) throw new ApiException("Not logged in");
+
+            var offers = await offerRepository.GetReceivedOffers(user.Id.Value);
 
             return offers.Select(Offer.FromDomain).ToList();
         }

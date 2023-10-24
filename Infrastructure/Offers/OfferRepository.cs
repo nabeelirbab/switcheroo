@@ -9,6 +9,7 @@ using Infrastructure.Database;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using NLog.Targets;
 
 namespace Infrastructure.Offers
 {
@@ -47,9 +48,19 @@ namespace Infrastructure.Offers
                         // For 20% limit
                         var lowerAmountLimit = Decimal.Multiply((decimal)offer.Cash, (decimal)0.80);
                         var upperAmountBound = Decimal.Multiply((decimal)offer.Cash, (decimal)1.20);
+                        var myItem = await db.Items.FirstOrDefaultAsync(item => item.Id == offer.TargetItemId);
+
+                        if (myItem != null)
+                        {
+                            // Update the 'isSwap' property
+                            myItem.IsSwapOnly = true;
+
+                            // Save the changes to the database
+                            await db.SaveChangesAsync();
+                        }
                         /*if(lowerAmountLimit > offer.Cash && offer.Cash < upperAmountBound)
                         {*/
-                            var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                        var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                             {
                                 CreatedByUserId = offer.CreatedByUserId.Value,
                                 UpdatedByUserId = offer.UpdatedByUserId.Value,
@@ -71,6 +82,15 @@ namespace Infrastructure.Offers
                     }
                     else
                     {
+                        var myItem = await db.Items.FirstOrDefaultAsync(item => item.Id == offer.TargetItemId);
+                        if (myItem != null)
+                        {
+                            // Update the 'isSwap' property
+                            myItem.IsSwapOnly = true;
+
+                            // Save the changes to the database
+                            await db.SaveChangesAsync();
+                        }
                         var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                         {
                             CreatedByUserId = offer.CreatedByUserId.Value,
@@ -118,7 +138,7 @@ namespace Infrastructure.Offers
             }
         }
 
-        public async Task<IEnumerable<Offer>> GetAllOffers(Guid userId)
+        public async Task<IEnumerable<Offer>> GetCreatedOffers(Guid userId)
         {
             try
             {
@@ -130,7 +150,7 @@ namespace Infrastructure.Offers
 
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
-                    .Where(z => myItems.Contains(z.SourceItemId) || myItems.Contains(z.TargetItemId))
+                    .Where(z => myItems.Contains(z.SourceItemId))
                     .Select(offer => new Offer(
                     offer.Id,
                     offer.SourceItemId,
@@ -152,6 +172,42 @@ namespace Infrastructure.Offers
                 return Enumerable.Empty<Offer>();
             }
         }
+
+        public async Task<IEnumerable<Offer>> GetReceivedOffers(Guid userId)
+        {
+            try
+            {
+                // Step 1: Retrieve myItems
+                var myItems = await db.Items
+                   .Where(z => z.CreatedByUserId == userId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+                // Step 2: Retrieve offers using myItems
+                var offers = await db.Offers
+                    .Where(z => myItems.Contains(z.TargetItemId))
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus))
+                    .ToListAsync();
+
+                return offers;
+            }
+
+            catch (Exception ex)
+            {
+                _logger.LogError($"An unhandled exception occurred:{ex}");
+                return Enumerable.Empty<Offer>();
+            }
+        }
+
 
         public async Task<Offer> GetOfferById(Guid userId, Guid offerId)
         {
@@ -198,6 +254,41 @@ namespace Infrastructure.Offers
             await db.SaveChangesAsync();
 
             return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus);
+        }
+
+        public async Task<IEnumerable<Offer>> GetAllOffers(Guid userId)
+        {
+            try
+            {
+                // Step 1: Retrieve myItems
+                var myItems = await db.Items
+                   .Where(z => z.CreatedByUserId == userId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+                // Step 2: Retrieve offers using myItems
+                var offers = await db.Offers
+                    .Where(z => myItems.Contains(z.SourceItemId) || myItems.Contains(z.TargetItemId))
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus))
+                    .ToListAsync();
+
+                return offers;
+            }
+
+            catch (Exception ex)
+            {
+                _logger.LogError($"An unhandled exception occurred:{ex}");
+                return Enumerable.Empty<Offer>();
+            }
         }
     }
 }
