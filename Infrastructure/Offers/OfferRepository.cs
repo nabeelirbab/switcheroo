@@ -66,7 +66,7 @@ namespace Infrastructure.Offers
                         }
                         else
                         {
-                            throw new ArgumentException($"you can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
+                            throw new Exception($"you can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
                         }
                     }
                     else
