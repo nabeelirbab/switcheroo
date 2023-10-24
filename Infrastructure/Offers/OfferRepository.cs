@@ -47,8 +47,8 @@ namespace Infrastructure.Offers
                         // For 20% limit
                         var lowerAmountLimit = Decimal.Multiply((decimal)offer.Cash, (decimal)0.80);
                         var upperAmountBound = Decimal.Multiply((decimal)offer.Cash, (decimal)1.20);
-                        if(upperAmountBound > offer.Cash && offer.Cash > lowerAmountLimit)
-                        {
+                        /*if(lowerAmountLimit > offer.Cash && offer.Cash < upperAmountBound)
+                        {*/
                             var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                             {
                                 CreatedByUserId = offer.CreatedByUserId.Value,
@@ -63,11 +63,11 @@ namespace Infrastructure.Offers
                             await db.SaveChangesAsync();
 
                             myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
-                        }
+                       /* }
                         else
                         {
                             throw new Exception($"you can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
-                        }
+                        }*/
                     }
                     else
                     {
@@ -77,7 +77,6 @@ namespace Infrastructure.Offers
                             UpdatedByUserId = offer.UpdatedByUserId.Value,
                             CreatedAt = now,
                             UpdatedAt = now,
-                            Cash = offer.Cash,
                             SourceStatus = Database.Schema.OfferStatus.Initiated
                         };
 

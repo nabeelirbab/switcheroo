@@ -214,9 +214,9 @@ namespace Infrastructure.Items
                 .Select(z => z.TargetItemId)
                 .ToListAsync();
 
-            // For 20% limit
-            var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.80);
-            var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.20);
+            // For 40% limit
+            var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.60);
+            var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.40);
 
             /*Expression<Func<Database.Schema.Item, bool>> searchPredicate =
                 x =>
