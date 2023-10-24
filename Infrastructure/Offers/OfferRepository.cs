@@ -47,7 +47,7 @@ namespace Infrastructure.Offers
                         // For 20% limit
                         var lowerAmountLimit = Decimal.Multiply((decimal)offer.Cash, (decimal)0.80);
                         var upperAmountBound = Decimal.Multiply((decimal)offer.Cash, (decimal)1.20);
-                        if(lowerAmountLimit > offer.Cash && offer.Cash > upperAmountBound)
+                        if(upperAmountBound > offer.Cash && offer.Cash > lowerAmountLimit)
                         {
                             var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                             {
