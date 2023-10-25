@@ -248,6 +248,11 @@ namespace Infrastructure.Items
                     .Select(x => new { x.Id, x.Latitude, x.Longitude })
                     .ToListAsync();
 
+                foreach (var item in filteredItems)
+                {
+                    Console.WriteLine($"filteredItems ID: {item.Id}");
+                }
+
                 //fetch offer to remove all items against which offer was created 
                 var offer = db.Offers.Where(x => x.CreatedByUserId.Equals(userId)).ToList();
 
@@ -267,8 +272,18 @@ namespace Infrastructure.Items
 
                 }
 
+                foreach (var item in filteredItems)
+                {
+                    Console.WriteLine($"filteredItems ID: {item.Id}");
+                }
+
                 var itemIdsSorted = filteredItemsWithoutOffers.Select(x => x.Id).ToList();
                 IEnumerable<Guid> requiredIds;
+
+                foreach (var item in itemIdsSorted)
+                {
+                    Console.WriteLine($"itemIdsSorted ID: {item}");
+                }
 
                 if (cursor != null)
                 {
@@ -290,6 +305,11 @@ namespace Infrastructure.Items
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
+
+                foreach (var item in data)
+                {
+                    Console.WriteLine($"data ID: {item.Id}");
+                }
 
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
                 Console.WriteLine($"\nnewCursor:, {newCursor}");
