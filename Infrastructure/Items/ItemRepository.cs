@@ -248,10 +248,6 @@ namespace Infrastructure.Items
                     .Select(x => new { x.Id, x.Latitude, x.Longitude })
                     .ToListAsync();
 
-                foreach (var item in filteredItems)
-                {
-                    Console.WriteLine($"filteredItems ID: {item.Id}");
-                }
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"no item found against this filter");
@@ -260,13 +256,13 @@ namespace Infrastructure.Items
                 //fetch offer to remove all items against which offer was created 
                 var offer = db.Offers.Where(x => x.CreatedByUserId.Equals(userId)).ToList();
 
-                var filteredItemsWithoutOffers = filteredItems
+                /*var filteredItemsWithoutOffers = filteredItems
                     .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id)).ToList();
-
+*/
                 // Check distance if latitude, longitude, and distance values are provided
                 if (latitude.HasValue && longitude.HasValue && distance.HasValue)
                 {
-                    filteredItemsWithoutOffers.RemoveAll(x => !IsDistanceWithinRange(
+                    filteredItems.RemoveAll(x => !IsDistanceWithinRange(
                         (double)latitude.Value,
                         (double)longitude.Value,
                         (double)x.Latitude,
@@ -276,16 +272,16 @@ namespace Infrastructure.Items
 
                 }
 
-                foreach (var item in filteredItems)
+                /*foreach (var item in filteredItems)
                 {
                     Console.WriteLine($"filteredItems ID: {item.Id}");
                 }
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"no item found against this filter");
-                }
+                }*/
 
-                var itemIdsSorted = filteredItemsWithoutOffers.Select(x => x.Id).ToList();
+                var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
                 IEnumerable<Guid> requiredIds;
 
                 foreach (var item in itemIdsSorted)
