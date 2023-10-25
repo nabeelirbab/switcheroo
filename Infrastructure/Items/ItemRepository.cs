@@ -246,11 +246,11 @@ namespace Infrastructure.Items
                     .OrderBy(x => x.Id)
                     .OrderByDescending(x => x.CreatedAt)
                     .Select(x => new { x.Id, x.Latitude, x.Longitude })
-                    .ToListAsync();
+                    .ToListAsync(); 
 
                 if (filteredItems.Count == 0)
                 {
-                    throw new InfrastructureException($"no item found against this filter");
+                    throw new InfrastructureException($"1no item found against this filter");
                 }
 
                 //fetch offer to remove all items against which offer was created 
