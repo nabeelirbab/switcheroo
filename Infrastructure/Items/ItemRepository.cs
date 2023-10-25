@@ -252,6 +252,10 @@ namespace Infrastructure.Items
                 {
                     Console.WriteLine($"filteredItems ID: {item.Id}");
                 }
+                if (filteredItems.Count > 0)
+                {
+                    throw new InfrastructureException($"no item found against this filter");
+                }
 
                 //fetch offer to remove all items against which offer was created 
                 var offer = db.Offers.Where(x => x.CreatedByUserId.Equals(userId)).ToList();
@@ -275,6 +279,10 @@ namespace Infrastructure.Items
                 foreach (var item in filteredItems)
                 {
                     Console.WriteLine($"filteredItems ID: {item.Id}");
+                }
+                if (filteredItems.Count > 0)
+                {
+                    throw new InfrastructureException($"no item found against this filter");
                 }
 
                 var itemIdsSorted = filteredItemsWithoutOffers.Select(x => x.Id).ToList();
@@ -309,6 +317,10 @@ namespace Infrastructure.Items
                 foreach (var item in data)
                 {
                     Console.WriteLine($"data ID: {item.Id}");
+                }
+                if(data.Count > 0)
+                {
+                    throw new InfrastructureException($"no item found against this filter");
                 }
 
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
