@@ -250,7 +250,7 @@ namespace Infrastructure.Items
 
                 if (filteredItems.Count == 0)
                 {
-                    throw new InfrastructureException($"1no item found against this filter");
+                    throw new InfrastructureException($"1no filteredItems found against this filter");
                 }
 
                 //fetch offer to remove all items against which offer was created 
@@ -284,9 +284,9 @@ namespace Infrastructure.Items
                 var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
                 IEnumerable<Guid> requiredIds;
 
-                foreach (var item in itemIdsSorted)
+                if (itemIdsSorted.Count == 0)
                 {
-                    Console.WriteLine($"itemIdsSorted ID: {item}");
+                    throw new InfrastructureException($"1no itemIdsSorted found against this filter");
                 }
 
                 if (cursor != null)
@@ -316,7 +316,7 @@ namespace Infrastructure.Items
                 }
                 if(data.Count == 0)
                 {
-                    throw new InfrastructureException($"no item found against this filter");
+                    throw new InfrastructureException($"no data found against this filter");
                 }
 
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
