@@ -252,7 +252,7 @@ namespace Infrastructure.Items
                 {
                     Console.WriteLine($"filteredItems ID: {item.Id}");
                 }
-                if (filteredItems.Count > 0)
+                if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"no item found against this filter");
                 }
@@ -280,7 +280,7 @@ namespace Infrastructure.Items
                 {
                     Console.WriteLine($"filteredItems ID: {item.Id}");
                 }
-                if (filteredItems.Count > 0)
+                if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"no item found against this filter");
                 }
@@ -318,7 +318,7 @@ namespace Infrastructure.Items
                 {
                     Console.WriteLine($"data ID: {item.Id}");
                 }
-                if(data.Count > 0)
+                if(data.Count == 0)
                 {
                     throw new InfrastructureException($"no item found against this filter");
                 }
