@@ -3,82 +3,75 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security;
 using System.Threading.Tasks;
-using Domain.Categories;
 using Domain.Offers;
 using Infrastructure.Database;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using NLog.Targets;
 
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
     {
         private readonly SwitcherooContext db;
-        private readonly ILogger<ExceptionHandlerMiddleware> _logger;
 
 
-        public OfferRepository(SwitcherooContext db, ILogger<ExceptionHandlerMiddleware> logger)
+        public OfferRepository(SwitcherooContext db)
         {
             this.db = db;
-            _logger = logger;
         }
 
         public async Task<Offer>? CreateOffer(Offer offer)
         {
             var now = DateTime.UtcNow;
             Offer? myoffer = null;
-            try
-            {
-                if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
-                    throw new InfrastructureException("No createdByUserId provided");
+            if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
+                throw new InfrastructureException("No createdByUserId provided");
 
-                var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
-                if (match != null)
-                {
-                    match.TargetStatus = Database.Schema.OfferStatus.Initiated;
-                    await db.SaveChangesAsync();
-                    myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
-                }
-                else
+            var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
+            if (match != null)
+            {
+                match.TargetStatus = Database.Schema.OfferStatus.Initiated;
+                await db.SaveChangesAsync();
+                myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
+            }
+            else
+            {
+                try
                 {
                     if (offer.Cash != null)
                     {
-                        // For 20% limit
-                        var lowerAmountLimit = Decimal.Multiply((decimal)offer.Cash, (decimal)0.80);
-                        var upperAmountBound = Decimal.Multiply((decimal)offer.Cash, (decimal)1.20);
-                        var myItem = await db.Items.FirstOrDefaultAsync(item => item.Id == offer.TargetItemId);
-
-                        if (myItem != null)
+                        var targetitem = db.Items.Where(i => i.Id.Equals(offer.TargetItemId)).FirstOrDefault();
+                        if (targetitem.IsSwapOnly)
                         {
-                            // Update the 'isSwap' property
-                            myItem.IsSwapOnly = true;
+                            // For 20% limit
+                            var lowerAmountLimit = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)0.60);
+                            var upperAmountBound = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)1.40);
 
-                            // Save the changes to the database
-                            await db.SaveChangesAsync();
-                        }
-                        /*if(lowerAmountLimit > offer.Cash && offer.Cash < upperAmountBound)
-                        {*/
-                        var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                            if (lowerAmountLimit < offer.Cash && offer.Cash < upperAmountBound)
                             {
-                                CreatedByUserId = offer.CreatedByUserId.Value,
-                                UpdatedByUserId = offer.UpdatedByUserId.Value,
-                                CreatedAt = now,
-                                UpdatedAt = now,
-                                Cash = offer.Cash,
-                                SourceStatus = Database.Schema.OfferStatus.Initiated
-                            };
+                                var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                                {
+                                    CreatedByUserId = offer.CreatedByUserId.Value,
+                                    UpdatedByUserId = offer.UpdatedByUserId.Value,
+                                    CreatedAt = now,
+                                    UpdatedAt = now,
+                                    Cash = offer.Cash,
+                                    SourceStatus = Database.Schema.OfferStatus.Initiated
+                                };
 
-                            await db.Offers.AddAsync(newDbOffer);
-                            await db.SaveChangesAsync();
+                                await db.Offers.AddAsync(newDbOffer);
+                                await db.SaveChangesAsync();
 
-                            myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
-                       /* }
+                                myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                            }
+                            else
+                            {
+                                throw new InfrastructureException($"You can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
+                            }
+                        }
                         else
                         {
-                            throw new Exception($"you can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
-                        }*/
+                            throw new InfrastructureException("you cannot give cash offer to this user");
+                        }
                     }
                     else
                     {
@@ -106,11 +99,10 @@ namespace Infrastructure.Offers
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"An unhandled exception occurred: {ex.Message}");
-                throw;
+                catch (Exception ex)
+                {
+                    throw new InfrastructureException(ex.Message);
+                }
             }
             return myoffer;
         }
@@ -133,8 +125,7 @@ namespace Infrastructure.Offers
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An unhandled exception occurred: {ex}");
-                return false;
+                throw new InfrastructureException(ex.Message);
             }
         }
 
@@ -168,8 +159,7 @@ namespace Infrastructure.Offers
 
             catch (Exception ex)
             {
-                _logger.LogError($"An unhandled exception occurred:{ex}");
-                return Enumerable.Empty<Offer>();
+                throw new InfrastructureException(ex.Message);
             }
         }
 
@@ -203,8 +193,7 @@ namespace Infrastructure.Offers
 
             catch (Exception ex)
             {
-                _logger.LogError($"An unhandled exception occurred:{ex}");
-                return Enumerable.Empty<Offer>();
+                throw new InfrastructureException(ex.Message);
             }
         }
 
@@ -286,8 +275,7 @@ namespace Infrastructure.Offers
 
             catch (Exception ex)
             {
-                _logger.LogError($"An unhandled exception occurred:{ex}");
-                return Enumerable.Empty<Offer>();
+                throw new InfrastructureException(ex.Message);
             }
         }
     }

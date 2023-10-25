@@ -19,7 +19,7 @@ namespace Domain.Items
 
          Task<Item> GetItemByItemId(Guid itemId);
 
-        Task<Paginated<Item>> GetItems(Guid userId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? isSwap, bool? inMiles);
-        Task<Paginated<Item>> GetAllItems(Guid userId, int limit, string? cursor, bool? isSwap);
+        Task<Paginated<Item>> GetItems(Guid userId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles);
+        Task<Paginated<Item>> GetAllItems(Guid userId, int limit, string? cursor);
     }
 }

@@ -34,7 +34,6 @@ namespace API.GraphQL
             decimal? latitude,
             decimal? longitude,
             decimal? distance,
-            bool? isSwap,
             bool? inMiles = false
         )
         {
@@ -46,7 +45,7 @@ namespace API.GraphQL
 
             if (amount.HasValue)
             {
-                var paginatedItemsResult = await itemRepository.GetItems(user.Id.Value, amount, categories, limit, cursor, latitude, longitude, distance, isSwap, inMiles);
+                var paginatedItemsResult = await itemRepository.GetItems(user.Id.Value, amount, categories, limit, cursor, latitude, longitude, distance, inMiles);
 
                 return new Paginated<Items.Models.Item>(
                     paginatedItemsResult.Data
@@ -58,7 +57,7 @@ namespace API.GraphQL
             }
             else
             {
-                var paginatedItems = await itemRepository.GetAllItems(user.Id.Value, limit, cursor, isSwap);
+                var paginatedItems = await itemRepository.GetAllItems(user.Id.Value, limit, cursor);
 
                 return new Paginated<Items.Models.Item>(
                     paginatedItems.Data

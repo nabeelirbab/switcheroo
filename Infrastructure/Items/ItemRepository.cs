@@ -13,6 +13,9 @@ using Microsoft.EntityFrameworkCore;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using System.IO;
+using Domain.Offers;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Items
 {
@@ -206,98 +209,100 @@ namespace Infrastructure.Items
             return Math.PI * angle / 180.0;
         }
 
-        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? isSwap, bool? inMiles = false)
+        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
         {
-            Console.Clear();
-            var myDismissedItems = await db.DismissedItem
-                .Where(z => z.CreatedByUserId == userId)
-                .Select(z => z.TargetItemId)
-                .ToListAsync();
-
-            // For 40% limit
-            var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.60);
-            var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.40);
-
-            /*Expression<Func<Database.Schema.Item, bool>> searchPredicate =
-                x =>
-                // If there is an amount it must be within the range of the item in question
-                (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
-                // If there are categories, they must be on this item
-                && (categories == null || x.ItemCategories.Select(z => z.Category.Name).Any(y => categories.Contains(y)))
-
-                // Skip dismissed items
-                && !myDismissedItems.Contains(x.Id)
-
-                // Skip hidden items
-                && !x.IsHidden;
-
-            // Order by newest created
-            var filteredItems = await db.Items
-                .AsNoTracking()
-                .Include(z => z.ItemCategories)
-                .ThenInclude(z => z.Category)
-                .Where(searchPredicate)
-                .Where(z => z.CreatedByUserId != userId)
-                .OrderBy(x => x.Id)
-                .OrderByDescending(x => x.CreatedAt)
-                .Select(x => new {x.Id, x.Latitude, x.Longitude})
-                .ToListAsync();*/
-
-            var filteredItems = await db.Items
-                .Where(item =>
-                item.AskingPrice >= lowerAmountLimit &&
-                item.AskingPrice <= upperAmountBound &&
-                item.CreatedByUserId != userId &&
-                item.IsSwapOnly == isSwap &&
-                !myDismissedItems.Contains(item.Id) && // Skip dismissed items
-                !item.IsHidden || // Skip hidden items
-                item.ItemCategories.Any(ic => categories.Contains(ic.Category.Name))) // Match specified category names
-                .ToListAsync();
-
-            // Check distance if latitude, longitude, and distance values are provided
-            if (latitude.HasValue && longitude.HasValue && distance.HasValue)
+            try
             {
-                filteredItems.RemoveAll(x => !IsDistanceWithinRange(
-                    (double)latitude.Value,
-                    (double)longitude.Value,
-                    (double)x.Latitude,
-                    (double)x.Longitude,
-                    (double)distance.Value,
-                    (bool)inMiles));
+                Console.Clear();
+                var myDismissedItems = await db.DismissedItem
+                    .Where(z => z.CreatedByUserId == userId)
+                    .Select(z => z.TargetItemId)
+                    .ToListAsync();
 
+                // For 40% limit
+                var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.60);
+                var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.40);
+
+                Expression<Func<Database.Schema.Item, bool>> searchPredicate =
+                    x =>
+                    // If there is an amount it must be within the range of the item in question
+                    // (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
+                    // If there are categories, they must be on this item
+                    // && 
+                    (categories == null || x.ItemCategories.Select(z => z.Category.Name).Any(y => categories.Contains(y)))
+
+                    // Skip dismissed items
+                    && !myDismissedItems.Contains(x.Id)
+
+                    // Skip hidden items
+                    && !x.IsHidden;
+
+                // Order by newest created
+                var filteredItems = await db.Items
+                    .AsNoTracking()
+                    .Where(searchPredicate)
+                    .Where(z => z.CreatedByUserId != userId)
+                    .Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
+                    .OrderBy(x => x.Id)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Select(x => new { x.Id, x.Latitude, x.Longitude })
+                    .ToListAsync();
+
+                //fetch offer to remove all items against which offer was created 
+                var offer = db.Offers.Where(x => x.CreatedByUserId.Equals(userId)).ToList();
+
+                var filteredItemsWithoutOffers = filteredItems
+                    .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id)).ToList();
+
+                // Check distance if latitude, longitude, and distance values are provided
+                if (latitude.HasValue && longitude.HasValue && distance.HasValue)
+                {
+                    filteredItemsWithoutOffers.RemoveAll(x => !IsDistanceWithinRange(
+                        (double)latitude.Value,
+                        (double)longitude.Value,
+                        (double)x.Latitude,
+                        (double)x.Longitude,
+                        (double)distance.Value,
+                        (bool)inMiles));
+
+                }
+
+                var itemIdsSorted = filteredItemsWithoutOffers.Select(x => x.Id).ToList();
+                IEnumerable<Guid> requiredIds;
+
+                if (cursor != null)
+                {
+                    requiredIds = itemIdsSorted
+                    .SkipWhile(x => cursor != "" && x.ToString() != cursor)
+                    .Skip(1)
+                    .Take(limit);
+                }
+                else
+                {
+                    requiredIds = itemIdsSorted.Take(limit);
+                }
+
+                var totalCount = itemIdsSorted.Count();
+
+                var data = await db.Items
+                    .AsNoTracking()
+                    .Where(x => requiredIds.Contains(x.Id))
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
+                Console.WriteLine($"\nnewCursor:, {newCursor}");
+
+                return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
             }
-
-            var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
-            IEnumerable<Guid> requiredIds;
-
-            if (cursor != null)
+            catch (Exception ex)
             {
-                requiredIds = itemIdsSorted
-                .SkipWhile(x => cursor != "" && x.ToString() != cursor)
-                .Skip(1)
-                .Take(limit);
+                throw new InfrastructureException(ex.Message);
             }
-            else
-            {
-                requiredIds = itemIdsSorted.Take(limit);
-            }
-
-            var totalCount = itemIdsSorted.Count();
-
-            var data = await db.Items
-                .AsNoTracking()
-                .Where(x => requiredIds.Contains(x.Id))
-                .OrderByDescending(x => x.CreatedAt)
-                .Select(Database.Schema.Item.ToDomain)
-                .ToListAsync();
-
-            var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
-            Console.WriteLine($"\nnewCursor:, {newCursor}");
-
-            return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
         }
 
-        public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor, bool? isSwap)
+        public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor)
         {
             var myDismissedItems = await db.DismissedItem
                 .Where(z => z.CreatedByUserId == userId)
@@ -308,7 +313,6 @@ namespace Infrastructure.Items
             var filteredItems = await db.Items
                 .Where(item =>
                 item.CreatedByUserId != userId &&
-                item.IsSwapOnly == isSwap &&
                 !myDismissedItems.Contains(item.Id) && // Skip dismissed items
                 !item.IsHidden) // Skip hidden items
                 .ToListAsync();
