@@ -275,11 +275,11 @@ namespace Infrastructure.Items
                 /*foreach (var item in filteredItems)
                 {
                     Console.WriteLine($"filteredItems ID: {item.Id}");
-                }
+                }*/
                 if (filteredItems.Count == 0)
                 {
-                    throw new InfrastructureException($"no item found against this filter");
-                }*/
+                    throw new InfrastructureException($"no filteredItems found against this filter");
+                }
 
                 var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
                 IEnumerable<Guid> requiredIds;
