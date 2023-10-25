@@ -223,7 +223,7 @@ namespace Infrastructure.Items
                 var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.60);
                 var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.40);
 
-                Expression<Func<Database.Schema.Item, bool>> searchPredicate =
+                /*Expression<Func<Database.Schema.Item, bool>> searchPredicate =
                     x =>
                     // If there is an amount it must be within the range of the item in question
                     // (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
@@ -235,12 +235,12 @@ namespace Infrastructure.Items
                     && !myDismissedItems.Contains(x.Id)
 
                     // Skip hidden items
-                    && !x.IsHidden;
+                    && !x.IsHidden;*/
 
                 // Order by newest created
                 var filteredItems = await db.Items
                     .AsNoTracking()
-                    .Where(searchPredicate)
+                    //.Where(searchPredicate)
                     .Where(z => z.CreatedByUserId != userId)
                     .Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
                     .OrderBy(x => x.Id)
@@ -256,9 +256,9 @@ namespace Infrastructure.Items
                 //fetch offer to remove all items against which offer was created 
                 var offer = db.Offers.Where(x => x.CreatedByUserId.Equals(userId)).ToList();
 
-                /*var filteredItemsWithoutOffers = filteredItems
+                var filteredItemsWithoutOffers = filteredItems
                     .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id)).ToList();
-*/
+
                 // Check distance if latitude, longitude, and distance values are provided
                 if (latitude.HasValue && longitude.HasValue && distance.HasValue)
                 {
