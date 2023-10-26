@@ -219,7 +219,14 @@ namespace Infrastructure.Items
                     .Where(z => z.SourceItemId == itemId)
                     .Select(z => z.TargetItemId)
                     .ToListAsync();
-
+                if (myDismissedItems.Count == 0)
+                {
+                    throw new InfrastructureException($"No Item found against this price range");
+                }
+                else
+                {
+                    throw new InfrastructureException($"No Item found against this price range {myDismissedItems.Count}");
+                }
                 // For 40% limit
                 var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.60);
                 var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.40);
