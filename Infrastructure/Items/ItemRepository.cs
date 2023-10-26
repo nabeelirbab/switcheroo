@@ -216,7 +216,7 @@ namespace Infrastructure.Items
             {
                 Console.Clear();
                 var myDismissedItems = await db.DismissedItem
-                    .Where(z => z.SourceItemId == itemId)
+                    .Where(z => z.SourceItemId.Equals(itemId))
                     .Select(z => z.TargetItemId)
                     .ToListAsync();
                 if (myDismissedItems.Count == 0)
