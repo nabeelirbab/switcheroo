@@ -31,6 +31,8 @@ namespace Infrastructure.UserManagement
                 user.Gender,
                 user.DateOfBirth,
                 user.Distance ?? 25,
+                user.Latitude,
+                user.Longitude,
                 user.Blurb,
                 user.AvatarUrl,
                 user.Email,

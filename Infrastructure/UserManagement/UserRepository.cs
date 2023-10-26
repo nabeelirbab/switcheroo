@@ -75,6 +75,22 @@ namespace Infrastructure.UserManagement
             return await GetById(id);
         }
 
+        public async Task<User> UpdateUserLocation(Guid id, decimal? latitude, decimal? longitude)
+        {
+            var dbUser = await db.Users.SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dbUser == null) throw new InfrastructureException($"Couldn't find user with id {id}");
+
+            dbUser.Latitude = latitude;
+            dbUser.Longitude = longitude;
+
+            db.Users.Update(dbUser);
+            await db.SaveChangesAsync();
+
+            return await GetById(id);
+        }
+
+
         public async Task<User> UpdateUserEmail(Guid id, string email)
         {
             var dbUser = await db.Users.SingleOrDefaultAsync(x => x.Id == id);

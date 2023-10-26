@@ -6,7 +6,7 @@ namespace Domain.Users
     public class User
     {
         public User(Guid? id, string username, string firstName, string lastName, string email,
-            string? mobile, string? gender, DateTime? dateOfBirth, int? distance,
+            string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude,
             string? blurb, string? avatarUrl, bool isMatchNotificationsEnabled,
             bool isChatNotificationsEnabled)
         {
@@ -19,6 +19,8 @@ namespace Domain.Users
             Gender = gender;
             DateOfBirth = dateOfBirth;
             Distance = distance;
+            Latitude = latitude;
+            Longitude = longitude;
             Blurb = blurb;
             AvatarUrl = avatarUrl;
             IsMatchNotificationsEnabled = isMatchNotificationsEnabled;
@@ -47,6 +49,10 @@ namespace Domain.Users
 
         public int? Distance { get; set; }
 
+        public decimal? Latitude { get; set; }
+
+        public decimal? Longitude { get; set; }
+
         public string? Blurb { get; set; }
 
         public string? AvatarUrl { get; set; }
@@ -58,7 +64,7 @@ namespace Domain.Users
         public static User CreateNewUser(string firstName, string lastName, string email)
         {
             return new User(
-                null, email, firstName, lastName, email, 
+                null, email, firstName, lastName, email, null, null, 
                 null, null, null, null, 
                 null, null, true, true);
         }
