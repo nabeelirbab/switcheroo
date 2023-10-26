@@ -243,7 +243,7 @@ namespace Infrastructure.Items
                 //.Where(searchPredicate)
                 .Where(z => z.CreatedByUserId != userId)
                 .Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
-                .Where(x => !myDismissedItems.Contains(x.Id)) // && !x.IsHidden && x.CreatedByUserId != userId
+                .Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId) 
                 .OrderBy(x => x.Id)
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new { x.Id, x.Latitude, x.Longitude })
