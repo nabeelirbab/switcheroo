@@ -16,6 +16,7 @@ using System.IO;
 using Domain.Offers;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Amazon.S3.Model;
 
 namespace Infrastructure.Items
 {
@@ -222,42 +223,36 @@ namespace Infrastructure.Items
                 // For 40% limit
                 var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.60);
                 var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.40);
-
                 /*Expression<Func<Database.Schema.Item, bool>> searchPredicate =
-                    x =>
-                    // If there is an amount it must be within the range of the item in question
-                    // (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
-                    // If there are categories, they must be on this item
-                    // && 
-                    (categories == null || x.ItemCategories.Select(z => z.Category.Name).Any(y => categories.Contains(y)))
+                     x =>
+                     // If there is an amount it must be within the range of the item in question
+                     // (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
+                     // If there are categories, they must be on this item
+                     // && 
+                     (categories == null || x.ItemCategories.Select(z => z.Category.Name).Any(y => categories.Contains(y)))
 
-                    // Skip dismissed items
-                    && !myDismissedItems.Contains(x.Id)
+                     // Skip dismissed items
+                     && !myDismissedItems.Contains(x.Id)
 
-                    // Skip hidden items
-                    && !x.IsHidden;*/
+                     // Skip hidden items
+                     && !x.IsHidden;*/
 
                 // Order by newest created
                 var filteredItems = await db.Items
-                    .AsNoTracking()
-                    //.Where(searchPredicate)
-                    .Where(z => z.CreatedByUserId != userId)
-                    .Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
-                    .OrderBy(x => x.Id)
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Select(x => new { x.Id, x.Latitude, x.Longitude })
-                    .ToListAsync(); 
+                .AsNoTracking()
+                //.Where(searchPredicate)
+                .Where(z => z.CreatedByUserId != userId)
+                .Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
+                .Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId)
+                .OrderBy(x => x.Id)
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new { x.Id, x.Latitude, x.Longitude })
+                .ToListAsync();
 
                 if (filteredItems.Count == 0)
                 {
-                    throw new InfrastructureException($"1no filteredItems found against this filter");
+                    throw new InfrastructureException($"No Item found against this price range");
                 }
-
-                //fetch offer to remove all items against which offer was created 
-                var offer = db.Offers.Where(x => x.CreatedByUserId.Equals(userId)).ToList();
-
-                var filteredItemsWithoutOffers = filteredItems
-                    .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id)).ToList();
 
                 // Check distance if latitude, longitude, and distance values are provided
                 if (latitude.HasValue && longitude.HasValue && distance.HasValue)
@@ -278,16 +273,11 @@ namespace Infrastructure.Items
                 }*/
                 if (filteredItems.Count == 0)
                 {
-                    throw new InfrastructureException($"no filteredItems found against this filter");
+                    throw new InfrastructureException($"no filteredItems found in this distance against this filter");
                 }
 
                 var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
                 IEnumerable<Guid> requiredIds;
-
-                if (itemIdsSorted.Count == 0)
-                {
-                    throw new InfrastructureException($"1no itemIdsSorted found against this filter");
-                }
 
                 if (cursor != null)
                 {
@@ -310,13 +300,9 @@ namespace Infrastructure.Items
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
-                foreach (var item in data)
+                if (data.Count == 0)
                 {
-                    Console.WriteLine($"data ID: {item.Id}");
-                }
-                if(data.Count == 0)
-                {
-                    throw new InfrastructureException($"no data found against this filter");
+                    throw new InfrastructureException($"No data found against");
                 }
 
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
