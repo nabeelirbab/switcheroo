@@ -27,6 +27,7 @@ namespace API.GraphQL
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IItemRepository itemRepository,
+            Guid itemId,
             decimal? amount,
             string[]? categories,
             int limit,
@@ -45,7 +46,7 @@ namespace API.GraphQL
 
             if (amount.HasValue)
             {
-                var paginatedItemsResult = await itemRepository.GetItems(user.Id.Value, amount, categories, limit, cursor, latitude, longitude, distance, inMiles);
+                var paginatedItemsResult = await itemRepository.GetItems(user.Id.Value, itemId, amount, categories, limit, cursor, latitude, longitude, distance, inMiles);
 
                 return new Paginated<Items.Models.Item>(
                     paginatedItemsResult.Data

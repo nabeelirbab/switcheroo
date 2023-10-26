@@ -210,13 +210,13 @@ namespace Infrastructure.Items
             return Math.PI * angle / 180.0;
         }
 
-        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
+        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId,Guid itemId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
         {
             try
             {
                 Console.Clear();
                 var myDismissedItems = await db.DismissedItem
-                    .Where(z => z.CreatedByUserId == userId)
+                    .Where(z => z.SourceItemId == itemId)
                     .Select(z => z.TargetItemId)
                     .ToListAsync();
 
@@ -267,10 +267,6 @@ namespace Infrastructure.Items
 
                 }
 
-                /*foreach (var item in filteredItems)
-                {
-                    Console.WriteLine($"filteredItems ID: {item.Id}");
-                }*/
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"no filteredItems found in this distance against this filter");
