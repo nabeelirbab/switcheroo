@@ -243,7 +243,7 @@ namespace Infrastructure.Items
                 //.Where(searchPredicate)
                 .Where(z => z.CreatedByUserId != userId)
                 .Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
-                .Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId) 
+                .Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId)
                 .OrderBy(x => x.Id)
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new { x.Id, x.Latitude, x.Longitude })
@@ -272,7 +272,17 @@ namespace Infrastructure.Items
                     throw new InfrastructureException($"no filteredItems found in this distance against this filter");
                 }
 
-                var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
+                // remove already created offer against this item
+                var offer = db.Offers.Where(x => x.SourceItemId.Equals(itemId)).ToList();
+                var filteredItemsWithoutOffers = filteredItems
+                        .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id))
+                        .ToList();
+                if (filteredItems.Count == 0)
+                {
+                    throw new InfrastructureException($"All offers are created against this items and filteres");
+                }
+
+                var itemIdsSorted = filteredItemsWithoutOffers.Select(x => x.Id).ToList();
                 IEnumerable<Guid> requiredIds;
 
                 if (cursor != null)
