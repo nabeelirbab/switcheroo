@@ -273,9 +273,9 @@ namespace Infrastructure.Items
                 }
 
                 // remove already created offer against this item
-                var offer = db.Offers.Where(x => x.SourceItemId.Equals(itemId)).ToList();
+                var offer = db.Offers.Where(x => x.SourceItemId.Equals(itemId) || x.TargetItemId.Equals(itemId)).ToList();
                 var filteredItemsWithoutOffers = filteredItems
-                        .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id))
+                        .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id || offerItem.SourceItemId == item.Id))
                         .ToList();
                 if (filteredItems.Count == 0)
                 {
