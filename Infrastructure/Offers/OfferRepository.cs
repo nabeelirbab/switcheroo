@@ -43,11 +43,11 @@ namespace Infrastructure.Offers
                         if (targetitem.IsSwapOnly)
                         {
                             // For 20% limit
-                            var lowerAmountLimit = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)0.60);
-                            var upperAmountBound = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)1.40);
+                            // var lowerAmountLimit = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)0.60);
+                            // var upperAmountBound = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)1.40);
 
-                            if (lowerAmountLimit < offer.Cash && offer.Cash < upperAmountBound)
-                            {
+                            // if (lowerAmountLimit < offer.Cash && offer.Cash < upperAmountBound)
+                            // {
                                 var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                                 {
                                     CreatedByUserId = offer.CreatedByUserId.Value,
@@ -62,11 +62,11 @@ namespace Infrastructure.Offers
                                 await db.SaveChangesAsync();
 
                                 myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
-                            }
-                            else
-                            {
-                                throw new InfrastructureException($"You can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
-                            }
+                            // }
+                            // else
+                            // {
+                            //    throw new InfrastructureException($"You can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
+                            //}
                         }
                         else
                         {
