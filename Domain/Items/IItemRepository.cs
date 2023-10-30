@@ -12,8 +12,9 @@ namespace Domain.Items
          Task<string> UpdateItemLocation(Guid userId, Guid itemId, decimal? latitude, decimal? longitude);
 
          Task<bool> ArchiveItemAsync(Guid itemId, Guid updatedByUserId);
+         Task<bool> DeleteItemAsync(Guid itemId);
 
-         Task<bool> DismissItemAsync(DismissedItem dismissedItem);
+        Task<bool> DismissItemAsync(DismissedItem dismissedItem);
 
          Task<IEnumerable<Item>> GetItemsByUserId(Guid userId);
 

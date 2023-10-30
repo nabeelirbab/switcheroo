@@ -401,5 +401,53 @@ namespace Infrastructure.Items
                 return $"An error occurred: {ex.Message}";
             }
         }
+
+        public async Task<bool> DeleteItemAsync(Guid itemId)
+        {
+            try
+            {
+                var item = await db.Items
+                    .Where(u => u.Id == itemId)
+                    .FirstOrDefaultAsync();
+
+                var offersAgainstItem = await db.Offers
+                    .Where(u => u.SourceItemId.Equals(itemId) || u.TargetItemId.Equals(itemId))
+                    .ToListAsync();
+
+                if (offersAgainstItem.Count > 0)
+                {
+                    foreach (var offer in offersAgainstItem)
+                    {
+                        db.Offers.Remove(offer);
+                        await db.SaveChangesAsync();
+                    }
+
+                    var myItems = await db.Items
+                    .Where(u => u.Id == itemId)
+                    .SingleOrDefaultAsync();
+
+                    db.Items.Remove(myItems);
+                    await db.SaveChangesAsync();
+
+                    return true;
+                }
+                else
+                {
+                    var myItems = await db.Items
+                    .Where(u => u.Id == itemId)
+                    .SingleOrDefaultAsync();
+
+                    db.Items.Remove(myItems);
+                    await db.SaveChangesAsync();
+                    return true;
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+
     }
 }

@@ -285,5 +285,38 @@ namespace Infrastructure.Offers
                 throw new InfrastructureException(ex.Message);
             }
         }
+        public async Task<IEnumerable<Offer>> GetAllOffersByItemId(Guid itemId)
+        {
+            try
+            {
+                // Step 1: Retrieve myItems
+                var myItems = await db.Items
+                   .Where(z => z.Id == itemId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+                // Step 2: Retrieve offers using myItems
+                var offers = await db.Offers
+                    .Where(z => myItems.Contains(z.SourceItemId) || myItems.Contains(z.TargetItemId))
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus))
+                    .ToListAsync();
+
+                return offers;
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
     }
 }

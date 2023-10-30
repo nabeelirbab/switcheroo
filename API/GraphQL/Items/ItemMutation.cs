@@ -126,6 +126,23 @@ namespace API.GraphQL
             return await itemRepository.ArchiveItemAsync(itemId, user.Id.Value);
         }
 
+        public async Task<bool> DeleteItem(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IItemRepository itemRepository,
+            Guid itemId
+        )
+        {
+            var userCp = httpContextAccessor?.HttpContext?.User;
+
+            if (userCp == null) throw new ApiException("Not authenticated");
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            if (!user.Id.HasValue) throw new ApiException("Database failure");
+
+            return await itemRepository.DeleteItemAsync(itemId);
+        }
+
+
         public async Task<bool> DismissItem(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,

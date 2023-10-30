@@ -31,6 +31,24 @@ namespace API.GraphQL
         }
 
         [Authorize]
+        public async Task<IEnumerable<Offer>> GetAllOffersByItemId(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IOfferRepository offerRepository,
+            Guid itemId)
+        {
+            var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+            if (!user.Id.HasValue) throw new ApiException("Fatal.");
+
+            if (user == null) throw new ApiException("Not logged in");
+
+            var offers = await offerRepository.GetAllOffersByItemId(itemId);
+
+            return offers.Select(Offer.FromDomain).ToList();
+        }
+
+        [Authorize]
         public async Task<IEnumerable<Offer>> GetCreatedOffers(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
