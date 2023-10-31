@@ -8,10 +8,10 @@ namespace Infrastructure.Database.Schema
 {
     public class User : IdentityUser<Guid>, IWhen
     {
+
         public User(string userName, string firstName, string lastName, 
-            string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude,
-            string? blurb, string? avatarUrl, string email,
-            bool isMatchNotificationsEnabled, bool isChatNotificationsEnabled)
+            string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude, 
+            string? fCMToken, string? blurb, string? avatarUrl, string email, bool isMatchNotificationsEnabled, bool isChatNotificationsEnabled)
         {
             UserName = userName;
             FirstName = firstName;
@@ -22,6 +22,7 @@ namespace Infrastructure.Database.Schema
             Distance = distance;
             Latitude = latitude;
             Longitude = longitude;
+            FCMToken = fCMToken;
             Blurb = blurb;
             AvatarUrl = avatarUrl;
             Email = email;
@@ -47,6 +48,8 @@ namespace Infrastructure.Database.Schema
         public decimal? Latitude { get; set; }
 
         public decimal? Longitude { get; set; }
+
+        public string? FCMToken { get; set; }
 
         public string? Blurb { get; set; }
 
@@ -77,6 +80,7 @@ namespace Infrastructure.Database.Schema
                 user.Distance,
                 user.Latitude,
                 user.Longitude,
+                user.FCMToken,
                 user.Blurb,
                 user.AvatarUrl,
                 user.IsMatchNotificationsEnabled,

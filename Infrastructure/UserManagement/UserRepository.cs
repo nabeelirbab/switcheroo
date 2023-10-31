@@ -6,6 +6,7 @@ using Domain.Users;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Infrastructure.UserManagement
 {
@@ -86,6 +87,26 @@ namespace Infrastructure.UserManagement
 
             db.Users.Update(dbUser);
             await db.SaveChangesAsync();
+
+            return await GetById(id);
+        }
+
+        public async Task<User> UpdateUserFCMToken(Guid id, string? fcmToken)
+        {
+            var dbUser = await db.Users.SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dbUser == null) throw new InfrastructureException($"Couldn't find user with id {id}");
+
+            if (string.IsNullOrEmpty(fcmToken))
+            {
+                throw new InfrastructureException($"token not found in payload");
+            }
+            else
+            {
+                dbUser.FCMToken = fcmToken;
+                db.Users.Update(dbUser);
+                await db.SaveChangesAsync();
+            }
 
             return await GetById(id);
         }

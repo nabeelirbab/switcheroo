@@ -39,7 +39,9 @@ namespace Infrastructure.Database.Seed
 
             var hasher = new PasswordHasher<User>();
 
-            modelBuilder.Entity<User>().HasData(new User(adminEmail, "Admin", "Admin", null, null, null, null, null, null, "I love things. Have too many of them though. Keen to swap yo!", "https://picsum.photos/300/300", adminEmail, true, true)
+            modelBuilder.Entity<User>().HasData(new User(adminEmail, "Admin", "Admin", 
+                null, null, null, null, null, null, null, "I love things. Have too many of them though. Keen to swap yo!", 
+                "https://picsum.photos/300/300", adminEmail, true, true)
             {
                 Id = AdminId,
                 NormalizedUserName = adminEmail.ToUpper(),
@@ -58,7 +60,9 @@ namespace Infrastructure.Database.Seed
                 UserId = AdminId
             });
             
-            modelBuilder.Entity<User>().HasData(new User(textUserEmail, "Test", "User", null, null, null, null, null, null, "Swap swap swapperoooooo yew yew yew!", "https://picsum.photos/300/300", textUserEmail, true, true)
+            modelBuilder.Entity<User>().HasData(new User(textUserEmail, "Test", "User", 
+                null, null, null, null, null, null, null, "Swap swap swapperoooooo yew yew yew!", 
+                "https://picsum.photos/300/300", textUserEmail, true, true)
             {
                 Id = TestUserId,
                 NormalizedUserName = textUserEmail.ToUpper(),

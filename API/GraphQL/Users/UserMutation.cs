@@ -251,6 +251,22 @@ namespace API.GraphQL
             return Users.Models.User.FromDomain(await userRepository.UpdateUserLocation(user.Id.Value, latitude, longitude));
         }
 
+        public async Task<Users.Models.User> UpdateUserFCMToken(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IUserRepository userRepository,
+            string? fcmtoken
+        )
+        {
+            var userCp = httpContextAccessor?.HttpContext?.User;
+
+            if (userCp == null) throw new ApiException("Not authenticated");
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            if (!user.Id.HasValue) throw new ApiException("Database failure");
+
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserFCMToken(user.Id.Value, fcmtoken));
+        }
+
 
         public async Task<Users.Models.User> SignIn(
             [Service] IUserAuthenticationService userAuthenticationService,

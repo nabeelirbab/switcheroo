@@ -7,7 +7,7 @@ namespace Domain.Users
     {
         public User(Guid? id, string username, string firstName, string lastName, string email,
             string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude,
-            string? blurb, string? avatarUrl, bool isMatchNotificationsEnabled,
+            string? fcmToken, string? blurb, string? avatarUrl, bool isMatchNotificationsEnabled,
             bool isChatNotificationsEnabled)
         {
             Id = id;
@@ -21,6 +21,7 @@ namespace Domain.Users
             Distance = distance;
             Latitude = latitude;
             Longitude = longitude;
+            FCMToken = fcmToken;
             Blurb = blurb;
             AvatarUrl = avatarUrl;
             IsMatchNotificationsEnabled = isMatchNotificationsEnabled;
@@ -53,6 +54,8 @@ namespace Domain.Users
 
         public decimal? Longitude { get; set; }
 
+        public string? FCMToken { get; set; }
+
         public string? Blurb { get; set; }
 
         public string? AvatarUrl { get; set; }
@@ -66,7 +69,7 @@ namespace Domain.Users
             return new User(
                 null, email, firstName, lastName, email, null, null, 
                 null, null, null, null, 
-                null, null, true, true);
+                null, null, null,  true, true);
         }
 
         public static string GenerateSixDigitVerificationCode()

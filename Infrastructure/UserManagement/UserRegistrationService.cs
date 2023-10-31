@@ -33,6 +33,7 @@ namespace Infrastructure.UserManagement
                 user.Distance ?? 25,
                 user.Latitude,
                 user.Longitude,
+                user.FCMToken,
                 user.Blurb,
                 user.AvatarUrl,
                 user.Email,
