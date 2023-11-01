@@ -82,7 +82,6 @@ namespace Infrastructure.Offers
 
                                 if (!string.IsNullOrEmpty(userFCMToken))
                                 {
-
                                     try
                                     {
                                         FirebaseApp app = FirebaseApp.Create(new AppOptions
@@ -119,7 +118,10 @@ namespace Infrastructure.Offers
                                     }
                                     
                                 }
-
+                                else
+                                {
+                                    throw new InfrastructureException($"No FCM Token exist against this user");
+                                }
                                 myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                                 // }
                                 // else
@@ -161,26 +163,46 @@ namespace Infrastructure.Offers
                         await db.SaveChangesAsync();
                         if (!string.IsNullOrEmpty(userFCMToken))
                         {
-                            FirebaseApp app = FirebaseApp.Create(new AppOptions
+                            try
                             {
-                                Credential = GoogleCredential.FromFile(filePath)
-                            });
-
-                            var messaging = FirebaseMessaging.GetMessaging(app);
-
-                            var message = new FirebaseAdmin.Messaging.Message()
-                            {
-                                Token = userFCMToken,
-                                Notification = new Notification
+                                FirebaseApp app = FirebaseApp.Create(new AppOptions
                                 {
-                                    Title = "New Offer",
-                                    Body = "You have a new offer"
-                                    // Other notification parameters can be added here
-                                }
-                            };
-                            string response = await messaging.SendAsync(message);
-                        }
+                                    Credential = GoogleCredential.FromFile(filePath)
+                                });
+                                var messaging = FirebaseMessaging.GetMessaging(app);
 
+                                var message = new FirebaseAdmin.Messaging.Message()
+                                {
+                                    Token = userFCMToken,
+                                    Notification = new Notification
+                                    {
+                                        Title = "Cash Offer",
+                                        Body = "You have a new cash offer"
+                                        // Other notification parameters can be added here
+                                    }
+                                };
+                                string response = await messaging.SendAsync(message);
+                            }
+                            catch (FileNotFoundException)
+                            {
+                                throw new InfrastructureException($"json file not found");
+                            }
+                            catch (ArgumentNullException)
+                            {
+                                throw new InfrastructureException($"Argument Null Exception");
+
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new InfrastructureException($"Exception{ex.Message}");
+
+                            }
+
+                        }
+                        else
+                        {
+                            throw new InfrastructureException($"No FCM Token exist against this user");
+                        }
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
