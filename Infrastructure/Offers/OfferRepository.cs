@@ -82,12 +82,13 @@ namespace Infrastructure.Offers
 
                                 if (!string.IsNullOrEmpty(userFCMToken))
                                 {
-                                    try
+                                    if (File.Exists(filePath))
                                     {
                                         FirebaseApp app = FirebaseApp.Create(new AppOptions
                                         {
                                             Credential = GoogleCredential.FromFile(filePath)
                                         });
+
                                         var messaging = FirebaseMessaging.GetMessaging(app);
 
                                         var message = new FirebaseAdmin.Messaging.Message()
@@ -95,19 +96,17 @@ namespace Infrastructure.Offers
                                             Token = userFCMToken,
                                             Notification = new Notification
                                             {
-                                                Title = "Cash Offer",
+                                                Title = "New Cash Offer",
                                                 Body = "You have a new cash offer"
                                                 // Other notification parameters can be added here
                                             }
                                         };
-                                        string response = await messaging.SendAsync(message);
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        throw new InfrastructureException($"Exception: {ex.Message}");
-
+                                        throw new InfrastructureException($"The required file does not exist.");
                                     }
-                                    
+
                                 }
                                 else
                                 {
@@ -154,7 +153,7 @@ namespace Infrastructure.Offers
                         await db.SaveChangesAsync();
                         if (!string.IsNullOrEmpty(userFCMToken))
                         {
-                            try
+                            if (File.Exists(filePath))
                             {
                                 FirebaseApp app = FirebaseApp.Create(new AppOptions
                                 {
@@ -167,19 +166,17 @@ namespace Infrastructure.Offers
                                     Token = userFCMToken,
                                     Notification = new Notification
                                     {
-                                        Title = "Cash Offer",
-                                        Body = "You have a new cash offer"
+                                        Title = "New Offer",
+                                        Body = "You have a new offer"
                                         // Other notification parameters can be added here
                                     }
                                 };
                                 string response = await messaging.SendAsync(message);
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                throw new InfrastructureException($"Exception: {ex.Message}");
-
+                                throw new InfrastructureException($"The required file does not exist.");
                             }
-
                         }
                         else
                         {
@@ -190,7 +187,7 @@ namespace Infrastructure.Offers
                 }
                 catch (Exception ex)
                 {
-                    throw new InfrastructureException(ex.Message);
+                    throw new InfrastructureException($"Exception: {ex.Message}");
                 }
             }
             return myoffer;
