@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 using Domain.Offers;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using FirebaseAdmin;
+using FirebaseAdmin.Messaging;
+using Google.Apis.Auth.OAuth2;
+using System.IO;
+using Microsoft.AspNetCore.Hosting;
 
 namespace Infrastructure.Offers
 {
@@ -13,10 +18,12 @@ namespace Infrastructure.Offers
     {
         private readonly SwitcherooContext db;
 
+        private readonly IHostingEnvironment _hostingEnvironment;
 
-        public OfferRepository(SwitcherooContext db)
+        public OfferRepository(SwitcherooContext db, IHostingEnvironment hostingEnvironment)
         {
             this.db = db;
+            _hostingEnvironment = hostingEnvironment;
         }
 
         public async Task<Offer>? CreateOffer(Offer offer)
@@ -37,6 +44,16 @@ namespace Infrastructure.Offers
             {
                 try
                 {
+                    var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
+                        .Select(x => x.CreatedByUserId).FirstOrDefault();
+
+                    var userFCMToken = db.Users
+                        .Where(x => x.Id == targetUserId)
+                        .Select(x => x.FCMToken).FirstOrDefault();
+
+                    string contentRootPath = _hostingEnvironment.ContentRootPath;
+                    string filePath = Path.Combine(contentRootPath + "/switchero-cd373-firebase-adminsdk-te7ao-3e732b23e3.json");
+
                     if (offer.Cash != null)
                     {
                         var targetitem = db.Items.Where(i => i.Id.Equals(offer.TargetItemId)).FirstOrDefault();
@@ -62,6 +79,27 @@ namespace Infrastructure.Offers
 
                                 await db.Offers.AddAsync(newDbOffer);
                                 await db.SaveChangesAsync();
+
+                                if (!string.IsNullOrEmpty(userFCMToken))
+                                {
+                                    FirebaseApp app = FirebaseApp.Create(new AppOptions
+                                    {
+                                        Credential = GoogleCredential.FromFile(filePath)
+                                    });
+                                    var messaging = FirebaseMessaging.GetMessaging(app);
+
+                                    var message = new FirebaseAdmin.Messaging.Message()
+                                    {
+                                        Token = userFCMToken,
+                                        Notification = new Notification
+                                        {
+                                            Title = "Cash Offer",
+                                            Body = "You have a new cash offer"
+                                            // Other notification parameters can be added here
+                                        }
+                                    };
+                                    string response = await messaging.SendAsync(message);
+                                }
 
                                 myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                                 // }
@@ -102,6 +140,27 @@ namespace Infrastructure.Offers
 
                         await db.Offers.AddAsync(newDbOffer);
                         await db.SaveChangesAsync();
+                        if (!string.IsNullOrEmpty(userFCMToken))
+                        {
+                            FirebaseApp app = FirebaseApp.Create(new AppOptions
+                            {
+                                Credential = GoogleCredential.FromFile(filePath)
+                            });
+
+                            var messaging = FirebaseMessaging.GetMessaging(app);
+
+                            var message = new FirebaseAdmin.Messaging.Message()
+                            {
+                                Token = userFCMToken,
+                                Notification = new Notification
+                                {
+                                    Title = "New Offer",
+                                    Body = "You have a new offer"
+                                    // Other notification parameters can be added here
+                                }
+                            };
+                            string response = await messaging.SendAsync(message);
+                        }
 
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
