@@ -102,18 +102,9 @@ namespace Infrastructure.Offers
                                         };
                                         string response = await messaging.SendAsync(message);
                                     }
-                                    catch (FileNotFoundException)
-                                    {
-                                        throw new InfrastructureException($"json file not found");
-                                    }
-                                    catch (ArgumentNullException)
-                                    {
-                                        throw new InfrastructureException($"Argument Null Exception");
-
-                                    }
                                     catch (Exception ex)
                                     {
-                                        throw new InfrastructureException($"Exception{ex.Message}");
+                                        throw new InfrastructureException($"Exception: {ex.Message}");
 
                                     }
                                     
@@ -183,18 +174,9 @@ namespace Infrastructure.Offers
                                 };
                                 string response = await messaging.SendAsync(message);
                             }
-                            catch (FileNotFoundException)
-                            {
-                                throw new InfrastructureException($"json file not found");
-                            }
-                            catch (ArgumentNullException)
-                            {
-                                throw new InfrastructureException($"Argument Null Exception");
-
-                            }
                             catch (Exception ex)
                             {
-                                throw new InfrastructureException($"Exception{ex.Message}");
+                                throw new InfrastructureException($"Exception: {ex.Message}");
 
                             }
 
