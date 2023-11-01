@@ -82,23 +82,42 @@ namespace Infrastructure.Offers
 
                                 if (!string.IsNullOrEmpty(userFCMToken))
                                 {
-                                    FirebaseApp app = FirebaseApp.Create(new AppOptions
-                                    {
-                                        Credential = GoogleCredential.FromFile(filePath)
-                                    });
-                                    var messaging = FirebaseMessaging.GetMessaging(app);
 
-                                    var message = new FirebaseAdmin.Messaging.Message()
+                                    try
                                     {
-                                        Token = userFCMToken,
-                                        Notification = new Notification
+                                        FirebaseApp app = FirebaseApp.Create(new AppOptions
                                         {
-                                            Title = "Cash Offer",
-                                            Body = "You have a new cash offer"
-                                            // Other notification parameters can be added here
-                                        }
-                                    };
-                                    string response = await messaging.SendAsync(message);
+                                            Credential = GoogleCredential.FromFile(filePath)
+                                        });
+                                        var messaging = FirebaseMessaging.GetMessaging(app);
+
+                                        var message = new FirebaseAdmin.Messaging.Message()
+                                        {
+                                            Token = userFCMToken,
+                                            Notification = new Notification
+                                            {
+                                                Title = "Cash Offer",
+                                                Body = "You have a new cash offer"
+                                                // Other notification parameters can be added here
+                                            }
+                                        };
+                                        string response = await messaging.SendAsync(message);
+                                    }
+                                    catch (FileNotFoundException)
+                                    {
+                                        throw new InfrastructureException($"json file not found");
+                                    }
+                                    catch (ArgumentNullException)
+                                    {
+                                        throw new InfrastructureException($"Argument Null Exception");
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new InfrastructureException($"Exception{ex.Message}");
+
+                                    }
+                                    
                                 }
 
                                 myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
