@@ -52,7 +52,7 @@ namespace Infrastructure.Offers
                         .Select(x => x.FCMToken).FirstOrDefault();
 
                     string contentRootPath = _hostingEnvironment.ContentRootPath;
-                    string filePath = Path.Combine(contentRootPath + "/switchero-cd373-firebase-adminsdk-te7ao-3e732b23e3.json");
+                    string filePath = Path.Combine(contentRootPath + "/Assets/switchero-cd373-firebase-adminsdk-te7ao-3e732b23e3.json");
 
                     if (offer.Cash != null)
                     {
