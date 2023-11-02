@@ -191,12 +191,6 @@ namespace Infrastructure.Offers
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
-                catch (FirebaseAuthException ex)
-                {
-                    // Handle the case where the FCM token is invalid
-                    _loggerManager.LogError($"Firebase Auth Exception: {ex.Message}");
-                    throw new InfrastructureException($"Invalid FCM Token: {ex.Message}");
-                }
                 catch (Exception ex)
                 {
                     _loggerManager.LogError($"Exception: {ex.Message}");
