@@ -22,6 +22,7 @@
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="7.2.0" />
     <PackageReference Include="DotEnv" Version="0.0.1.1" />
     <PackageReference Include="DotNetEnv" Version="2.5.0" />
+    <PackageReference Include="FirebaseAdmin" Version="2.4.0" />
     <PackageReference Include="GraphQL" Version="7.6.1" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="10.4.2" />
     <PackageReference Include="HotChocolate.AspNetCore.Playground" Version="10.4.2" />
