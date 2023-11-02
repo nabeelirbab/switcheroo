@@ -11,6 +11,8 @@ using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
+using Domain.Services;
+using FirebaseAdmin.Auth;
 
 namespace Infrastructure.Offers
 {
@@ -20,10 +22,13 @@ namespace Infrastructure.Offers
 
         private readonly IHostingEnvironment _hostingEnvironment;
 
-        public OfferRepository(SwitcherooContext db, IHostingEnvironment hostingEnvironment)
+        private readonly ILoggerManager _loggerManager;
+
+        public OfferRepository(SwitcherooContext db, IHostingEnvironment hostingEnvironment, ILoggerManager loggerManager)
         {
             this.db = db;
             _hostingEnvironment = hostingEnvironment;
+            _loggerManager = loggerManager;
         }
 
         public async Task<Offer>? CreateOffer(Offer offer)
@@ -88,7 +93,8 @@ namespace Infrastructure.Offers
                                         {
                                             Credential = GoogleCredential.FromFile(filePath)
                                         });
-
+                                        var auth = FirebaseAuth.GetAuth(app);
+                                        var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
                                         var messaging = FirebaseMessaging.GetMessaging(app);
 
                                         var message = new FirebaseAdmin.Messaging.Message()
@@ -185,8 +191,15 @@ namespace Infrastructure.Offers
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
+                catch (FirebaseAuthException ex)
+                {
+                    // Handle the case where the FCM token is invalid
+                    _loggerManager.LogError($"Firebase Auth Exception: {ex.Message}");
+                    throw new InfrastructureException($"Invalid FCM Token: {ex.Message}");
+                }
                 catch (Exception ex)
                 {
+                    _loggerManager.LogError($"Exception: {ex.Message}");
                     throw new InfrastructureException($"Exception: {ex.Message}");
                 }
             }
