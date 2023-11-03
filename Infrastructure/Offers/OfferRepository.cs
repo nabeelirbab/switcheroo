@@ -35,6 +35,15 @@ namespace Infrastructure.Offers
         {
             var now = DateTime.UtcNow;
             Offer? myoffer = null;
+
+            var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
+                       .Select(x => x.CreatedByUserId).FirstOrDefault();
+
+            var userFCMToken = db.Users
+                .Where(x => x.Id == targetUserId)
+                .Select(x => x.FCMToken).FirstOrDefault();
+
+
             if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
                 throw new InfrastructureException("No createdByUserId provided");
 
@@ -42,6 +51,28 @@ namespace Infrastructure.Offers
             if (match != null)
             {
                 match.TargetStatus = Database.Schema.OfferStatus.Initiated;
+                if (!string.IsNullOrEmpty(userFCMToken))
+                {
+                    var app = FirebaseApp.DefaultInstance;
+                    var auth = FirebaseAuth.GetAuth(app);
+                    var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
+                    var messaging = FirebaseMessaging.GetMessaging(app);
+
+                    var message = new FirebaseAdmin.Messaging.Message()
+                    {
+                        Token = userFCMToken,
+                        Notification = new Notification
+                        {
+                            Title = "Product Matched",
+                            Body = "One of your offers is accepted"
+                            // Other notification parameters can be added here
+                        }
+                    };
+                }
+                else
+                {
+                    throw new InfrastructureException($"No FCM Token exists for this user");
+                }
                 await db.SaveChangesAsync();
                 myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
             }
@@ -49,16 +80,6 @@ namespace Infrastructure.Offers
             {
                 try
                 {
-                    var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
-                        .Select(x => x.CreatedByUserId).FirstOrDefault();
-
-                    var userFCMToken = db.Users
-                        .Where(x => x.Id == targetUserId)
-                        .Select(x => x.FCMToken).FirstOrDefault();
-
-                    string contentRootPath = _hostingEnvironment.ContentRootPath;
-                    string filePath = Path.Combine(contentRootPath + "/Assets/switchero-cd373-firebase-adminsdk-te7ao-3e732b23e3.json");
-
                     if (offer.Cash != null)
                     {
                         var targetitem = db.Items.Where(i => i.Id.Equals(offer.TargetItemId)).FirstOrDefault();
@@ -83,41 +104,30 @@ namespace Infrastructure.Offers
                                 };
 
                                 await db.Offers.AddAsync(newDbOffer);
-                                await db.SaveChangesAsync();
 
                                 if (!string.IsNullOrEmpty(userFCMToken))
                                 {
-                                    if (File.Exists(filePath))
-                                    {
-                                        FirebaseApp app = FirebaseApp.Create(new AppOptions
-                                        {
-                                            Credential = GoogleCredential.FromFile(filePath)
-                                        });
-                                        var auth = FirebaseAuth.GetAuth(app);
-                                        var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
-                                        var messaging = FirebaseMessaging.GetMessaging(app);
+                                    var app = FirebaseApp.DefaultInstance;
+                                    var auth = FirebaseAuth.GetAuth(app);
+                                    var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
+                                    var messaging = FirebaseMessaging.GetMessaging(app);
 
-                                        var message = new FirebaseAdmin.Messaging.Message()
-                                        {
-                                            Token = userFCMToken,
-                                            Notification = new Notification
-                                            {
-                                                Title = "New Cash Offer",
-                                                Body = "You have a new cash offer"
-                                                // Other notification parameters can be added here
-                                            }
-                                        };
-                                    }
-                                    else
+                                    var message = new FirebaseAdmin.Messaging.Message()
                                     {
-                                        throw new InfrastructureException($"The required file does not exist.");
-                                    }
-
+                                        Token = userFCMToken,
+                                        Notification = new Notification
+                                        {
+                                            Title = "New Cash Offer",
+                                            Body = "You have a new cash offer"
+                                            // Other notification parameters can be added here
+                                        }
+                                    };
                                 }
                                 else
                                 {
                                     throw new InfrastructureException($"No FCM Token exist against this user");
                                 }
+                                await db.SaveChangesAsync();
                                 myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                                 // }
                                 // else
@@ -156,38 +166,29 @@ namespace Infrastructure.Offers
                         };
 
                         await db.Offers.AddAsync(newDbOffer);
-                        await db.SaveChangesAsync();
                         if (!string.IsNullOrEmpty(userFCMToken))
                         {
-                            if (File.Exists(filePath))
-                            {
-                                FirebaseApp app = FirebaseApp.Create(new AppOptions
-                                {
-                                    Credential = GoogleCredential.FromFile(filePath)
-                                });
-                                var messaging = FirebaseMessaging.GetMessaging(app);
+                            var app = FirebaseApp.DefaultInstance;
+                            var auth = FirebaseAuth.GetAuth(app);
+                            var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
+                            var messaging = FirebaseMessaging.GetMessaging(app);
 
-                                var message = new FirebaseAdmin.Messaging.Message()
-                                {
-                                    Token = userFCMToken,
-                                    Notification = new Notification
-                                    {
-                                        Title = "New Offer",
-                                        Body = "You have a new offer"
-                                        // Other notification parameters can be added here
-                                    }
-                                };
-                                string response = await messaging.SendAsync(message);
-                            }
-                            else
+                            var message = new FirebaseAdmin.Messaging.Message()
                             {
-                                throw new InfrastructureException($"The required file does not exist.");
-                            }
+                                Token = userFCMToken,
+                                Notification = new Notification
+                                {
+                                    Title = "New Offer",
+                                    Body = "You have a new offer"
+                                    // Other notification parameters can be added here
+                                }
+                            };
                         }
                         else
                         {
                             throw new InfrastructureException($"No FCM Token exist against this user");
                         }
+                        await db.SaveChangesAsync();
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }

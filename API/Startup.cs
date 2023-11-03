@@ -37,6 +37,10 @@ using Infrastructure.Services;
 using NLog;
 using NLog.Web;
 using Microsoft.Extensions.Logging;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+using Path = System.IO.Path;
 
 namespace API
 {
@@ -163,6 +167,17 @@ namespace API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app)
         {
+            string contentRootPath = app.ApplicationServices.GetRequiredService<IHostingEnvironment>().ContentRootPath;
+            string filePath = Path.Combine(contentRootPath, "Assets/switchero-cd373-firebase-adminsdk-te7ao-3e732b23e3.json");
+
+            if (File.Exists(filePath))
+            {
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = GoogleCredential.FromFile(filePath)
+                });
+            }
+
             app
                 .UseDeveloperExceptionPage()
                 .UseAuthentication()
