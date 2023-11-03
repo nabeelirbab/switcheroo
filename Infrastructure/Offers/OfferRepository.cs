@@ -54,8 +54,6 @@ namespace Infrastructure.Offers
                 if (!string.IsNullOrEmpty(userFCMToken))
                 {
                     var app = FirebaseApp.DefaultInstance;
-                    var auth = FirebaseAuth.GetAuth(app);
-                    var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
                     var messaging = FirebaseMessaging.GetMessaging(app);
 
                     var message = new FirebaseAdmin.Messaging.Message()
@@ -68,6 +66,7 @@ namespace Infrastructure.Offers
                             // Other notification parameters can be added here
                         }
                     };
+                    string response = await messaging.SendAsync(message);
                 }
                 else
                 {
@@ -108,8 +107,6 @@ namespace Infrastructure.Offers
                                 if (!string.IsNullOrEmpty(userFCMToken))
                                 {
                                     var app = FirebaseApp.DefaultInstance;
-                                    var auth = FirebaseAuth.GetAuth(app);
-                                    var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
                                     var messaging = FirebaseMessaging.GetMessaging(app);
 
                                     var message = new FirebaseAdmin.Messaging.Message()
@@ -122,6 +119,7 @@ namespace Infrastructure.Offers
                                             // Other notification parameters can be added here
                                         }
                                     };
+                                    string response = await messaging.SendAsync(message);
                                 }
                                 else
                                 {
@@ -169,8 +167,6 @@ namespace Infrastructure.Offers
                         if (!string.IsNullOrEmpty(userFCMToken))
                         {
                             var app = FirebaseApp.DefaultInstance;
-                            var auth = FirebaseAuth.GetAuth(app);
-                            var checkToken = await auth.VerifyIdTokenAsync(userFCMToken);
                             var messaging = FirebaseMessaging.GetMessaging(app);
 
                             var message = new FirebaseAdmin.Messaging.Message()
@@ -183,6 +179,7 @@ namespace Infrastructure.Offers
                                     // Other notification parameters can be added here
                                 }
                             };
+                            string response = await messaging.SendAsync(message);
                         }
                         else
                         {
