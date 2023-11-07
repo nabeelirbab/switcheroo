@@ -13,9 +13,10 @@ namespace API.GraphQL.Users.Models
 {
     public class User
     {
+
         private User(Guid id, string username, string firstName, string lastName, string email,
             string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude,
-            string? fcmToken, string? blurb, string? avatarUrl, bool isMatchNotification, bool isChatNotificationsEnabled)
+            string? fcmToken, string? blurb, string? avatarUrl, bool isMatchNotification, bool isChatNotificationsEnabled, DateTimeOffset? createdAt)
         {
             Id = id;
             Username = username;
@@ -33,6 +34,7 @@ namespace API.GraphQL.Users.Models
             AvatarUrl = avatarUrl;
             IsMatchNotification = isMatchNotification;
             IsChatNotificationsEnabled = isChatNotificationsEnabled;
+            CreatedAt = createdAt;
         }
 
         public Guid Id { get; private set; }
@@ -62,6 +64,8 @@ namespace API.GraphQL.Users.Models
         public string? Blurb { get; private set; }
 
         public string? AvatarUrl { get; private set; }
+
+        public DateTimeOffset? CreatedAt { get; set; }
 
         public bool IsMatchNotification { get; private set; }
 
@@ -114,7 +118,8 @@ namespace API.GraphQL.Users.Models
                 domUser.Blurb,
                 domUser.AvatarUrl,
                 domUser.IsMatchNotificationsEnabled,
-                domUser.IsChatNotificationsEnabled
+                domUser.IsChatNotificationsEnabled,
+                domUser.CreatedAt
             );
         }
     }

@@ -84,7 +84,8 @@ namespace Infrastructure.Database.Schema
                 user.Blurb,
                 user.AvatarUrl,
                 user.IsMatchNotificationsEnabled,
-                user.IsChatNotificationsEnabled
+                user.IsChatNotificationsEnabled,
+                user.CreatedAt
             );
     }
 }

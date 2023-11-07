@@ -8,7 +8,7 @@ namespace Domain.Users
         public User(Guid? id, string username, string firstName, string lastName, string email,
             string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude,
             string? fcmToken, string? blurb, string? avatarUrl, bool isMatchNotificationsEnabled,
-            bool isChatNotificationsEnabled)
+            bool isChatNotificationsEnabled, DateTimeOffset? createdAt)
         {
             Id = id;
             Username = username;
@@ -26,6 +26,7 @@ namespace Domain.Users
             AvatarUrl = avatarUrl;
             IsMatchNotificationsEnabled = isMatchNotificationsEnabled;
             IsChatNotificationsEnabled = isChatNotificationsEnabled;
+            CreatedAt = createdAt;
         }
 
         public Guid? Id { get; set; }
@@ -64,12 +65,14 @@ namespace Domain.Users
 
         public bool IsChatNotificationsEnabled { get; set; }
 
+        public DateTimeOffset? CreatedAt { get; set; }
+
         public static User CreateNewUser(string firstName, string lastName, string email)
         {
             return new User(
                 null, email, firstName, lastName, email, null, null, 
                 null, null, null, null, 
-                null, null, null,  true, true);
+                null, null, null,  true, true, null);
         }
 
         public static string GenerateSixDigitVerificationCode()
