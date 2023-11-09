@@ -65,8 +65,8 @@ namespace API.GraphQL
                 item.ImageUrls,
                 user.Id.Value,
                 item.Latitude,
-                item.Longitude
-
+                item.Longitude,
+                item.MainImageUrl
             ));
 
             return Items.Models.Item.FromDomain(updatedDomainItem);

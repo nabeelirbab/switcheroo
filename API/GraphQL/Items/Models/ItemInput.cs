@@ -12,5 +12,7 @@ namespace API.GraphQL.Items.Models
         public bool IsSwapOnly { get; set; }
         public List<string> Categories { get; set; } = null!;
         public List<string> ImageUrls { get; set; } = null!;
+
+        public string? MainImageUrl { get; set; }
     }
 }

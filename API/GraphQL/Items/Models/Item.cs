@@ -11,7 +11,7 @@ namespace API.GraphQL.Items.Models
         private Item(Guid id, string title, string description,
             decimal askingPrice, int? flexibilityRange,
             bool isFlexible, bool isHidden, bool isSwapOnly,
-            List<string> categories, List<string> imageUrls,
+            List<string> categories, List<string> imageUrls, string mainImageUrl,
             Guid createdByUserId, Guid updatedByUserId, decimal? latitude, decimal? longitude)
         {
             Id = id;
@@ -28,6 +28,7 @@ namespace API.GraphQL.Items.Models
             UpdatedByUserId = updatedByUserId;
             Latitude = latitude;
             Longitude = longitude;
+            MainImageUrl= mainImageUrl;
         }
         public Guid Id { get; private set; }
 
@@ -53,7 +54,7 @@ namespace API.GraphQL.Items.Models
         [GraphQLNonNullType]
         public List<string> ImageUrls { get; private set; }
 
-        public string? MainImageUrl => ImageUrls?.Count == 0 ? null : ImageUrls[0];
+        public string? MainImageUrl { get; set; } //=> ImageUrls?.Count == 0 ? null : ImageUrls[0];
 
         public Guid CreatedByUserId { get; private set; }
 
@@ -96,6 +97,7 @@ namespace API.GraphQL.Items.Models
                 domItem.IsSwapOnly,
                 domItem.Categories,
                 domItem.ImageUrls,
+                domItem.MainImageUrl,
                 domItem.CreatedByUserId.Value,
                 domItem.UpdatedByUserId.Value,
                 domItem.Latitude,

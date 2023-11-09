@@ -49,6 +49,8 @@ namespace Infrastructure.Database.Schema
         public List<ItemImage> ItemImages { get; set; } = new List<ItemImage>();
         public List<Location> Locations { get; set; } = new List<Location>();
 
+        public string MainImageUrl { get; set; }
+
         public void FromDomain(Domain.Items.Item domainItem)
         {
             Title = domainItem.Title;
@@ -75,7 +77,9 @@ namespace Infrastructure.Database.Schema
                 item.CreatedByUserId,
                 item.UpdatedByUserId,
                 item.Latitude != null ? item.Latitude : null,
-                item.Longitude != null ? item.Longitude : null
+                item.Longitude != null ? item.Longitude : null,
+                item.MainImageUrl
             );
+
     }
 }

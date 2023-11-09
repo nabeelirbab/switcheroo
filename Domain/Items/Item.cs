@@ -8,8 +8,8 @@ namespace Domain.Items
     {
         public Item(Guid? id, string title, string description,
             decimal askingPrice, int? flexibilityRange, bool isHidden,
-            bool isSwapOnly, List<string> categories, List<string> imageUrls,
-            Guid? createdByUserId, Guid? updatedByUserId, decimal? latitude, decimal? longitude)
+            bool isSwapOnly, List<string> categories, List<string> imageUrls, 
+            Guid? createdByUserId, Guid? updatedByUserId, decimal? latitude, decimal? longitude, string? mainImageUrl)
         {
             Id = id;
             Title = title;
@@ -24,6 +24,7 @@ namespace Domain.Items
             UpdatedByUserId = updatedByUserId;
             Latitude = latitude;
             Longitude = longitude;
+            MainImageUrl = mainImageUrl;
         }
 
         [Required]
@@ -52,7 +53,9 @@ namespace Domain.Items
 
         public List<string> Categories { get; private set; }
 
-        public List<string> ImageUrls { get; private set; }
+        public List<string> ImageUrls { get; set; }
+
+        public string? MainImageUrl { get; set; }
 
         public Guid? CreatedByUserId { get; private set; }
 
@@ -83,7 +86,8 @@ namespace Domain.Items
                 createdByUserId,
                 createdByUserId,
                 latitude,
-                longitude
+                longitude,
+                null
             );
         }
 
@@ -97,7 +101,8 @@ namespace Domain.Items
             List<string> imageUrls,
             Guid updatedByUserId,
             decimal? latitude,
-            decimal? longitude
+            decimal? longitude,
+            string mainImageUrl
         )
         {
             return new Item(
@@ -113,7 +118,8 @@ namespace Domain.Items
                 null,
                 updatedByUserId,
                 latitude,
-                longitude
+                longitude,
+                mainImageUrl
             );
         }
     }

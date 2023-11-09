@@ -81,6 +81,7 @@ namespace Infrastructure.Items
             if (!item.CreatedByUserId.HasValue)
                 throw new InfrastructureException("No createdByUserId provided");
 
+
             var newDbItem = new Database.Schema.Item(
                 item.Title,
                 item.Description,
@@ -96,6 +97,8 @@ namespace Infrastructure.Items
                 CreatedAt = now,
                 UpdatedAt = now
             };
+
+            newDbItem.MainImageUrl = item.ImageUrls[0];
 
             await db.Items.AddAsync(newDbItem);
 
@@ -129,6 +132,8 @@ namespace Infrastructure.Items
                 .Where(z => z.Id == itemId)
                 .Select(Database.Schema.Item.ToDomain)
                 .SingleOrDefaultAsync();
+
+            item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
 
             if (item == null) throw new InfrastructureException($"Unable to locate item {itemId}");
 
