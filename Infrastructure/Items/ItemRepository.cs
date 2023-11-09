@@ -120,10 +120,24 @@ namespace Infrastructure.Items
 
         public async Task<IEnumerable<Domain.Items.Item>> GetItemsByUserId(Guid userId)
         {
-            return await db.Items
-                .Where(item => item.CreatedByUserId == userId)
-                .Select(Database.Schema.Item.ToDomain)
-                .ToListAsync();
+            try
+            {
+                var items = await db.Items
+                    .Where(item => item.CreatedByUserId == userId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                foreach (var item in items)
+                {
+                    // Create a new list excluding the main image URL for each item
+                    item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+                }
+                return items;
+            }
+            catch(Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
         }
 
         public async Task<Domain.Items.Item> GetItemByItemId(Guid itemId)
@@ -315,7 +329,11 @@ namespace Infrastructure.Items
                 {
                     throw new InfrastructureException($"No data found against");
                 }
-
+                foreach (var item in data)
+                {
+                    // Create a new list excluding the main image URL for each item
+                    item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+                }
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
                 Console.WriteLine($"\nnewCursor:, {newCursor}");
 
@@ -365,6 +383,12 @@ namespace Infrastructure.Items
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.Item.ToDomain)
                 .ToListAsync();
+
+            foreach (var item in data)
+            {
+                // Create a new list excluding the main image URL for each item
+                item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+            }
 
             var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
 
