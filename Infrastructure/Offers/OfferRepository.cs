@@ -13,6 +13,7 @@ using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Domain.Services;
 using FirebaseAdmin.Auth;
+using System.Text.RegularExpressions;
 
 namespace Infrastructure.Offers
 {
@@ -20,14 +21,12 @@ namespace Infrastructure.Offers
     {
         private readonly SwitcherooContext db;
 
-        private readonly IHostingEnvironment _hostingEnvironment;
 
         private readonly ILoggerManager _loggerManager;
 
-        public OfferRepository(SwitcherooContext db, IHostingEnvironment hostingEnvironment, ILoggerManager loggerManager)
+        public OfferRepository(SwitcherooContext db, ILoggerManager loggerManager)
         {
             this.db = db;
-            _hostingEnvironment = hostingEnvironment;
             _loggerManager = loggerManager;
         }
 
@@ -62,7 +61,7 @@ namespace Infrastructure.Offers
                         Notification = new Notification
                         {
                             Title = "Product Matched",
-                            Body = "One of your offers is accepted"
+                            Body = "One of your product is matched"
                             // Other notification parameters can be added here
                         }
                     };
@@ -180,12 +179,12 @@ namespace Infrastructure.Offers
                                 }
                             };
                             string response = await messaging.SendAsync(message);
+                            await db.SaveChangesAsync();
                         }
                         else
                         {
                             throw new InfrastructureException($"No FCM Token exist against this user");
                         }
-                        await db.SaveChangesAsync();
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
@@ -198,7 +197,7 @@ namespace Infrastructure.Offers
             return myoffer;
         }
 
-        public async Task<bool> DeleteOffer(Guid Id)
+        public async Task<bool> DeleteOffer(Guid Id, Guid userId)
         {
             try
             {
@@ -212,6 +211,73 @@ namespace Infrastructure.Offers
 
                 db.Offers.Remove(offer);
                 await db.SaveChangesAsync();
+
+                var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
+                        .Select(x => x.CreatedByUserId).FirstOrDefault();
+
+                var sourceUserId = db.Items.Where(x => x.Id.Equals(offer.SourceItemId))
+                        .Select(x => x.CreatedByUserId).FirstOrDefault();
+
+                if (userId != sourceUserId)
+                {
+                    
+                    var userFCMToken = db.Users
+                    .Where(x => x.Id == sourceUserId)
+                    .Select(x => x.FCMToken).FirstOrDefault();
+
+                    var app = FirebaseApp.DefaultInstance;
+                    var messaging = FirebaseMessaging.GetMessaging(app);
+
+                    var message = new FirebaseAdmin.Messaging.Message()
+                    {
+                        Token = userFCMToken,
+                        Notification = new Notification
+                        {
+                            Title = "Offer Rejected",
+                            Body = "One of your offer is rejected"
+                            // Other notification parameters can be added here
+                        }
+                    };
+                    string response = await messaging.SendAsync(message);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+
+        public async Task<bool> AcceptOffer(Guid offerId)
+        {
+            try
+            {
+                var offer = db.Offers.Where(u => u.Id == offerId).FirstOrDefault();
+
+                offer.TargetStatus = Database.Schema.OfferStatus.Initiated;
+
+                var sourceUserId = db.Items.Where(x => x.Id.Equals(offer.SourceItemId))
+                        .Select(x => x.CreatedByUserId).FirstOrDefault();
+
+                var userFCMToken = db.Users
+                    .Where(x => x.Id == sourceUserId)
+                    .Select(x => x.FCMToken).FirstOrDefault();
+
+                var app = FirebaseApp.DefaultInstance;
+                var messaging = FirebaseMessaging.GetMessaging(app);
+
+                var message = new FirebaseAdmin.Messaging.Message()
+                {
+                    Token = userFCMToken,
+                    Notification = new Notification
+                    {
+                        Title = "Offer Accpeted",
+                        Body = "One of your offer is accepted"
+                        // Other notification parameters can be added here
+                    }
+                };
+                string response = await messaging.SendAsync(message);
+
                 return true;
             }
             catch (Exception ex)

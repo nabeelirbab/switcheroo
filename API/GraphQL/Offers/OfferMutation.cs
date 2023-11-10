@@ -62,7 +62,25 @@ namespace API.GraphQL
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
 
-            await offerRepository.DeleteOffer(id);
+            await offerRepository.DeleteOffer(id,(Guid)user.Id);
+
+            return true;
+        }
+
+        public async Task<bool> AcceptOffer(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IOfferRepository offerRepository,
+            Guid offerId
+        )
+        {
+            var userCp = httpContextAccessor?.HttpContext?.User;
+
+            if (userCp == null) throw new ApiException("Not authenticated");
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            if (!user.Id.HasValue) throw new ApiException("Database failure");
+
+            await offerRepository.AcceptOffer(offerId);
 
             return true;
         }
