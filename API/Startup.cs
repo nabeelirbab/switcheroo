@@ -32,11 +32,7 @@ using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Domain.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Infrastructure.Services;
-using NLog;
-using NLog.Web;
-using Microsoft.Extensions.Logging;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
@@ -63,6 +59,9 @@ namespace API
             services.AddSingleton<ILoggerManager, LoggerManager>();
             // If you need dependency injection with your query object add your query type as a services.
             // services.AddSingleton<Query>();
+
+            // Add SignalR
+            services.AddSignalR();
 
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
@@ -183,7 +182,11 @@ namespace API
                 .UseAuthentication()
                 .UseRouting()
                 .UseWebSockets()
-                .UseEndpoints(endpoints => endpoints.MapControllers())
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers();
+                    endpoints.MapHub<ChatHub>("/yourHubPath");
+                })
                 .UseGraphQL()
                 .UsePlayground()
                 .UseVoyager()

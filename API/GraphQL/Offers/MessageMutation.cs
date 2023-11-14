@@ -1,8 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
-using API.GraphQL.Items.Models;
+﻿using System.Threading.Tasks;
 using API.GraphQL.Offers.Models;
-using Domain.Items;
 using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
