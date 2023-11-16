@@ -277,7 +277,7 @@ namespace Infrastructure.Offers
                     }
                 };
                 string response = await messaging.SendAsync(message);
-
+                await db.SaveChangesAsync();
                 return true;
             }
             catch (Exception ex)

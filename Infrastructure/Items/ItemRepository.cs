@@ -105,12 +105,12 @@ namespace Infrastructure.Items
             // Add item categories
             var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
             newDbItem.ItemCategories.AddRange(dbCategories
-                .Select(dbCat => new Database.Schema.ItemCategory(newDbItem.Id, dbCat.Id))
+                .Select(dbCat => new ItemCategory(newDbItem.Id, dbCat.Id))
                 .ToList());
 
             // Add item images
             newDbItem.ItemImages.AddRange(item.ImageUrls
-                .Select(url => new Database.Schema.ItemImage(url, newDbItem.Id))
+                .Select(url => new ItemImage(url, newDbItem.Id))
                 .ToList());
 
             await db.SaveChangesAsync();
@@ -178,12 +178,14 @@ namespace Infrastructure.Items
             var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
             existingDbItem.ItemCategories.RemoveAll(z => true);
             existingDbItem.ItemCategories.AddRange(dbCategories
-                .Select(dbCat => new Database.Schema.ItemCategory(existingDbItem.Id, dbCat.Id)));
+                .Select(dbCat => new ItemCategory(existingDbItem.Id, dbCat.Id)));
+
+            existingDbItem.MainImageUrl = item.ImageUrls[0];
 
             // Item images
             existingDbItem.ItemImages.RemoveAll(z => true);
             existingDbItem.ItemImages.AddRange(item.ImageUrls
-                .Select(url => new Database.Schema.ItemImage(url, existingDbItem.Id))
+                .Select(url => new ItemImage(url, existingDbItem.Id))
                 .ToList());
 
             await db.SaveChangesAsync();

@@ -1,20 +1,29 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using API.GraphQL.Offers.Models;
 using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Message = API.GraphQL.Models.Message;
 
 namespace API.GraphQL
 {
     public partial class Mutation
     {
+        private readonly IHubContext<ChatHub> _chatHubContext;
+
+        public Mutation(IHubContext<ChatHub> chatHubContext)
+        {
+            _chatHubContext = chatHubContext;
+        }
         public async Task<Message> CreateMessage(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IMessageRepository messageRepository,
-            MessageInput message
+            MessageInput message,
+            Guid? receiverId
         )
         {
             var userCp = httpContextAccessor?.HttpContext?.User;
@@ -31,7 +40,11 @@ namespace API.GraphQL
                  )
              );
 
-            return Message.FromDomain(newDomainMessage);
+            var returnmessage = Message.FromDomain(newDomainMessage);
+
+            await _chatHubContext.Clients.User(receiverId.ToString()).SendAsync("ReceiveMessage", returnmessage.MessageText);
+
+            return returnmessage;
         }
     }
 }
