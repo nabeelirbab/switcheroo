@@ -7,7 +7,8 @@ namespace Domain.Offers
     public interface IMessageRepository
     {
         Task<List<Message>> GetMessagesByOfferId(Guid offerId);
-        
+        Task<List<Message>> GetChat(Guid userId);
+
         Task<Message> CreateMessageAsync(Message item);
     }
 }

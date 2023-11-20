@@ -394,7 +394,7 @@ namespace Infrastructure.Offers
 
             foreach (var message in messages)
             {
-                message.MessageReadAt = DateTime.Now;
+                message.MessageReadAt = DateTime.UtcNow;
             }
 
             await db.SaveChangesAsync();

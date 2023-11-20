@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -47,7 +48,22 @@ namespace Infrastructure.UserManagement
 
             return user;
         }
+        
+        public async Task<List<User>> GetUserByOfferId(Guid offerId)
+        {
+            var userIds = await db.Offers
+                .Where(o => o.Id == offerId) // Adjusting the condition to match a specific offerId
+                .Select(o => o.CreatedByUserId)
+                .ToListAsync();
 
+            var users = await db.Users
+                .AsNoTracking()
+                .Where(user => userIds.Contains(user.Id))
+                .Select(Database.Schema.User.ToDomain)
+                .ToListAsync();
+
+            return users;
+        }
         public async Task<User> UpdateUserDateOfBirth(Guid id, DateTime? dateOfBirth)
         {
             var dbUser = await db.Users.SingleOrDefaultAsync(x => x.Id == id);

@@ -5,13 +5,14 @@ namespace Domain.Offers
 {
     public class Message
     {
-        public Message(Guid? id, Guid createdByUserId, Guid offerId, string messageText, DateTime? messageReadAt)
+        public Message(Guid? id, Guid createdByUserId, Guid offerId, string messageText, DateTime? messageReadAt, DateTimeOffset? createdAt)
         {
             Id = id;
             CreatedByUserId = createdByUserId;
             OfferId = offerId;
             MessageText = messageText;
             MessageReadAt = messageReadAt;
+            CreatedAt = createdAt;
         }
 
         [Required]
@@ -27,8 +28,8 @@ namespace Domain.Offers
         public Guid CreatedByUserId { get; private set; }
         
         public DateTime? MessageReadAt { get; private set; }
-        
-        
+        public DateTimeOffset? CreatedAt { get; set; }
+
         public static Message CreateMessage(
             Guid offerId,
             Guid currentUserId,
@@ -40,6 +41,7 @@ namespace Domain.Offers
                 currentUserId,
                 offerId,
                 messageText,
+                null,
                 null
             );
         }

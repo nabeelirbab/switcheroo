@@ -1,4 +1,6 @@
+using Domain.Offers;
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -7,6 +9,8 @@ namespace Domain.Users
     public interface IUserRepository
     {
         Task<User> GetById(Guid id);
+
+        Task<List<User>> GetUserByOfferId(Guid offerId);
 
         Task<User> GetByEmail(string email);
 

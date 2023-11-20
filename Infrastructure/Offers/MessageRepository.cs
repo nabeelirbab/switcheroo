@@ -7,6 +7,7 @@ using FirebaseAdmin.Messaging;
 using FirebaseAdmin;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using Infrastructure.Database.Schema;
 
 namespace Infrastructure.Offers
 {
@@ -28,7 +29,31 @@ namespace Infrastructure.Offers
 
             var msg =  messages
                 .OrderByDescending(_messageOrderingExpression)
-                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt))
+                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt, message.CreatedAt))
+                .ToList();
+            return msg;
+        }
+
+        public async Task<List<Domain.Offers.Message>> GetChat(Guid userId)
+        {
+            var myItems = await db.Items
+                   .Where(z => z.CreatedByUserId == userId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+            var offerIds = await db.Offers
+                    .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
+                    .Select(offer => offer.Id)
+                    .ToListAsync();
+
+            var lastMessages = await db.Messages
+                    .Where(message => offerIds.Contains(message.OfferId))
+                    .GroupBy(message => message.OfferId)
+                    .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
+                    .ToListAsync();
+
+            var msg = lastMessages
+                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt, message.CreatedAt))
                 .ToList();
             return msg;
         }
@@ -39,7 +64,7 @@ namespace Infrastructure.Offers
                 .SingleOrDefaultAsync(z => z.Id == messageId);
             
             return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId, dbMessage.MessageText,
-                dbMessage.MessageReadAt);
+                dbMessage.MessageReadAt, dbMessage.CreatedAt);
         }
 
         public async Task<Domain.Offers.Message> CreateMessageAsync(Domain.Offers.Message message)
