@@ -11,7 +11,7 @@ using Infrastructure.Database.Schema;
 
 namespace Infrastructure.Offers
 {
-    public class MessageRepository: IMessageRepository
+    public class MessageRepository : IMessageRepository
     {
         private readonly SwitcherooContext db;
         private readonly Func<Database.Schema.Message, DateTime> _messageOrderingExpression = z => z.CreatedAt.Date;
@@ -20,14 +20,14 @@ namespace Infrastructure.Offers
         {
             this.db = db;
         }
-        
+
         public async Task<List<Domain.Offers.Message>> GetMessagesByOfferId(Guid offerId)
         {
             var messages = await db.Messages
                 .Where(z => z.OfferId == offerId)
                 .ToListAsync();
 
-            var msg =  messages
+            var msg = messages
                 .OrderByDescending(_messageOrderingExpression)
                 .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt, message.CreatedAt))
                 .ToList();
@@ -62,7 +62,7 @@ namespace Infrastructure.Offers
         {
             var dbMessage = await db.Messages
                 .SingleOrDefaultAsync(z => z.Id == messageId);
-            
+
             return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId, dbMessage.MessageText,
                 dbMessage.MessageReadAt, dbMessage.CreatedAt);
         }
@@ -80,7 +80,7 @@ namespace Infrastructure.Offers
             };
 
             var offer = db.Offers.FirstOrDefault(x => x.Id.Equals(message.OfferId));
-            if (offer==null) throw new InfrastructureException("offer is null");
+            if (offer == null) throw new InfrastructureException("offer is null");
 
             var itemId = db.Items.FirstOrDefault(x => x.Id.Equals(offer.TargetItemId));
             if (itemId == null) throw new InfrastructureException("offer is null");
@@ -103,6 +103,11 @@ namespace Infrastructure.Offers
                         Title = "Message",
                         Body = message.MessageText
                         // Other notification parameters can be added here
+                    },
+                    Data = new Dictionary<string, string>
+                    {
+                        { "datetime", DateTime.Now.ToString() }
+                        // You can add other data fields as needed
                     }
                 };
                 string response = await messaging.SendAsync(notification);
