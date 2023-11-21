@@ -8,6 +8,8 @@ using FirebaseAdmin;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Database.Schema;
+using Microsoft.AspNetCore.SignalR;
+using Domain.Users;
 
 namespace Infrastructure.Offers
 {
@@ -15,10 +17,12 @@ namespace Infrastructure.Offers
     {
         private readonly SwitcherooContext db;
         private readonly Func<Database.Schema.Message, DateTime> _messageOrderingExpression = z => z.CreatedAt.Date;
+        private readonly IHubContext<ChatHub> _chatHubContext;
 
-        public MessageRepository(SwitcherooContext db)
+        public MessageRepository(SwitcherooContext db, IHubContext<ChatHub> chatHubContext)
         {
             this.db = db;
+            _chatHubContext = chatHubContext;
         }
 
         public async Task<List<Domain.Offers.Message>> GetMessagesByOfferId(Guid offerId)
@@ -120,19 +124,19 @@ namespace Infrastructure.Offers
             var itemId = db.Items.FirstOrDefault(x => x.Id.Equals(offer.TargetItemId));
             if (itemId == null) throw new InfrastructureException("offer is null");
 
-            var userFCMToken = db.Users
+            var receiverUser = db.Users
                 .Where(x => x.Id == itemId.CreatedByUserId)
-                .Select(x => x.FCMToken).FirstOrDefault();
+                .FirstOrDefault();
 
             await db.Messages.AddAsync(newDbItem);
-            if (!string.IsNullOrEmpty(userFCMToken))
+            if (!string.IsNullOrEmpty(receiverUser.FCMToken))
             {
                 var app = FirebaseApp.DefaultInstance;
                 var messaging = FirebaseMessaging.GetMessaging(app);
 
                 var notification = new FirebaseAdmin.Messaging.Message()
                 {
-                    Token = userFCMToken,
+                    Token = receiverUser.FCMToken,
                     Notification = new Notification
                     {
                         Title = "Message",
@@ -152,6 +156,7 @@ namespace Infrastructure.Offers
                 throw new InfrastructureException($"No FCM Token exists for this user");
             }
             await db.SaveChangesAsync();
+            await _chatHubContext.Clients.User(receiverUser.Id.ToString()).SendAsync("ReceiveMessage", message);
 
             return await GetMessageById(newDbItem.Id);
         }
