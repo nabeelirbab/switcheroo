@@ -43,6 +43,7 @@ namespace Infrastructure.Offers
 
             var offerIds = await db.Offers
                     .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
+                    .Where(z => z.SourceStatus == z.TargetStatus)
                     .Select(offer => offer.Id)
                     .ToListAsync();
 
@@ -52,10 +53,44 @@ namespace Infrastructure.Offers
                     .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                     .ToListAsync();
 
-            var msg = lastMessages
-                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt, message.CreatedAt))
+            // Extract offerIds that have associated messages
+            var offerIdsWithMessages = lastMessages.Select(message => message.OfferId).ToList();
+
+            // Create dummy messages for offerIds without associated messages
+            string message = "";
+            var offerIdsWithoutMessages = offerIds.Except(offerIdsWithMessages).ToList();
+            var dummyMessages = offerIdsWithoutMessages.Select(offerId => new Domain.Offers.Message(
+                Guid.NewGuid(), // Assuming a unique identifier for messages
+                userId, // Replace null with the appropriate value for CreatedByUserId
+                offerId, // Assign each dummy message to an offerId
+                message, // Replace null with the appropriate value for MessageText
+                null, // Replace null with the appropriate value for MessageReadAt
+                null // Replace null with the appropriate value for CreatedAt
+            )).ToList();
+
+            // Merge lastMessages and dummyMessages
+            var mergedMessages = lastMessages
+                .Select(message => new Domain.Offers.Message(
+                    message.Id,
+                    message.CreatedByUserId,
+                    message.OfferId,
+                    message.MessageText,
+                    message.MessageReadAt,
+                    message.CreatedAt
+                ))
+                .Concat(dummyMessages
+                    .Select(message => new Domain.Offers.Message(
+                        message.Id,
+                        message.CreatedByUserId,
+                        message.OfferId,
+                        message.MessageText,
+                        message.MessageReadAt,
+                        message.CreatedAt
+                    ))
+                )
                 .ToList();
-            return msg;
+
+            return mergedMessages;
         }
 
         public async Task<Domain.Offers.Message> GetMessageById(Guid messageId)
