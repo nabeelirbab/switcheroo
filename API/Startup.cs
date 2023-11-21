@@ -185,7 +185,7 @@ namespace API
                 .UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();
-                    endpoints.MapHub<ChatHub>("/yourHubPath");
+                    endpoints.MapHub<ChatHub>("/chatHub");
                 })
                 .UseGraphQL()
                 .UsePlayground()
