@@ -362,7 +362,7 @@ namespace Infrastructure.Offers
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
                     .Where(z => myItems.Contains(z.TargetItemId))
-                    .Where(offer => (int)offer.SourceStatus == (int)offer.TargetStatus)
+                    .Where(offer => (int)offer.SourceStatus != (int)offer.TargetStatus)
                     .Select(offer => offer.Id)
                     .ToListAsync();
 
