@@ -8,12 +8,7 @@ using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
-using Google.Apis.Auth.OAuth2;
-using System.IO;
-using Microsoft.AspNetCore.Hosting;
 using Domain.Services;
-using FirebaseAdmin.Auth;
-using System.Text.RegularExpressions;
 
 namespace Infrastructure.Offers
 {
@@ -354,6 +349,32 @@ namespace Infrastructure.Offers
             }
         }
 
+        public async Task<int> GetReceivedCount(Guid userId)
+        {
+            try
+            {
+                // Step 1: Retrieve myItems
+                var myItems = await db.Items
+                   .Where(z => z.CreatedByUserId == userId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+                // Step 2: Retrieve offers using myItems
+                var offers = await db.Offers
+                    .Where(z => myItems.Contains(z.TargetItemId))
+                    .Where(offer => (int)offer.SourceStatus == (int)offer.TargetStatus)
+                    .Select(offer => offer.Id)
+                    .ToListAsync();
+
+                return offers.Count;
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+
 
         public async Task<Offer> GetOfferById(Guid userId, Guid offerId)
         {
@@ -435,6 +456,7 @@ namespace Infrastructure.Offers
                 throw new InfrastructureException(ex.Message);
             }
         }
+        
         public async Task<IEnumerable<Offer>> GetAllOffersByItemId(Guid itemId)
         {
             try

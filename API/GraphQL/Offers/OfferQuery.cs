@@ -81,5 +81,22 @@ namespace API.GraphQL
 
             return offers.Select(Offer.FromDomain).ToList();
         }
+
+        [Authorize]
+        public async Task<int> GetReceivedCount(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IOfferRepository offerRepository)
+        {
+            var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+            if (!user.Id.HasValue) throw new ApiException("Fatal.");
+
+            if (user == null) throw new ApiException("Not logged in");
+
+            var chatCount = offerRepository.GetReceivedCount((Guid)user.Id);
+
+            return await chatCount;
+        }
     }
 }

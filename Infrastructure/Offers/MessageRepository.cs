@@ -7,9 +7,7 @@ using FirebaseAdmin.Messaging;
 using FirebaseAdmin;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
-using Infrastructure.Database.Schema;
 using Microsoft.AspNetCore.SignalR;
-using Domain.Users;
 
 namespace Infrastructure.Offers
 {
@@ -96,6 +94,29 @@ namespace Infrastructure.Offers
 
             return mergedMessages;
         }
+
+        public async Task<int> GetChatCount(Guid userId)
+        {
+            var itemIds = await db.Items
+               .Where(z => z.CreatedByUserId == userId)
+               .Select(z => z.Id)
+               .ToArrayAsync();
+
+            // Retrieve received offers using myItems
+            var offerIds = await db.Offers
+                .Where(z => itemIds.Contains(z.TargetItemId))
+                .Where(offer => (int)offer.SourceStatus == (int)offer.TargetStatus)
+                .Select(offer => offer.Id)
+                .ToArrayAsync();
+
+            // Retrieve received offers using myItems
+            var messages = await db.Messages
+                .Where(message => offerIds.Contains(message.OfferId) && message.MessageReadAt == null)
+                .ToListAsync();
+
+            return messages.Count;
+        }
+
 
         public async Task<Domain.Offers.Message> GetMessageById(Guid messageId)
         {
