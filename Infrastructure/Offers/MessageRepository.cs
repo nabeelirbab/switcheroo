@@ -9,6 +9,7 @@ using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using Infrastructure.Database.Schema;
+using System.Threading;
 
 namespace Infrastructure.Offers
 {
@@ -131,7 +132,6 @@ namespace Infrastructure.Offers
             // Retrieve received offers using myItems
             var offerIds = await db.Offers
                 .Where(z => itemIds.Contains(z.TargetItemId))
-                .Where(offer => (int)offer.SourceStatus != (int)offer.TargetStatus)
                 .Select(offer => offer.Id)
                 .ToArrayAsync();
 
@@ -168,7 +168,8 @@ namespace Infrastructure.Offers
                 CreatedByUserId = message.CreatedByUserId,
                 CreatedAt = now,
                 UpdatedAt = now,
-                UpdatedByUserId = message.CreatedByUserId
+                UpdatedByUserId = message.CreatedByUserId,
+                IsRead=false
             };
 
             var offer = db.Offers.FirstOrDefault(x => x.Id.Equals(message.OfferId));
@@ -182,7 +183,7 @@ namespace Infrastructure.Offers
                 .FirstOrDefault();
 
             await db.Messages.AddAsync(newDbItem);
-            if (!string.IsNullOrEmpty(receiverUser.FCMToken))
+            /*if (!string.IsNullOrEmpty(receiverUser.FCMToken))
             {
                 var app = FirebaseApp.DefaultInstance;
                 var messaging = FirebaseMessaging.GetMessaging(app);
@@ -207,7 +208,7 @@ namespace Infrastructure.Offers
             else
             {
                 throw new InfrastructureException($"No FCM Token exists for this user");
-            }
+            }*/
             await db.SaveChangesAsync();
             await _chatHubContext.Clients.User(receiverUser.Id.ToString()).SendAsync("ReceiveMessage", message);
 
@@ -224,7 +225,6 @@ namespace Infrastructure.Offers
             // Retrieve received offers using myItems
             var offerIds = await db.Offers
                 .Where(z => itemIds.Contains(z.TargetItemId))
-                .Where(offer => (int)offer.SourceStatus != (int)offer.TargetStatus)
                 .Select(offer => offer.Id)
                 .ToArrayAsync();
 
