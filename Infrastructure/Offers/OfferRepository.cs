@@ -303,7 +303,8 @@ namespace Infrastructure.Offers
                     offer.UpdatedByUserId,
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
-                    (int)offer.TargetStatus))
+                    (int)offer.TargetStatus,
+                    offer.IsRead))
                     .ToListAsync();
 
                 return offers;
@@ -337,7 +338,8 @@ namespace Infrastructure.Offers
                     offer.UpdatedByUserId,
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
-                    (int)offer.TargetStatus))
+                    (int)offer.TargetStatus,
+                    offer.IsRead))
                     .ToListAsync();
 
                 return offers;
@@ -349,7 +351,7 @@ namespace Infrastructure.Offers
             }
         }
 
-        public async Task<int> GetReceivedCount(Guid userId)
+        public async Task<int> GetNotificationCount(Guid userId)
         {
             try
             {
@@ -359,14 +361,13 @@ namespace Infrastructure.Offers
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
-                // Step 2: Retrieve offers using myItems
-                var offers = await db.Offers
+                int countOfUnreadOffers = await db.Offers
                     .Where(z => myItems.Contains(z.TargetItemId))
                     .Where(offer => (int)offer.SourceStatus != (int)offer.TargetStatus)
-                    .Select(offer => offer.Id)
-                    .ToListAsync();
+                    .Where(offer => offer.IsRead == false)
+                    .CountAsync();
 
-                return offers.Count;
+                return countOfUnreadOffers;
             }
 
             catch (Exception ex)
@@ -375,6 +376,37 @@ namespace Infrastructure.Offers
             }
         }
 
+        public async Task<bool> MarkNotificationRead(Guid userId)
+        {
+            try
+            {
+                // Step 1: Retrieve myItems
+                var myItems = await db.Items
+                   .Where(z => z.CreatedByUserId == userId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+                var offers = await db.Offers
+                    .Where(z => myItems.Contains(z.TargetItemId))
+                    .Where(offer => (int)offer.SourceStatus != (int)offer.TargetStatus)
+                    .Where(offer => offer.IsRead == false)
+                    .ToListAsync();
+
+                foreach (var offer in offers)
+                {
+                    offer.IsRead = true;
+                }
+
+                await db.SaveChangesAsync();
+
+                return true;
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
 
         public async Task<Offer> GetOfferById(Guid userId, Guid offerId)
         {
@@ -391,7 +423,7 @@ namespace Infrastructure.Offers
                 throw new SecurityException("You cant access this offer");
             }
 
-            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus);
+            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead);
         }
 
         public async Task<Offer> MarkMessagesAsRead(Guid userId, Guid offerId)
@@ -420,7 +452,7 @@ namespace Infrastructure.Offers
 
             await db.SaveChangesAsync();
 
-            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus);
+            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead);
         }
 
         public async Task<IEnumerable<Offer>> GetAllOffers(Guid userId)
@@ -445,7 +477,8 @@ namespace Infrastructure.Offers
                     offer.UpdatedByUserId,
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
-                    (int)offer.TargetStatus))
+                    (int)offer.TargetStatus,
+                    offer.IsRead))
                     .ToListAsync();
 
                 return offers;
@@ -479,7 +512,8 @@ namespace Infrastructure.Offers
                     offer.UpdatedByUserId,
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
-                    (int)offer.TargetStatus))
+                    (int)offer.TargetStatus,
+                    offer.IsRead))
                     .ToListAsync();
 
                 return offers;

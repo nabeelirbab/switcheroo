@@ -9,7 +9,8 @@ namespace Domain.Offers
     {
         Task<IEnumerable<Offer>> GetCreatedOffers(Guid userId);
         Task<IEnumerable<Offer>> GetReceivedOffers(Guid userId);
-        Task<int> GetReceivedCount(Guid userId);
+        Task<int> GetNotificationCount(Guid userId);
+        Task<bool> MarkNotificationRead(Guid userId);
         Task<Offer> GetOfferById(Guid userId, Guid offerId);
         Task<Offer> MarkMessagesAsRead(Guid userId, Guid offerId);
         Task<Offer> CreateOffer(Offer offer);

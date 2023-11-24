@@ -83,7 +83,7 @@ namespace API.GraphQL
         }
 
         [Authorize]
-        public async Task<int> GetReceivedCount(
+        public async Task<int> GetNotificationCount(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IOfferRepository offerRepository)
@@ -94,7 +94,7 @@ namespace API.GraphQL
 
             if (user == null) throw new ApiException("Not logged in");
 
-            var chatCount = offerRepository.GetReceivedCount((Guid)user.Id);
+            var chatCount = offerRepository.GetNotificationCount((Guid)user.Id);
 
             return await chatCount;
         }

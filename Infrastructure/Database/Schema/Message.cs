@@ -25,5 +25,7 @@ namespace Infrastructure.Database.Schema
         public string MessageText { get; private set; }
         
         public DateTime? MessageReadAt { get; set; }
+
+        public bool? IsRead { get; set; }
     }
 }

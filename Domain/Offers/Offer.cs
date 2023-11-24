@@ -7,7 +7,8 @@ namespace Domain.Offers
     {
         public Offer(Guid? id, Guid sourceItemId,
             Guid targetItemId, int? cash,
-            Guid? createdByUserId, Guid? updatedByUserId, DateTime createdAt, int sourceStatus,int? targeteStatus)
+            Guid? createdByUserId, Guid? updatedByUserId, 
+            DateTime createdAt, int sourceStatus,int? targeteStatus, bool? isRead)
         {
             Id = id;
             SourceItemId = sourceItemId;
@@ -18,6 +19,7 @@ namespace Domain.Offers
             CreatedAt = createdAt;
             SourceStatus = sourceStatus;
             TargeteStatus = targeteStatus;
+            IsRead = isRead;
         }
 
         [Required]
@@ -39,9 +41,11 @@ namespace Domain.Offers
         public int SourceStatus { get; set; }
         public int? TargeteStatus { get; set; }
 
-        public static Offer CreateNewOffer(Guid sourceItemId, Guid targetItemId,int? cash, Guid createdByUserId, int sourceStatus, int? targeteStatus)
+        public bool? IsRead { get; set; }
+
+        public static Offer CreateNewOffer(Guid sourceItemId, Guid targetItemId,int? cash, Guid createdByUserId, int sourceStatus, int? targeteStatus, bool? isRead)
         {
-            return new Offer(null, sourceItemId, targetItemId, cash, createdByUserId, createdByUserId, DateTime.Now, sourceStatus, targeteStatus);
+            return new Offer(null, sourceItemId, targetItemId, cash, createdByUserId, createdByUserId, DateTime.Now, sourceStatus, targeteStatus, isRead);
         }
     }
 }

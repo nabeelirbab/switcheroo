@@ -10,6 +10,9 @@ namespace Domain.Offers
         Task<List<Message>> GetChat(Guid userId);
         Task<int> GetChatCount(Guid userId);
 
+        Task<int> GetMessagesCount(Guid userId);
+        Task<bool> MarkmessageCountZero(Guid userId);
+
         Task<Message> CreateMessageAsync(Message item);
     }
 }

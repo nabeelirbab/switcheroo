@@ -46,5 +46,22 @@ namespace API.GraphQL
 
             return returnmessage;
         }
+
+        public async Task<bool> MarkmessageCountZero(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IMessageRepository messageRepository
+        )
+        {
+            var userCp = httpContextAccessor?.HttpContext?.User;
+
+            if (userCp == null) throw new ApiException("Not authenticated");
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            if (!user.Id.HasValue) throw new ApiException("Database failure");
+
+            await messageRepository.MarkmessageCountZero(user.Id.Value);
+
+            return true;
+        }
     }
 }

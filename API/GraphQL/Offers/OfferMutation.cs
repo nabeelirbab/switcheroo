@@ -27,6 +27,24 @@ namespace API.GraphQL
             return Offer.FromDomain(domainOffer);
         }
 
+        public async Task<bool> MarkNotificationAsRead(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IOfferRepository offerRepository
+        )
+        {
+            var userCp = httpContextAccessor?.HttpContext?.User;
+
+            if (userCp == null) throw new ApiException("Not authenticated");
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            if (!user.Id.HasValue) throw new ApiException("Database failure");
+
+            await offerRepository.MarkNotificationRead(user.Id.Value);
+
+            return true;
+        }
+
+
         public async Task<Offer> CreateOffer(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
@@ -39,12 +57,12 @@ namespace API.GraphQL
         )
         {
             var userCp = httpContextAccessor?.HttpContext?.User;
-
+            bool isRead = false;
             if (userCp == null) throw new ApiException("Not authenticated");
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
 
-            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId, targetItemId, cash, user.Id.Value, sourceStatus, targeteStatus));
+            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId, targetItemId, cash, user.Id.Value, sourceStatus, targeteStatus, isRead));
             
             return Offer.FromDomain(domainOffer);
         }

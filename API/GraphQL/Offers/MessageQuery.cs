@@ -59,5 +59,22 @@ namespace API.GraphQL
 
             return await chatCount;
         }
+
+        [Authorize]
+        public async Task<int> GetMessagesCount(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IMessageRepository messageRepository)
+        {
+            var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+            if (!user.Id.HasValue) throw new ApiException("Fatal.");
+
+            if (user == null) throw new ApiException("Not logged in");
+
+            var chatCount = messageRepository.GetMessagesCount((Guid)user.Id);
+
+            return await chatCount;
+        }
     }
 }

@@ -35,6 +35,8 @@ namespace Infrastructure.Database.Schema
 
         public int? Cash { get; set; }
 
+        public bool? IsRead { get; set; }
+
         public List<Message> Messages { get; private set; } = new List<Message>();
     }
 }

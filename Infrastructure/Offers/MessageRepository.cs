@@ -8,6 +8,7 @@ using FirebaseAdmin;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
+using Infrastructure.Database.Schema;
 
 namespace Infrastructure.Offers
 {
@@ -31,7 +32,7 @@ namespace Infrastructure.Offers
 
             var msg = messages
                 .OrderByDescending(_messageOrderingExpression)
-                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt, message.CreatedAt))
+                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt, message.CreatedAt, message.IsRead))
                 .ToList();
             return msg;
         }
@@ -67,7 +68,8 @@ namespace Infrastructure.Offers
                 offerId, // Assign each dummy message to an offerId
                 message, // Replace null with the appropriate value for MessageText
                 null, // Replace null with the appropriate value for MessageReadAt
-                null // Replace null with the appropriate value for CreatedAt
+                null, // Replace null with the appropriate value for CreatedAt
+                false
             )).ToList();
 
             // Merge lastMessages and dummyMessages
@@ -78,7 +80,8 @@ namespace Infrastructure.Offers
                     message.OfferId,
                     message.MessageText,
                     message.MessageReadAt,
-                    message.CreatedAt
+                    message.CreatedAt,
+                    message.IsRead
                 ))
                 .Concat(dummyMessages
                     .Select(message => new Domain.Offers.Message(
@@ -87,7 +90,8 @@ namespace Infrastructure.Offers
                         message.OfferId,
                         message.MessageText,
                         message.MessageReadAt,
-                        message.CreatedAt
+                        message.CreatedAt,
+                        message.IsRead
                     ))
                 )
                 .ToList();
@@ -117,6 +121,34 @@ namespace Infrastructure.Offers
             return messages.Count;
         }
 
+        public async Task<bool> MarkmessageCountZero(Guid userId)
+        {
+            var itemIds = await db.Items
+               .Where(z => z.CreatedByUserId == userId)
+               .Select(z => z.Id)
+               .ToArrayAsync();
+
+            // Retrieve received offers using myItems
+            var offerIds = await db.Offers
+                .Where(z => itemIds.Contains(z.TargetItemId))
+                .Where(offer => (int)offer.SourceStatus != (int)offer.TargetStatus)
+                .Select(offer => offer.Id)
+                .ToArrayAsync();
+
+            // Retrieve received offers using myItems
+            var messages = await db.Messages
+                .Where(message => offerIds.Contains(message.OfferId) && message.IsRead == false)
+            .ToListAsync();
+
+            foreach (var message in messages)
+            {
+                message.IsRead = true;
+            }
+
+            await db.SaveChangesAsync(); 
+
+            return true;
+        }
 
         public async Task<Domain.Offers.Message> GetMessageById(Guid messageId)
         {
@@ -124,7 +156,7 @@ namespace Infrastructure.Offers
                 .SingleOrDefaultAsync(z => z.Id == messageId);
 
             return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId, dbMessage.MessageText,
-                dbMessage.MessageReadAt, dbMessage.CreatedAt);
+                dbMessage.MessageReadAt, dbMessage.CreatedAt, dbMessage.IsRead);
         }
 
         public async Task<Domain.Offers.Message> CreateMessageAsync(Domain.Offers.Message message)
@@ -180,6 +212,28 @@ namespace Infrastructure.Offers
             await _chatHubContext.Clients.User(receiverUser.Id.ToString()).SendAsync("ReceiveMessage", message);
 
             return await GetMessageById(newDbItem.Id);
+        }
+
+        public async Task<int> GetMessagesCount(Guid userId)
+        {
+            var itemIds = await db.Items
+               .Where(z => z.CreatedByUserId == userId)
+               .Select(z => z.Id)
+               .ToArrayAsync();
+
+            // Retrieve received offers using myItems
+            var offerIds = await db.Offers
+                .Where(z => itemIds.Contains(z.TargetItemId))
+                .Where(offer => (int)offer.SourceStatus != (int)offer.TargetStatus)
+                .Select(offer => offer.Id)
+                .ToArrayAsync();
+
+            // Retrieve received offers using myItems
+            var messages = await db.Messages
+                .Where(message => offerIds.Contains(message.OfferId) && message.IsRead == false)
+            .ToListAsync();
+
+            return messages.Count;
         }
     }
 }
