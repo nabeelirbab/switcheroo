@@ -6,9 +6,9 @@ namespace API
 {
     public class ChatHub : Hub
     {
-        public async Task SendMessage(Guid userId, object message)
+        public async Task SendMessage(object message)
         {
-            await Clients.User(userId.ToString()).SendAsync("ReceiveMessage", message);
+            await Clients.All.SendAsync("ReceiveMessage", message);
         }
     }
 }

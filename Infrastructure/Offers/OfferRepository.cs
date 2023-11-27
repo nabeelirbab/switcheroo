@@ -162,7 +162,7 @@ namespace Infrastructure.Offers
                         await db.Offers.AddAsync(newDbOffer);
                         if (!string.IsNullOrEmpty(userFCMToken))
                         {
-                           /* var app = FirebaseApp.DefaultInstance;
+                           var app = FirebaseApp.DefaultInstance;
                             var messaging = FirebaseMessaging.GetMessaging(app);
 
                             var message = new FirebaseAdmin.Messaging.Message()
@@ -175,7 +175,7 @@ namespace Infrastructure.Offers
                                     // Other notification parameters can be added here
                                 }
                             };
-                            string response = await messaging.SendAsync(message);*/
+                            string response = await messaging.SendAsync(message);
                             await db.SaveChangesAsync();
                         }
                         else

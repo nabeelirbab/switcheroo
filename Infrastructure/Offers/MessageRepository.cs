@@ -17,12 +17,10 @@ namespace Infrastructure.Offers
     {
         private readonly SwitcherooContext db;
         private readonly Func<Database.Schema.Message, DateTime> _messageOrderingExpression = z => z.CreatedAt.Date;
-        private readonly IHubContext<ChatHub> _chatHubContext;
 
-        public MessageRepository(SwitcherooContext db, IHubContext<ChatHub> chatHubContext)
+        public MessageRepository(SwitcherooContext db)
         {
             this.db = db;
-            _chatHubContext = chatHubContext;
         }
 
         public async Task<List<Domain.Offers.Message>> GetMessagesByOfferId(Guid offerId)
@@ -183,7 +181,7 @@ namespace Infrastructure.Offers
                 .FirstOrDefault();
 
             await db.Messages.AddAsync(newDbItem);
-            /*if (!string.IsNullOrEmpty(receiverUser.FCMToken))
+            if (!string.IsNullOrEmpty(receiverUser.FCMToken))
             {
                 var app = FirebaseApp.DefaultInstance;
                 var messaging = FirebaseMessaging.GetMessaging(app);
@@ -208,9 +206,8 @@ namespace Infrastructure.Offers
             else
             {
                 throw new InfrastructureException($"No FCM Token exists for this user");
-            }*/
+            }
             await db.SaveChangesAsync();
-            await _chatHubContext.Clients.User(receiverUser.Id.ToString()).SendAsync("ReceiveMessage", message);
 
             return await GetMessageById(newDbItem.Id);
         }

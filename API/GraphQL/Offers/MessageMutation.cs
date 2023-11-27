@@ -22,8 +22,7 @@ namespace API.GraphQL
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IMessageRepository messageRepository,
-            MessageInput message,
-            Guid? receiverId
+            MessageInput message
         )
         {
             var userCp = httpContextAccessor?.HttpContext?.User;
@@ -42,7 +41,7 @@ namespace API.GraphQL
 
             var returnmessage = Message.FromDomain(newDomainMessage);
 
-            await _chatHubContext.Clients.User(receiverId.ToString()).SendAsync("ReceiveMessage", returnmessage.MessageText);
+            await _chatHubContext.Clients.All.SendAsync("ReceiveMessage", returnmessage);
 
             return returnmessage;
         }

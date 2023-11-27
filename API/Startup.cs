@@ -63,6 +63,21 @@ namespace API
             // Add SignalR
             services.AddSignalR();
 
+            // Add CORS
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowReactApp",
+                    builder => builder.WithOrigins("http://localhost:3000") // Replace with your React app URL
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials()
+                        .WithMethods("OPTIONS")); // Allow OPTIONS method
+            });
+            services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+            });
+
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
 
@@ -182,10 +197,13 @@ namespace API
                 .UseAuthentication()
                 .UseRouting()
                 .UseWebSockets()
+                .UseRouting()
+                .UseCors()
                 .UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();
-                    endpoints.MapHub<ChatHub>("/chatHub");
+                    endpoints.MapHub<ChatHub>("/chatHub")
+                       .RequireCors("AllowReactApp");
                 })
                 .UseGraphQL()
                 .UsePlayground()
