@@ -170,25 +170,33 @@ namespace Infrastructure.Offers
                 IsRead=false
             };
 
-            var offer = db.Offers.FirstOrDefault(x => x.Id.Equals(message.OfferId));
-            if (offer == null) throw new InfrastructureException("offer is null");
-
-            var itemId = db.Items.FirstOrDefault(x => x.Id.Equals(offer.TargetItemId));
-            if (itemId == null) throw new InfrastructureException("offer is null");
-
-            var receiverUser = db.Users
-                .Where(x => x.Id == itemId.CreatedByUserId)
-                .FirstOrDefault();
-
             await db.Messages.AddAsync(newDbItem);
-            if (!string.IsNullOrEmpty(receiverUser.FCMToken))
+
+            var senderId = message.CreatedByUserId;
+            var offerId = db.Offers.Where(o=>o.Id.Equals(message.OfferId)).FirstOrDefault(); 
+            var sourceItem = db.Items.Where(i=>i.Id.Equals(offerId.SourceItemId)).FirstOrDefault();
+            var targetItem = db.Items.Where(i=>i.Id.Equals(offerId.TargetItemId)).FirstOrDefault();
+            var sourceItemCreatedUser = db.Users.Where(u=>u.Id.Equals(sourceItem.CreatedByUserId)).FirstOrDefault();
+            var targetItemCreatedUser = db.Users.Where(u=>u.Id.Equals(targetItem.CreatedByUserId)).FirstOrDefault();
+
+            var userFCM = "";
+            if (senderId != sourceItemCreatedUser.Id)
+            {
+                userFCM = sourceItemCreatedUser.FCMToken;
+            }
+            else
+            {
+                userFCM = targetItemCreatedUser.FCMToken;
+            }
+
+            if (!string.IsNullOrEmpty(userFCM))
             {
                 var app = FirebaseApp.DefaultInstance;
                 var messaging = FirebaseMessaging.GetMessaging(app);
 
                 var notification = new FirebaseAdmin.Messaging.Message()
                 {
-                    Token = receiverUser.FCMToken,
+                    Token = userFCM,
                     Notification = new Notification
                     {
                         Title = "Message",
