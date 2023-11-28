@@ -124,7 +124,12 @@ namespace Infrastructure.Offers
                 )
                 .ToList();
 
-            return mergedMessages;
+            var mergedMessagesDistinct = mergedMessages
+                .GroupBy(m => m.CreatedByUserId)
+                .Select(g => g.First()) // You can use any logic to choose the distinct message, like ordering by CreatedAt
+                .ToList();
+
+            return mergedMessagesDistinct;
         }
 
         public async Task<int> GetChatCount(Guid userId)
