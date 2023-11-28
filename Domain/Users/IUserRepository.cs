@@ -10,7 +10,7 @@ namespace Domain.Users
     {
         Task<User> GetById(Guid id);
 
-        Task<List<User>> GetUserByOfferId(Guid offerId);
+        Task<List<User>> GetUserByUserId(Guid userId);
 
         Task<User> GetByEmail(string email);
 

@@ -1,6 +1,7 @@
 ﻿using Domain.Items;
 using Domain.Users;
 using HotChocolate;
+using Infrastructure.Items;
 using Infrastructure.Offers;
 using System;
 using System.Collections.Generic;
@@ -38,7 +39,7 @@ namespace API.GraphQL.Models
             [Service] IUserRepository userRepository
         )
         {
-            return (await userRepository.GetUserByOfferId(OfferId))
+            return (await userRepository.GetUserByUserId(CreatedByUserId))
                 .Select(Users.Models.User.FromDomain)
                 .ToList();
         }

@@ -49,16 +49,12 @@ namespace Infrastructure.UserManagement
             return user;
         }
         
-        public async Task<List<User>> GetUserByOfferId(Guid offerId)
+        public async Task<List<User>> GetUserByUserId(Guid userId)
         {
-            var userIds = await db.Offers
-                .Where(o => o.Id == offerId) // Adjusting the condition to match a specific offerId
-                .Select(o => o.CreatedByUserId)
-                .ToListAsync();
-
+            
             var users = await db.Users
                 .AsNoTracking()
-                .Where(user => userIds.Contains(user.Id))
+                .Where(user => user.Id == userId)
                 .Select(Database.Schema.User.ToDomain)
                 .ToListAsync();
 
