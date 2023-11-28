@@ -49,6 +49,7 @@ namespace Infrastructure.Offers
                     .Select(offer => offer.Id)
                     .ToListAsync();
 
+            // Offer IDs with messages
             var lastMessages = await db.Messages
                     .Where(message => offerIds.Contains(message.OfferId))
                     .Where(message => message.CreatedByUserId != userId)
@@ -56,21 +57,48 @@ namespace Infrastructure.Offers
                     .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                     .ToListAsync();
 
-            // Extract offerIds that have associated messages
-            var offerIdsWithMessages = lastMessages.Select(message => message.OfferId).ToList();
+            // Offer IDs without any messages
+            var offerIdsWithNoMessages = await db.Offers
+                .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
+                .Select(offer => offer.Id)
+                .ToListAsync();
 
+            // Offer without any messages
+            var offersWithNoMessages = await db.Offers
+                .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
+                .ToListAsync();
+
+            var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
+
+            var items = await db.Items
+                .Where(item => itemIds.Contains(item.Id))
+                .ToListAsync();
+
+            var UsersIds = items
+                .Where(i => i.CreatedByUserId != userId)
+                .Select(i => i.CreatedByUserId)
+                .ToList();
+            
             // Create dummy messages for offerIds without associated messages
             string message = "";
-            var offerIdsWithoutMessages = offerIds.Except(offerIdsWithMessages).ToList();
-            var dummyMessages = offerIdsWithoutMessages.Select(offerId => new Domain.Offers.Message(
-                Guid.NewGuid(), // Assuming a unique identifier for messages
-                userId, // Replace null with the appropriate value for CreatedByUserId
-                offerId, // Assign each dummy message to an offerId
-                message, // Replace null with the appropriate value for MessageText
-                null, // Replace null with the appropriate value for MessageReadAt
-                null, // Replace null with the appropriate value for CreatedAt
-                false
-            )).ToList();
+            var dummyMessages = new List<Domain.Offers.Message>();
+            foreach (var offerId in offerIdsWithNoMessages)
+            {
+                foreach (var user in UsersIds)
+                {
+                    var newDummyMessage = new Domain.Offers.Message(
+                        Guid.NewGuid(),
+                        user,
+                        offerId,
+                        message,
+                        null,
+                        null,
+                        false
+                    );
+                    dummyMessages.Add(newDummyMessage);
+                }
+            }
+
 
             // Merge lastMessages and dummyMessages
             var mergedMessages = lastMessages
