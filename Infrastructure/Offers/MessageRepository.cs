@@ -58,18 +58,18 @@ namespace Infrastructure.Offers
                     .GroupBy(message => message.OfferId)
                     .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                     .ToListAsync();
-            _loggerManager.LogInfo($"lastMessages: {lastMessages}");
+            _loggerManager.LogDebug($"lastMessages: {lastMessages}");
             // Offer IDs without any messages
             var offerIdsWithNoMessages = offers
                 .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
                 .Select(offer => offer.Id)
                 .ToList();
-            _loggerManager.LogInfo($"offerIdsWithNoMessages: {offerIdsWithNoMessages}");
+            _loggerManager.LogDebug($"offerIdsWithNoMessages: {offerIdsWithNoMessages}");
             // Offer without any messages
             var offersWithNoMessages = offers
                 .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
                 .ToList();
-            _loggerManager.LogInfo($"offersWithNoMessages: {offersWithNoMessages}");
+            _loggerManager.LogDebug($"offersWithNoMessages: {offersWithNoMessages}");
             var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
 
             var items = await db.Items
@@ -80,7 +80,7 @@ namespace Infrastructure.Offers
                 .Where(i => i.CreatedByUserId != userId)
                 .Select(i => i.CreatedByUserId)
                 .ToList();
-            _loggerManager.LogInfo($"UsersIds: {UsersIds}");
+            _loggerManager.LogDebug($"UsersIds: {UsersIds}");
             // Create dummy messages for offerIds without associated messages
             string message = "";
             var dummyMessages = new List<Domain.Offers.Message>();
@@ -130,7 +130,7 @@ namespace Infrastructure.Offers
                 .GroupBy(m => m.CreatedByUserId)
                 .Select(g => g.First()) // You can use any logic to choose the distinct message, like ordering by CreatedAt
                 .ToList();
-            _loggerManager.LogInfo($"mergedMessagesDistinct: {mergedMessagesDistinct}");
+            _loggerManager.LogDebug($"mergedMessagesDistinct: {mergedMessagesDistinct}");
             return mergedMessagesDistinct;
         }
 
