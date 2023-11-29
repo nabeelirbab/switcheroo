@@ -49,7 +49,7 @@ namespace Infrastructure.Offers
                     .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
                     .Where(z => z.SourceStatus == z.TargetStatus)
                     .ToListAsync();
-            _loggerManager.LogWarn($"offers: {offers.Count}");
+            _loggerManager.LogError($"offers: {offers.Count}");
             // Offer IDs with messages
             var lastMessages = await db.Messages
                     .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
@@ -57,13 +57,13 @@ namespace Infrastructure.Offers
                     .GroupBy(message => message.OfferId)
                     .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                     .ToListAsync();
-            _loggerManager.LogWarn($"lastMessages: {lastMessages.Count}");
+            _loggerManager.LogError($"lastMessages: {lastMessages.Count}");
             // Offer IDs without any messages
             var offerIdsWithNoMessages = offers
                 .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
                 .Select(offer => offer.Id)
                 .ToList();
-            _loggerManager.LogWarn($"offerIdsWithNoMessages: {offerIdsWithNoMessages.Count}");
+            _loggerManager.LogError($"offerIdsWithNoMessages: {offerIdsWithNoMessages.Count}");
             // Offer without any messages
             var offersWithNoMessages = offers
                 .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
@@ -79,7 +79,7 @@ namespace Infrastructure.Offers
                 .Where(i => i.CreatedByUserId != userId)
                 .Select(i => i.CreatedByUserId)
                 .ToList();
-            _loggerManager.LogWarn($"UsersIds: {UsersIds.Count}");
+            _loggerManager.LogError($"UsersIds: {UsersIds.Count}");
             // Create dummy messages for offerIds without associated messages
             string message = "";
             var dummyMessages = new List<Domain.Offers.Message>();
@@ -129,7 +129,7 @@ namespace Infrastructure.Offers
                 .GroupBy(m => m.CreatedByUserId)
                 .Select(g => g.First()) // You can use any logic to choose the distinct message, like ordering by CreatedAt
                 .ToList();
-            _loggerManager.LogWarn($"mergedMessagesDistinct: {mergedMessagesDistinct.Count}");
+            _loggerManager.LogError($"mergedMessagesDistinct: {mergedMessagesDistinct.Count}");
             return mergedMessagesDistinct;
         }
 
