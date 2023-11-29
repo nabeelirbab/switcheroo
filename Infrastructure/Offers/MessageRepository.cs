@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using Infrastructure.Database.Schema;
 using System.Threading;
+using Domain.Services;
 
 namespace Infrastructure.Offers
 {
@@ -17,10 +18,12 @@ namespace Infrastructure.Offers
     {
         private readonly SwitcherooContext db;
         private readonly Func<Database.Schema.Message, DateTime> _messageOrderingExpression = z => z.CreatedAt.Date;
+        private readonly ILoggerManager _loggerManager;
 
-        public MessageRepository(SwitcherooContext db)
+        public MessageRepository(SwitcherooContext db, ILoggerManager loggerManager)
         {
             this.db = db;
+            _loggerManager = loggerManager;
         }
 
         public async Task<List<Domain.Offers.Message>> GetMessagesByOfferId(Guid offerId)
@@ -42,12 +45,12 @@ namespace Infrastructure.Offers
                    .Where(z => z.CreatedByUserId == userId)
                    .Select(z => z.Id)
                    .ToArrayAsync();
-
+            _loggerManager.LogInfo($"myItems: {myItems}");
             var offers = await db.Offers
                     .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
                     .Where(z => z.SourceStatus == z.TargetStatus)
                     .ToListAsync();
-
+            _loggerManager.LogInfo($"offers: {offers}");
             // Offer IDs with messages
             var lastMessages = await db.Messages
                     .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
@@ -55,18 +58,18 @@ namespace Infrastructure.Offers
                     .GroupBy(message => message.OfferId)
                     .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                     .ToListAsync();
-
+            _loggerManager.LogInfo($"lastMessages: {lastMessages}");
             // Offer IDs without any messages
             var offerIdsWithNoMessages = offers
                 .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
                 .Select(offer => offer.Id)
                 .ToList();
-
+            _loggerManager.LogInfo($"offerIdsWithNoMessages: {offerIdsWithNoMessages}");
             // Offer without any messages
             var offersWithNoMessages = offers
                 .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
                 .ToList();
-
+            _loggerManager.LogInfo($"offersWithNoMessages: {offersWithNoMessages}");
             var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
 
             var items = await db.Items
@@ -77,7 +80,7 @@ namespace Infrastructure.Offers
                 .Where(i => i.CreatedByUserId != userId)
                 .Select(i => i.CreatedByUserId)
                 .ToList();
-            
+            _loggerManager.LogInfo($"UsersIds: {UsersIds}");
             // Create dummy messages for offerIds without associated messages
             string message = "";
             var dummyMessages = new List<Domain.Offers.Message>();
@@ -127,7 +130,7 @@ namespace Infrastructure.Offers
                 .GroupBy(m => m.CreatedByUserId)
                 .Select(g => g.First()) // You can use any logic to choose the distinct message, like ordering by CreatedAt
                 .ToList();
-
+            _loggerManager.LogInfo($"mergedMessagesDistinct: {mergedMessagesDistinct}");
             return mergedMessagesDistinct;
         }
 
