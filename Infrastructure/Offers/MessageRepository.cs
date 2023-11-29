@@ -43,30 +43,29 @@ namespace Infrastructure.Offers
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
-            var offerIds = await db.Offers
+            var offers = await db.Offers
                     .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
                     .Where(z => z.SourceStatus == z.TargetStatus)
-                    .Select(offer => offer.Id)
                     .ToListAsync();
 
             // Offer IDs with messages
             var lastMessages = await db.Messages
-                    .Where(message => offerIds.Contains(message.OfferId))
+                    .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
                     .Where(message => message.CreatedByUserId != userId)
                     .GroupBy(message => message.OfferId)
                     .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                     .ToListAsync();
 
             // Offer IDs without any messages
-            var offerIdsWithNoMessages = await db.Offers
+            var offerIdsWithNoMessages = offers
                 .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
                 .Select(offer => offer.Id)
-                .ToListAsync();
+                .ToList();
 
             // Offer without any messages
-            var offersWithNoMessages = await db.Offers
+            var offersWithNoMessages = offers
                 .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
-                .ToListAsync();
+                .ToList();
 
             var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
 
