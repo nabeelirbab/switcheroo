@@ -20,6 +20,9 @@ namespace Domain.Items
 
          Task<Item> GetItemByItemId(Guid itemId);
 
+        Task<List<Item>> GetItemByOfferId(Guid offerId, Guid userId);
+
+
         Task<Paginated<Item>> GetItems(Guid userId,Guid itemId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles);
         Task<Paginated<Item>> GetAllItems(Guid userId, int limit, string? cursor);
     }

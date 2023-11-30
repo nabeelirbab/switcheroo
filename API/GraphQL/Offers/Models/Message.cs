@@ -44,6 +44,17 @@ namespace API.GraphQL.Models
                 .ToList();
         }
 
+        [GraphQLNonNullType]
+        public async Task<List<Items.Models.Item>> GetTargetItem(
+            [Service] IItemRepository itemRepository
+        )
+        {
+            return (await itemRepository.GetItemByOfferId(OfferId, CreatedByUserId))
+                .Select(Items.Models.Item.FromDomain)
+                .ToList();
+        }
+
+
         public static Message FromDomain(Domain.Offers.Message domMessage) {
             if (!domMessage.Id.HasValue) throw new ApiException("Mapping error. Invalid message");
 
