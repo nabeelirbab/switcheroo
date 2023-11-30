@@ -283,6 +283,22 @@ namespace Infrastructure.Offers
             }
         }
 
+        public async Task<bool> UnmatchOffer(Guid offerId)
+        {
+            try
+            {
+                var offer = db.Offers.Where(u => u.Id == offerId).FirstOrDefault();
+                offer.TargetStatus = 0;
+                await db.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+
+
         public async Task<IEnumerable<Offer>> GetCreatedOffers(Guid userId)
         {
             try

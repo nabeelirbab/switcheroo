@@ -16,6 +16,7 @@ namespace Domain.Offers
         Task<Offer> CreateOffer(Offer offer);
         Task<bool> DeleteOffer(Guid Id, Guid userId);
         Task<bool> AcceptOffer(Guid offerId);
+        Task<bool> UnmatchOffer(Guid offerId);
         Task<IEnumerable<Offer>> GetAllOffers(Guid value);
         Task<IEnumerable<Offer>> GetAllOffersByItemId(Guid userId);
     }
