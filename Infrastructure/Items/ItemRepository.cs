@@ -1,22 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Domain;
 using Domain.Categories;
 using Domain.Items;
-using Domain.Users;
 using Infrastructure.Database;
 using Infrastructure.Database.Schema;
 using Microsoft.EntityFrameworkCore;
-using Amazon.S3;
-using Amazon.S3.Transfer;
-using System.IO;
-using Domain.Offers;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.Extensions.Logging;
-using Amazon.S3.Model;
 
 namespace Infrastructure.Items
 {
@@ -134,7 +125,7 @@ namespace Infrastructure.Items
                 }
                 return items;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new InfrastructureException($"Exception {ex.Message}");
             }
@@ -144,7 +135,8 @@ namespace Infrastructure.Items
         {
             try
             {
-                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new {
+                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                {
                     SourceItemId = o.SourceItemId,
                     TargetItemId = o.TargetItemId
                 }).FirstOrDefault();
@@ -257,7 +249,7 @@ namespace Infrastructure.Items
             return Math.PI * angle / 180.0;
         }
 
-        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId,Guid itemId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
+        public async Task<Paginated<Domain.Items.Item>> GetItems(Guid userId, Guid itemId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
         {
             try
             {
@@ -423,28 +415,21 @@ namespace Infrastructure.Items
             return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
         }
 
-        public async Task<string> UpdateItemLocation(Guid userId, Guid itemId, decimal? latitude, decimal? longitude)
+        public async Task<string> UpdateItemLocation(Guid itemId, decimal? latitude, decimal? longitude)
         {
-            var items = await db.Items
-                .Where(item => item.CreatedByUserId == userId)
-                .ToListAsync();
+            var item = await db.Items
+                .Where(item => item.Id == itemId)
+                .FirstOrDefaultAsync();
 
-            if (items.Count == 0)
+            if (item == null)
             {
                 return "No items found for the specified user.";
             }
-            foreach (var item in items)
-            {
-                if (item.Id == itemId)
-                {
-                    // Update the latitude and longitude of each item
-                    item.Latitude = latitude;
-                    item.Longitude = longitude;
 
-                    // Mark the item as modified in the context
-                    db.Entry(item).State = EntityState.Modified;
-                }
-            }
+            item.Latitude = latitude;
+            item.Longitude = longitude;
+
+            db.Entry(item).State = EntityState.Modified;
 
             try
             {
@@ -455,6 +440,31 @@ namespace Infrastructure.Items
             catch (Exception ex)
             {
                 // Handle any exceptions that occur during database save
+                return $"An error occurred: {ex.Message}";
+            }
+        }
+
+        public async Task<string> UpdateAllItemsLocation(Guid userId, decimal? latitude, decimal? longitude)
+        {
+            var items = await db.Items
+                .Where(item => item.CreatedByUserId == userId)
+                .ToListAsync();
+
+            if (items.Count == 0) { throw new InfrastructureException("No item found"); }
+            foreach (var item in items)
+            {
+                item.Latitude = latitude;
+                item.Longitude = longitude;
+
+                db.Entry(item).State = EntityState.Modified;
+            }
+            try
+            {
+                await db.SaveChangesAsync();
+                return "Item locations updated successfully.";
+            }
+            catch (Exception ex)
+            {
                 return $"An error occurred: {ex.Message}";
             }
         }
@@ -498,7 +508,7 @@ namespace Infrastructure.Items
                     await db.SaveChangesAsync();
                     return true;
                 }
-                
+
             }
             catch (Exception ex)
             {

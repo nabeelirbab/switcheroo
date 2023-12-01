@@ -140,6 +140,7 @@ namespace Infrastructure.Offers
                     }
                     else
                     {
+                        // swaped item
                         var myItem = await db.Items.FirstOrDefaultAsync(item => item.Id == offer.TargetItemId);
                         if (myItem != null)
                         {
@@ -160,28 +161,8 @@ namespace Infrastructure.Offers
                         };
 
                         await db.Offers.AddAsync(newDbOffer);
-                        if (!string.IsNullOrEmpty(userFCMToken))
-                        {
-                           var app = FirebaseApp.DefaultInstance;
-                            var messaging = FirebaseMessaging.GetMessaging(app);
-
-                            var message = new FirebaseAdmin.Messaging.Message()
-                            {
-                                Token = userFCMToken,
-                                Notification = new Notification
-                                {
-                                    Title = "New Offer",
-                                    Body = "You have a new offer"
-                                    // Other notification parameters can be added here
-                                }
-                            };
-                            string response = await messaging.SendAsync(message);
-                            await db.SaveChangesAsync();
-                        }
-                        else
-                        {
-                            throw new InfrastructureException($"No FCM Token exist against this user");
-                        }
+                        await db.SaveChangesAsync();
+                        
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
@@ -305,7 +286,7 @@ namespace Infrastructure.Offers
             {
                 // Step 1: Retrieve myItems
                 var myItems = await db.Items
-                   .Where(z => z.CreatedByUserId == userId)
+                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly==false)
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
@@ -340,7 +321,7 @@ namespace Infrastructure.Offers
             {
                 // Step 1: Retrieve myItems
                 var myItems = await db.Items
-                   .Where(z => z.CreatedByUserId == userId)
+                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == false)
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
