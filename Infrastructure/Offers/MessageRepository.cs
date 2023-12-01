@@ -53,7 +53,6 @@ namespace Infrastructure.Offers
             // Offer IDs with messages
             var lastMessages = await db.Messages
                     .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
-                    .Where(message => message.CreatedByUserId != userId)
                     .GroupBy(message => message.OfferId)
                     .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                     .ToListAsync();
