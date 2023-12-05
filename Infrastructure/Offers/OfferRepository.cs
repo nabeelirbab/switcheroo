@@ -286,7 +286,7 @@ namespace Infrastructure.Offers
             {
                 // Step 1: Retrieve myItems
                 var myItems = await db.Items
-                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly==false)
+                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == true)
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
@@ -321,7 +321,7 @@ namespace Infrastructure.Offers
             {
                 // Step 1: Retrieve myItems
                 var myItems = await db.Items
-                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == false)
+                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == true)
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
