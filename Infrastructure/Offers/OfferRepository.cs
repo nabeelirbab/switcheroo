@@ -140,16 +140,6 @@ namespace Infrastructure.Offers
                     }
                     else
                     {
-                        // swaped item
-                        var myItem = await db.Items.FirstOrDefaultAsync(item => item.Id == offer.TargetItemId);
-                        if (myItem != null)
-                        {
-                            // Update the 'isSwap' property
-                            myItem.IsSwapOnly = true;
-
-                            // Save the changes to the database
-                            await db.SaveChangesAsync();
-                        }
                         var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                         {
                             CreatedByUserId = offer.CreatedByUserId.Value,
