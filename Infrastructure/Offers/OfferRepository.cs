@@ -282,7 +282,7 @@ namespace Infrastructure.Offers
 
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
-                    .Where(z => myItems.Contains(z.SourceItemId))
+                    .Where(z => myItems.Contains(z.SourceItemId) && z.Cash != null)
                     .Select(offer => new Offer(
                     offer.Id,
                     offer.SourceItemId,
@@ -317,7 +317,7 @@ namespace Infrastructure.Offers
 
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
-                    .Where(z => myItems.Contains(z.TargetItemId))
+                    .Where(z => myItems.Contains(z.TargetItemId) && z.Cash != null)
                     .Select(offer => new Offer(
                     offer.Id,
                     offer.SourceItemId,
