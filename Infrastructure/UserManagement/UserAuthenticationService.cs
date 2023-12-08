@@ -36,12 +36,28 @@ namespace Infrastructure.UserManagement
 
             if (result.Succeeded)
             {
-                var user = await signInManager.UserManager.FindByEmailAsync(email);
+                var successUser = await signInManager.UserManager.FindByEmailAsync(email);
 
-                return user.Id;
+                return successUser.Id;
             }
 
-            throw new InfrastructureException("Invalid credentials");
+            var user = await signInManager.UserManager.FindByEmailAsync(email);
+            
+            // if email is invalid
+            if(user == null) throw new InfrastructureException("Invalid credentials");
+            else
+            {
+                // if email is valid but not confirmed
+                if (!user.EmailConfirmed)
+                {
+                    throw new InfrastructureException("Account not Actived");
+                }
+                // if email is valid but password id wrong
+                else
+                {
+                    throw new InfrastructureException("Invalid credentials");
+                }
+            }
         }
 
         public async Task<Guid> SignOutAsync(ClaimsPrincipal principal)
