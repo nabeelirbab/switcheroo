@@ -138,6 +138,11 @@ namespace Infrastructure.UserManagement
                 .Where(x => x.Email == email && x.SixDigitCode == verificationCode)
                 .SingleOrDefaultAsync();
 
+
+            var user = await db.Users.Where(u=>u.Id.Equals(retVal.CreatedByUserId)).FirstOrDefaultAsync();
+            if (user == null) { throw new InfrastructureException("No User Found"); }
+            user.EmailConfirmed = true;
+            db.Users.Update(user);
             if (retVal == null) return null;
             
             // Delete entry in DB
