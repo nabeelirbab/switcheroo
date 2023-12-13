@@ -1,6 +1,8 @@
 ﻿using Domain.Categories;
 using Domain.Complaints;
+using Domain.Services;
 using Infrastructure.Database;
+using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -13,10 +15,12 @@ namespace Infrastructure.Complaints
     public class ComplaintRepositoy: IComplaintRepository
     {
         private readonly SwitcherooContext db;
+        private readonly ILoggerManager _loggerManager;
 
-        public ComplaintRepositoy(SwitcherooContext db)
+        public ComplaintRepositoy(SwitcherooContext db, ILoggerManager loggerManager)
         {
             this.db = db;
+            _loggerManager = loggerManager;
         }
 
         public async Task<Complaint> CreateComplaintAsync(Complaint complaint)
@@ -39,14 +43,14 @@ namespace Infrastructure.Complaints
                     UpdatedAt = now
                 };
                 await db.Complaints.AddAsync(newDbComplaints);
-
+                _loggerManager.LogInfo($"{newDbComplaints.Description}");
                 await db.SaveChangesAsync();
 
                 return await GetComplaintById(newDbComplaints.Id);
             }
             catch (Exception ex)
             {
-                throw new InfrastructureException(ex.Message);
+                throw new InfrastructureException($"Exception:{ex.InnerException}");
             }
         }
 
