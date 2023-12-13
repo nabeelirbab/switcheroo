@@ -43,7 +43,7 @@ namespace Infrastructure.Complaints
                     UpdatedAt = now
                 };
                 await db.Complaints.AddAsync(newDbComplaints);
-                _loggerManager.LogInfo($"{newDbComplaints.Description}");
+                _loggerManager.LogError($"{newDbComplaints.Description}");
                 await db.SaveChangesAsync();
 
                 return await GetComplaintById(newDbComplaints.Id);
