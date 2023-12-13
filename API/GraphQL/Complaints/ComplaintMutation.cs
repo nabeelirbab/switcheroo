@@ -58,7 +58,7 @@ namespace API.GraphQL
                 var request = httpContext.Request;
                 var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
                 var email = new ReportEmail(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description);
-                _loggerManager.LogError($"User from DB {smtpOptions.SMTP_FROM_SUPPORT_ADDRESS}");
+                _loggerManager.LogError($"User from DB {smtpOptions.SMTP_FROM_ADDRESS}");
                 await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
                 
 
