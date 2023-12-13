@@ -1,9 +1,12 @@
 ﻿using API.HtmlTemplates;
 using Domain.Complaints;
 using Domain.Items;
+using Domain.Services;
 using Domain.Users;
 using HotChocolate;
+using Infrastructure;
 using Infrastructure.Email;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Options;
@@ -16,9 +19,12 @@ namespace API.GraphQL
     public partial class Mutation
     {
         private readonly SmtpOptions smtpOptions;
-        public Mutation(IOptions<SmtpOptions> smtpOptions)
+        private readonly ILoggerManager _loggerManager;
+
+        public Mutation(IOptions<SmtpOptions> smtpOptions, ILoggerManager loggerManager)
         {
             this.smtpOptions = smtpOptions.Value;
+            _loggerManager = loggerManager;
         }
         public async Task<Complaints.Models.Complaint> CreateUserComplaint(
             [Service] IHttpContextAccessor httpContextAccessor,
@@ -30,29 +36,38 @@ namespace API.GraphQL
             Guid userId
         )
         {
-            var httpContext = httpContextAccessor.HttpContext;
-            if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
+            try
+            {
+                _loggerManager.LogError($"UserId from API {userId}");
+                var httpContext = httpContextAccessor.HttpContext;
+                if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
 
-            var userCp = httpContextAccessor?.HttpContext?.User;
+                var userCp = httpContextAccessor?.HttpContext?.User;
 
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
+                if (userCp == null) throw new ApiException("Not authenticated");
+                var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+                if (!user.Id.HasValue) throw new ApiException("Database failure");
 
-            var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
-                complaint.Title,
-                complaint.Description,
-                user.Id.Value
-            ));
+                var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
+                    complaint.Title,
+                    complaint.Description,
+                    user.Id.Value
+                ));
 
-            var complaintUser = await userRepository.GetById(userId);
+                var complaintUser = await userRepository.GetById(userId);
+                _loggerManager.LogError($"User from DB {complaintUser.Email}");
 
-            var request = httpContext.Request;
-            var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
-            var email = new ReportEmail(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description);
-            await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
+                var request = httpContext.Request;
+                var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
+                var email = new ReportEmail(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description);
+                await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
 
-            return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
+                return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"API Exception {ex.Message}");
+            }
         }
 
         public async Task<Complaints.Models.Complaint> CreateItemComplaint(
