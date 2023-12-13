@@ -42,15 +42,15 @@ namespace Infrastructure.Complaints
                     CreatedAt = now,
                     UpdatedAt = now
                 };
-                await db.Complaints.AddAsync(newDbComplaints);
                 _loggerManager.LogError($"{newDbComplaints.Description}");
+                await db.Complaints.AddAsync(newDbComplaints);
                 await db.SaveChangesAsync();
 
                 return await GetComplaintById(newDbComplaints.Id);
             }
             catch (Exception ex)
             {
-                throw new InfrastructureException($"Exception:{ex.InnerException}");
+                throw new InfrastructureException($"Exception:{ex.Message}");
             }
         }
 
