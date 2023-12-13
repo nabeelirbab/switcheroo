@@ -56,14 +56,11 @@ namespace API.GraphQL
                 var complaintUser = await userRepository.GetById(userId);
 
                 var request = httpContext.Request;
-                _loggerManager.LogError($"request {request}");
                 var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
-                _loggerManager.LogError($"basePath {basePath}");
-                _loggerManager.LogError($"user.Email {user.Email}");
                 var email = new ReportEmail(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description);
-                _loggerManager.LogError($"email {email}");
-                await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
                 _loggerManager.LogError($"User from DB {smtpOptions.SMTP_FROM_SUPPORT_ADDRESS}");
+                await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
+                
 
                 return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
             }
