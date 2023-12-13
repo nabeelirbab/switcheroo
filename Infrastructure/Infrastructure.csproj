@@ -12,7 +12,6 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="Database\" />
     <Folder Include="Database\Seed\" />
   </ItemGroup>
   <ItemGroup>

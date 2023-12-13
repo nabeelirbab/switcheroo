@@ -8,7 +8,7 @@ namespace Domain.Users
 {
     public interface IUserRepository
     {
-        Task<User> GetById(Guid id);
+        Task<User> GetById(Guid? id);
 
         Task<List<User>> GetUserByUserId(Guid userId);
 

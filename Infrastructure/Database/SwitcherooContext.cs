@@ -23,6 +23,8 @@ namespace Infrastructure.Database
 
         public DbSet<UserVerificationCode> UserVerificationCodes { get; set; } = null!;
         public DbSet<Category> Categories { get; set; } = null!;
+
+        public DbSet<Complaint> Complaints { get; set; } = null!;
         public DbSet<Item> Items { get; set; } = null!;
         public DbSet<ItemCategory> ItemCategories { get; set; } = null!;
         public DbSet<ItemImage> ItemImages { get; set; } = null!;

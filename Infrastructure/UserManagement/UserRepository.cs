@@ -36,7 +36,7 @@ namespace Infrastructure.UserManagement
             return user;
         }
 
-        public async Task<User> GetById(Guid id)
+        public async Task<User> GetById(Guid? id)
         {
             var user = await db.Users
                 .AsNoTracking()
@@ -207,11 +207,34 @@ namespace Infrastructure.UserManagement
                     .SingleOrDefaultAsync();
                 if (user == null)
                 {
-                    _logger.LogWarning($"DeleteUser: User with ID {id} not found.");
-                    return false;
+                    throw new InfrastructureException("User not found.");
                 }
+                var items = await db.Items.Where(u => u.CreatedByUserId.Equals(id)).ToListAsync();
 
-                _logger.LogInformation($"DeleteUser: Deleting user {user.Id}");
+                var itemIds = items.Select(item => item.Id);
+
+                var offers = await db.Offers
+                    .Where(u => u.CreatedByUserId.Equals(id) || itemIds.Contains(u.TargetItemId))
+                    .ToListAsync();
+
+                // delete messages
+                var offerIds = offers.Select(offer => offer.Id).ToList();
+                var messageOfferIds = await db.Messages
+                        .Where(message => offerIds.Contains(message.OfferId))
+                        .ToListAsync();
+                if (messageOfferIds == null) { _logger.LogInformation($"No message Found"); }
+                else { db.Messages.RemoveRange(messageOfferIds); }
+
+                // delete offers
+                if (offers == null) { _logger.LogInformation($"No offer Found"); }
+                else { db.Offers.RemoveRange(offers); }
+
+                // delete items
+                var itemsToDelete = await db.Items.Where(u => u.CreatedByUserId.Equals(id)).ToListAsync();
+                if (itemsToDelete == null) { _logger.LogInformation($"No item Found"); }
+                else { db.Items.RemoveRange(itemsToDelete); }
+
+                // delete user
                 db.Users.Remove(user);
                 await db.SaveChangesAsync();
 
@@ -223,19 +246,16 @@ namespace Infrastructure.UserManagement
 
                 if (checkUser == null)
                 {
-                    _logger.LogInformation($"DeleteUser: User {user.Id} deleted successfully.");
+                    return true;
                 }
                 else
                 {
-                    _logger.LogError($"DeleteUser: User {user.Id} deletion failed.");
+                    throw new InfrastructureException("User not deleted.");
                 }
-
-                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"DeleteUser: An error occurred while deleting the user {ex.Message}");
-                return false;
+                throw new InfrastructureException($"DeleteUser: An error occurred while deleting the user {ex.Message}");
             }
         }
     }

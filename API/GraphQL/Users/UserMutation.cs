@@ -300,7 +300,6 @@ namespace API.GraphQL
         }
 
         public async Task<bool> DeleteUser(
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IUserRepository userRepository,
             Guid userId
         )

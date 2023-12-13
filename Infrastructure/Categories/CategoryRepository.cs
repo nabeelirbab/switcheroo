@@ -16,6 +16,27 @@ namespace Infrastructure.Categories
             this.db = db;
         }
 
+        public async Task<bool> CreateCategories(List<string> name)
+        {
+            foreach (var category in name)
+            {
+                var newCategory = new Database.Schema.Category(
+                category
+                )
+                {
+                    Name = category,
+                };
+                db.Categories.Add(newCategory);
+            }
+
+            await db.SaveChangesAsync();
+
+            var caregories = await db.Categories.ToListAsync();
+            if ( caregories.Count > 0 ) { return true; }
+            else { return false; }
+            
+        }
+
         public async Task<IEnumerable<Category>> GetAllCategories()
         {
             return await db.Categories

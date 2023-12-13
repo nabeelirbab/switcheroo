@@ -18,6 +18,7 @@ using Domain.Categories;
 using Infrastructure.Categories;
 using Domain.Items;
 using Domain.Offers;
+using Domain.Complaints;
 using Infrastructure.Items;
 using Infrastructure.Offers;
 using Microsoft.AspNetCore.Http;
@@ -37,6 +38,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 using Path = System.IO.Path;
+using Infrastructure.Complaints;
 
 namespace API
 {
@@ -100,6 +102,7 @@ namespace API
             services.AddTransient<IOfferRepository, OfferRepository>();
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IMessageRepository, MessageRepository>();
+            services.AddTransient<IComplaintRepository, ComplaintRepositoy>();
         }
 
         private void AddUserManagement(IServiceCollection services)

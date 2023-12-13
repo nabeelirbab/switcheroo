@@ -8,6 +8,9 @@ using Domain.Items;
 using Infrastructure.Database;
 using Infrastructure.Database.Schema;
 using Microsoft.EntityFrameworkCore;
+using Amazon.S3;
+using System.IO;
+using Amazon.S3.Model;
 
 namespace Infrastructure.Items
 {
@@ -516,5 +519,27 @@ namespace Infrastructure.Items
             }
         }
 
+        private async Task<string> UploadImageToS3Async(byte[] imageBytes, string contentType)
+        {
+            string fileName = Guid.NewGuid().ToString();
+
+
+            using (var s3Client = new AmazonS3Client("AKIA6EM2LZWU3ULXZ32E", "skgJAOA7bXo6aWe74nuP1UZuCbyO4UVB7t4zMei9", Amazon.RegionEndpoint.EUNorth1))
+            {
+                var putRequest = new PutObjectRequest
+                {
+                    BucketName = "switcheroofiles",
+                    Key = $"{fileName}.jpg",
+                    InputStream = new MemoryStream(imageBytes),
+                    ContentType = contentType,
+                    CannedACL = S3CannedACL.PublicRead
+                };
+
+                PutObjectResponse response = await s3Client.PutObjectAsync(putRequest);
+
+                // Get the URL of the uploaded image
+                return $"https://switcheroofiles.s3.eu-north-1.amazonaws.com/{fileName}.jpg"; ;
+            }
+        }
     }
 }
