@@ -38,7 +38,6 @@ namespace API.GraphQL
         {
             try
             {
-                _loggerManager.LogError($"UserId from API {userId}");
                 var httpContext = httpContextAccessor.HttpContext;
                 if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
 
@@ -55,12 +54,12 @@ namespace API.GraphQL
                 ));
 
                 var complaintUser = await userRepository.GetById(userId);
-                _loggerManager.LogError($"User from DB {complaintUser.Email}");
 
                 var request = httpContext.Request;
                 var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
                 var email = new ReportEmail(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description);
                 await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
+                _loggerManager.LogError($"User from DB {smtpOptions.SMTP_FROM_SUPPORT_ADDRESS}");
 
                 return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
             }
