@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using API.GraphQL.Offers.Models;
 using Domain.Offers;
 using Domain.Users;
@@ -19,28 +20,33 @@ namespace API.GraphQL
             MessageInput message
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
+            try
+            {
+                var userCp = httpContextAccessor?.HttpContext?.User;
 
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
+                if (userCp == null) throw new ApiException("Not authenticated");
+                var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+                if (!user.Id.HasValue) throw new ApiException("Database failure");
 
-            var newDomainMessage = await messageRepository.CreateMessageAsync(
-                Domain.Offers.Message.CreateMessage(
-                    message.OfferId,
-                    user.Id.Value,
-                    user.Id.Value,
-                    message.MessageText
-                 )
-             );
+                var newDomainMessage = await messageRepository.CreateMessageAsync(
+                    Domain.Offers.Message.CreateMessage(
+                        message.OfferId,
+                        user.Id.Value,
+                        user.Id.Value,
+                        message.MessageText
+                     )
+                 );
 
-            var returnmessage = Message.FromDomain(newDomainMessage);
+                var returnmessage = Message.FromDomain(newDomainMessage);
 
-            var targetUser = await userRepository.GetTargetUser(user.Id, message.OfferId);
+                var targetUser = await userRepository.GetTargetUser(user.Id, message.OfferId);
+                await _chatHubContext.Clients.User(targetUser[0].Id.ToString()).SendAsync("ReceiveMessage", returnmessage);
 
-            await _chatHubContext.Clients.User(targetUser[0].Id.ToString()).SendAsync("ReceiveMessage",returnmessage);
-
-            return returnmessage;
+                return returnmessage;
+            }
+            catch(Exception ex) {
+                throw new ApiException($"API Exception {ex.Message}");
+            }
         }
 
         public async Task<bool> MarkmessageCountZero(
