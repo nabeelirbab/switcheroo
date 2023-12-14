@@ -6,24 +6,25 @@ using Domain.Users;
 using HotChocolate;
 using Infrastructure;
 using Infrastructure.Email;
-using Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace API.GraphQL
 {
     public partial class Mutation
     {
-        private readonly SmtpOptions smtpOptions;
+        private readonly SmtpOptions _smtpOptions;
         private readonly ILoggerManager _loggerManager;
+        private readonly IHubContext<ChatHub> _chatHubContext;
 
-        public Mutation(IOptions<SmtpOptions> smtpOptions, ILoggerManager loggerManager)
+        public Mutation(IHubContext<ChatHub> chatHubContext, IOptions<SmtpOptions> smtpOptions, ILoggerManager loggerManager)
         {
-            this.smtpOptions = smtpOptions.Value;
+            _chatHubContext = chatHubContext;
+            _smtpOptions = smtpOptions.Value;
             _loggerManager = loggerManager;
         }
         public async Task<Complaints.Models.Complaint> CreateUserComplaint(
@@ -58,8 +59,8 @@ namespace API.GraphQL
                 var request = httpContext.Request;
                 var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
                 var email = new ReportEmail(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description);
-                _loggerManager.LogError($"User from DB {smtpOptions.SMTP_FROM_ADDRESS}");
-                await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
+                _loggerManager.LogError($"User from DB {_smtpOptions.SMTP_FROM_ADDRESS}");
+                await emailSender.SendEmailAsync(_smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
                 
 
                 return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
@@ -103,7 +104,7 @@ namespace API.GraphQL
             var request = httpContext.Request;
             var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
             var email = new ItemReport(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description, itemId.ToString(), complaintItem.Title);
-            await emailSender.SendEmailAsync(smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
+            await emailSender.SendEmailAsync(_smtpOptions.SMTP_FROM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
 
             return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
         }

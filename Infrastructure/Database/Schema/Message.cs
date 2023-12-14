@@ -21,6 +21,8 @@ namespace Infrastructure.Database.Schema
         [Required]
         public Guid OfferId { get; private set; }
 
+        public Guid? UserId { get; set; }
+
         [Required]
         public string MessageText { get; private set; }
         

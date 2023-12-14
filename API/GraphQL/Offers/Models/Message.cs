@@ -12,10 +12,11 @@ namespace API.GraphQL.Models
 {
     public class Message
     {
-        public Message(Guid id, Guid createdByUserId, Guid offerId, string messageText, DateTime? messageReadAt, DateTimeOffset? createdAt)
+        public Message(Guid id, Guid createdByUserId, Guid offerId, Guid? userId, string messageText, DateTime? messageReadAt, DateTimeOffset? createdAt)
         {
             Id = id;
             OfferId = offerId;
+            UserId = userId;
             CreatedByUserId = createdByUserId;
             MessageText = messageText;
             MessageReadAt = messageReadAt;
@@ -25,7 +26,9 @@ namespace API.GraphQL.Models
         public Guid Id { get; private set; }
 
         public Guid OfferId { get; private set; }
-        
+
+        public Guid? UserId { get; set; }
+
         public Guid CreatedByUserId { get; private set; }
 
         public string MessageText { get; private set; }
@@ -39,7 +42,7 @@ namespace API.GraphQL.Models
             [Service] IUserRepository userRepository
         )
         {
-            return (await userRepository.GetUserByUserId(CreatedByUserId))
+            return (await userRepository.GetTargetUser(UserId, OfferId))
                 .Select(Users.Models.User.FromDomain)
                 .ToList();
         }
@@ -49,7 +52,7 @@ namespace API.GraphQL.Models
             [Service] IItemRepository itemRepository
         )
         {
-            return (await itemRepository.GetItemByOfferId(OfferId, CreatedByUserId))
+            return (await itemRepository.GetTargetItem(OfferId, UserId))
                 .Select(Items.Models.Item.FromDomain)
                 .ToList();
         }
@@ -58,7 +61,7 @@ namespace API.GraphQL.Models
         public static Message FromDomain(Domain.Offers.Message domMessage) {
             if (!domMessage.Id.HasValue) throw new ApiException("Mapping error. Invalid message");
 
-            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt);
+            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId, domMessage.UserId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt);
         }
 
         public static List<Message> FromDomain(List<Domain.Offers.Message> domMessages)
@@ -73,6 +76,7 @@ namespace API.GraphQL.Models
                 domMessage.Id.Value,
                 domMessage.CreatedByUserId,
                 domMessage.OfferId,
+                domMessage.UserId,
                 domMessage.MessageText,
                 domMessage.MessageReadAt,
                 domMessage.CreatedAt))

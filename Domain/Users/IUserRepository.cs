@@ -12,6 +12,8 @@ namespace Domain.Users
 
         Task<List<User>> GetUserByUserId(Guid userId);
 
+        Task<List<User>> GetTargetUser(Guid? userId, Guid offerId);
+
         Task<User> GetByEmail(string email);
 
         Task<User> UpdateUserProfileDetails(Guid id, string? blurb, string? avatarUrl);

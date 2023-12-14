@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using API.GraphQL.Offers.Models;
 using Domain.Offers;
 using Domain.Users;
@@ -12,16 +11,11 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
-        private readonly IHubContext<ChatHub> _chatHubContext;
-
-        public Mutation(IHubContext<ChatHub> chatHubContext)
-        {
-            _chatHubContext = chatHubContext;
-        }
         public async Task<Message> CreateMessage(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IMessageRepository messageRepository,
+            [Service] IUserRepository userRepository,
             MessageInput message
         )
         {
@@ -35,13 +29,16 @@ namespace API.GraphQL
                 Domain.Offers.Message.CreateMessage(
                     message.OfferId,
                     user.Id.Value,
+                    user.Id.Value,
                     message.MessageText
                  )
              );
 
             var returnmessage = Message.FromDomain(newDomainMessage);
 
-            await _chatHubContext.Clients.All.SendAsync("ReceiveMessage", returnmessage);
+            var targetUser = await userRepository.GetTargetUser(user.Id, message.OfferId);
+
+            await _chatHubContext.Clients.User(targetUser[0].Id.ToString()).SendAsync("ReceiveMessage",returnmessage);
 
             return returnmessage;
         }

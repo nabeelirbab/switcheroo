@@ -32,6 +32,7 @@ namespace API.GraphQL
                 item.IsSwapOnly,
                 item.Categories,
                 item.ImageUrls,
+                item.MainImageUrl,
                 user.Id.Value,
                 item.Latitude,
                 item.Longitude

@@ -75,7 +75,6 @@ namespace Infrastructure.Items
             if (!item.CreatedByUserId.HasValue)
                 throw new InfrastructureException("No createdByUserId provided");
 
-
             var newDbItem = new Database.Schema.Item(
                 item.Title,
                 item.Description,
@@ -92,7 +91,23 @@ namespace Infrastructure.Items
                 UpdatedAt = now
             };
 
-            newDbItem.MainImageUrl = item.ImageUrls[0];
+            // Upload MainImageUrl to S3 separately
+            if (!string.IsNullOrEmpty(item.MainImageUrl))
+            {
+                byte[] mainImageBytes = Convert.FromBase64String(item.MainImageUrl);
+                newDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
+            }
+
+            // Upload ImageUrls to S3
+            List<string> imagesBase64 = item.ImageUrls;
+            List<string> s3Urls = new List<string>();
+
+            foreach (string base64String in imagesBase64)
+            {
+                byte[] imageBytes = Convert.FromBase64String(base64String);
+                string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
+                s3Urls.Add(uploadedImageUrl);
+            }
 
             await db.Items.AddAsync(newDbItem);
 
@@ -103,7 +118,7 @@ namespace Infrastructure.Items
                 .ToList());
 
             // Add item images
-            newDbItem.ItemImages.AddRange(item.ImageUrls
+            newDbItem.ItemImages.AddRange(s3Urls
                 .Select(url => new ItemImage(url, newDbItem.Id))
                 .ToList());
 
@@ -149,6 +164,32 @@ namespace Infrastructure.Items
 
                 var items = await db.Items
                     .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                return items;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
+        public async Task<List<Domain.Items.Item>> GetTargetItem(Guid offerId, Guid? userId)
+        {
+            try
+            {
+                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                {
+                    SourceItemId = o.SourceItemId,
+                    TargetItemId = o.TargetItemId
+                }).FirstOrDefault();
+
+                var sourceItemId = itemIds.SourceItemId;
+                var targetItemId = itemIds.TargetItemId;
+
+                var items = await db.Items
+                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
@@ -532,7 +573,6 @@ namespace Infrastructure.Items
                     Key = $"{fileName}.jpg",
                     InputStream = new MemoryStream(imageBytes),
                     ContentType = contentType,
-                    CannedACL = S3CannedACL.PublicRead
                 };
 
                 PutObjectResponse response = await s3Client.PutObjectAsync(putRequest);

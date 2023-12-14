@@ -68,6 +68,7 @@ namespace Domain.Items
             bool isSwapOnly,
             List<string> categories,
             List<string> imageUrls,
+            string? mainImageUrl,
             Guid createdByUserId,
             decimal? latitude,
             decimal? longitude
@@ -87,7 +88,7 @@ namespace Domain.Items
                 createdByUserId,
                 latitude,
                 longitude,
-                null
+                mainImageUrl
             );
         }
 

@@ -60,6 +60,40 @@ namespace Infrastructure.UserManagement
 
             return users;
         }
+
+        public async Task<List<User>> GetTargetUser(Guid? userId, Guid offerId)
+        {
+            try
+            {
+                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                {
+                    SourceItemId = o.SourceItemId,
+                    TargetItemId = o.TargetItemId
+                }).FirstOrDefault();
+
+                var sourceItemId = itemIds.SourceItemId;
+                var targetItemId = itemIds.TargetItemId;
+
+                var items = await db.Items
+                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                var creatorIds = items.Select(item => item.CreatedByUserId).Distinct().ToList();
+
+                var users = await db.Users
+                    .AsNoTracking()
+                    .Where(user => creatorIds.Contains(user.Id))
+                    .Select(Database.Schema.User.ToDomain)
+                    .ToListAsync();
+
+                return users;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
         public async Task<User> UpdateUserDateOfBirth(Guid id, DateTime? dateOfBirth)
         {
             var dbUser = await db.Users.SingleOrDefaultAsync(x => x.Id == id);

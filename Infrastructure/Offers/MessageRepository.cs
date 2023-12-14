@@ -34,7 +34,7 @@ namespace Infrastructure.Offers
 
             var msg = messages
                 .OrderByDescending(_messageOrderingExpression)
-                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.MessageText, message.MessageReadAt, message.CreatedAt, message.IsRead))
+                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.CreatedByUserId, message.MessageText, message.MessageReadAt, message.CreatedAt, message.IsRead))
                 .ToList();
             return msg;
         }
@@ -90,6 +90,7 @@ namespace Infrastructure.Offers
                         Guid.NewGuid(),
                         user,
                         offerId,
+                        userId,
                         message,
                         null,
                         null,
@@ -106,6 +107,7 @@ namespace Infrastructure.Offers
                     message.Id,
                     message.CreatedByUserId,
                     message.OfferId,
+                    message.UserId= userId,
                     message.MessageText,
                     message.MessageReadAt,
                     message.CreatedAt,
@@ -116,6 +118,7 @@ namespace Infrastructure.Offers
                         message.Id,
                         message.CreatedByUserId,
                         message.OfferId,
+                        message.UserId= userId,
                         message.MessageText,
                         message.MessageReadAt,
                         message.CreatedAt,
@@ -187,7 +190,7 @@ namespace Infrastructure.Offers
             var dbMessage = await db.Messages
                 .SingleOrDefaultAsync(z => z.Id == messageId);
 
-            return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId, dbMessage.MessageText,
+            return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId, dbMessage.CreatedByUserId, dbMessage.MessageText,
                 dbMessage.MessageReadAt, dbMessage.CreatedAt, dbMessage.IsRead);
         }
 
