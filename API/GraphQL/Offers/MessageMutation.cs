@@ -45,7 +45,7 @@ namespace API.GraphQL
                 return returnmessage;
             }
             catch(Exception ex) {
-                throw new ApiException($"API Exception {ex.InnerException}");
+                throw new ApiException($"API Exception {ex.Message}");
             }
         }
 
