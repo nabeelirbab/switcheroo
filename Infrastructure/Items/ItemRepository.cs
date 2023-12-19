@@ -70,61 +70,68 @@ namespace Infrastructure.Items
 
         public async Task<Domain.Items.Item> CreateItemAsync(Domain.Items.Item item)
         {
-            var now = DateTime.UtcNow;
-
-            if (!item.CreatedByUserId.HasValue)
-                throw new InfrastructureException("No createdByUserId provided");
-
-            var newDbItem = new Database.Schema.Item(
-                item.Title,
-                item.Description,
-                item.AskingPrice,
-                item.IsHidden,
-                item.IsSwapOnly,
-                item.Latitude,
-                item.Longitude
-            )
+            try
             {
-                CreatedByUserId = item.CreatedByUserId.Value,
-                UpdatedByUserId = item.CreatedByUserId.Value,
-                CreatedAt = now,
-                UpdatedAt = now
-            };
+                var now = DateTime.UtcNow;
 
-            // Upload MainImageUrl to S3 separately
-            if (!string.IsNullOrEmpty(item.MainImageUrl))
-            {
-                byte[] mainImageBytes = Convert.FromBase64String(item.MainImageUrl);
-                newDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
+                if (!item.CreatedByUserId.HasValue)
+                    throw new InfrastructureException("No createdByUserId provided");
+
+                var newDbItem = new Database.Schema.Item(
+                    item.Title,
+                    item.Description,
+                    item.AskingPrice,
+                    item.IsHidden,
+                    item.IsSwapOnly,
+                    item.Latitude,
+                    item.Longitude
+                )
+                {
+                    CreatedByUserId = item.CreatedByUserId.Value,
+                    UpdatedByUserId = item.CreatedByUserId.Value,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                // Upload MainImageUrl to S3 separately
+                if (!string.IsNullOrEmpty(item.MainImageUrl))
+                {
+                    byte[] mainImageBytes = Convert.FromBase64String(item.MainImageUrl);
+                    newDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
+                }
+
+                // Upload ImageUrls to S3
+                List<string> imagesBase64 = item.ImageUrls;
+                List<string> s3Urls = new List<string>();
+
+                foreach (string base64String in imagesBase64)
+                {
+                    byte[] imageBytes = Convert.FromBase64String(base64String);
+                    string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
+                    s3Urls.Add(uploadedImageUrl);
+                }
+
+                await db.Items.AddAsync(newDbItem);
+
+                // Add item categories
+                var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
+                newDbItem.ItemCategories.AddRange(dbCategories
+                    .Select(dbCat => new ItemCategory(newDbItem.Id, dbCat.Id))
+                    .ToList());
+
+                // Add item images
+                newDbItem.ItemImages.AddRange(s3Urls
+                    .Select(url => new ItemImage(url, newDbItem.Id))
+                    .ToList());
+
+                await db.SaveChangesAsync();
+
+                return await GetItemByItemId(newDbItem.Id);
             }
-
-            // Upload ImageUrls to S3
-            List<string> imagesBase64 = item.ImageUrls;
-            List<string> s3Urls = new List<string>();
-
-            foreach (string base64String in imagesBase64)
+            catch (Exception ex)
             {
-                byte[] imageBytes = Convert.FromBase64String(base64String);
-                string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
-                s3Urls.Add(uploadedImageUrl);
+                throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
             }
-
-            await db.Items.AddAsync(newDbItem);
-
-            // Add item categories
-            var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
-            newDbItem.ItemCategories.AddRange(dbCategories
-                .Select(dbCat => new ItemCategory(newDbItem.Id, dbCat.Id))
-                .ToList());
-
-            // Add item images
-            newDbItem.ItemImages.AddRange(s3Urls
-                .Select(url => new ItemImage(url, newDbItem.Id))
-                .ToList());
-
-            await db.SaveChangesAsync();
-
-            return await GetItemByItemId(newDbItem.Id);
         }
 
         public async Task<IEnumerable<Domain.Items.Item>> GetItemsByUserId(Guid userId)
@@ -149,7 +156,7 @@ namespace Infrastructure.Items
             }
         }
 
-        public async Task<List<Domain.Items.Item>> GetItemByOfferId(Guid offerId, Guid userId)
+        public async Task<List<Domain.Items.Item>> GetItemByOfferId(Guid offerId, Guid? userId)
         {
             try
             {

@@ -22,7 +22,7 @@ namespace Domain.Items
 
         Task<Item> GetItemByItemId(Guid itemId);
 
-        Task<List<Item>> GetItemByOfferId(Guid offerId, Guid userId);
+        Task<List<Item>> GetItemByOfferId(Guid offerId, Guid? userId);
 
         Task<List<Item>> GetTargetItem(Guid offerId, Guid? userId);
 

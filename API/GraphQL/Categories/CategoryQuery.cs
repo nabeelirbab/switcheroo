@@ -9,14 +9,9 @@ namespace API.GraphQL
 {
     public partial class Query
     {
-        public async Task<IEnumerable<Categories>> GetCategories(
+        public async Task<IEnumerable<Categories.Model.Categories>> GetCategories(
             [Service]ICategoryRepository categoryRepository)
             => (await categoryRepository.GetAllCategories())
-                .Select(z => new Categories { Id = z.Id, Name = z.Name });
+                .Select(z => new Categories.Model.Categories { Id = z.Id, Name = z.Name });
     }
-}
-public class Categories
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; }
 }
