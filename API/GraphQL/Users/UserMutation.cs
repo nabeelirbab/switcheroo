@@ -275,15 +275,22 @@ namespace API.GraphQL
             string password
         )
         {
-            var userId = await userAuthenticationService.SignInAsync(email, password);
-            var user = await userRepository.GetById(userId);
-
-            if (!user.Id.HasValue)
+            try
             {
-                throw new ApiException("No primary key. Database cooked?");
-            }
+                var userId = await userAuthenticationService.SignInAsync(email, password);
+                var user = await userRepository.GetById(userId);
 
-            return Users.Models.User.FromDomain(user);
+                if (!user.Id.HasValue)
+                {
+                    throw new ApiException("No primary key. Database cooked?");
+                }
+
+                return Users.Models.User.FromDomain(user);
+            }
+           catch (Exception ex)
+            {
+                throw new ApiException(ex.Message);
+            }
         }
 
         public async Task<bool> SignOut(
