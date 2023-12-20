@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Domain;
 using Domain.Users;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,60 @@ namespace Infrastructure.UserManagement
             if (user == null) throw new InfrastructureException($"Couldn't find user with email {email}");
 
             return user;
+        }
+
+        public async Task<Paginated<User>> GetAllUsers(int limit, string? cursor)
+        {
+            IEnumerable<Guid> requiredIds;
+
+            var Users = await db.Users.ToListAsync();
+
+            var usersIdsSorted = Users.Select(x => x.Id).ToList();
+
+            if (cursor != null)
+            {
+                requiredIds = usersIdsSorted
+                .SkipWhile(x => cursor != "" && x.ToString() != cursor)
+                .Skip(1)
+                .Take(limit);
+            }
+            else
+            {
+                requiredIds = usersIdsSorted.Take(limit);
+            }
+
+            if (cursor != null)
+            {
+                requiredIds = usersIdsSorted
+                .SkipWhile(x => cursor != "" && x.ToString() != cursor)
+                .Skip(1)
+                .Take(limit);
+            }
+            else
+            {
+                requiredIds = usersIdsSorted.Take(limit);
+            }
+
+            var totalCount = usersIdsSorted.Count();
+
+            var data = await db.Users
+                .AsNoTracking()
+                .Where(x => requiredIds.Contains(x.Id))
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(Database.Schema.User.ToDomain)
+                .ToListAsync();
+
+            foreach (var user in data)
+            {
+                var userItems = await db.Items
+                    .Where(i => i.CreatedByUserId == user.Id)
+                    .ToListAsync();
+                user.ItemCount = userItems.Count;
+            }
+
+            var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
+
+            return new Paginated<User>(data, newCursor ?? "", totalCount, data.Count == limit);
         }
 
         public async Task<User> GetById(Guid? id)

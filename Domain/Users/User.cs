@@ -51,6 +51,12 @@ namespace Domain.Users
 
         public int? Distance { get; set; }
 
+        public int? ItemCount { get; set; }
+
+        public int? MatchedItemCount { get; set; }
+
+        public int? UnMatchedItemCount { get; set; }
+
         public decimal? Latitude { get; set; }
 
         public decimal? Longitude { get; set; }
@@ -71,7 +77,7 @@ namespace Domain.Users
         {
             return new User(
                 null, email, firstName, lastName, email, null, null, 
-                null, null, null, null, 
+                null, null, null, null,
                 null, null, null,  true, true, null);
         }
 

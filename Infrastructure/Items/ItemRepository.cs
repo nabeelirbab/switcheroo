@@ -96,7 +96,9 @@ namespace Infrastructure.Items
                 // Upload MainImageUrl to S3 separately
                 if (!string.IsNullOrEmpty(item.MainImageUrl))
                 {
-                    byte[] mainImageBytes = Convert.FromBase64String(item.MainImageUrl);
+                    string base64 = item.MainImageUrl?.Split(',').LastOrDefault();
+                    base64 = base64.Trim();
+                    byte[] mainImageBytes = Convert.FromBase64String(base64);
                     newDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
                 }
 
@@ -106,7 +108,9 @@ namespace Infrastructure.Items
 
                 foreach (string base64String in imagesBase64)
                 {
-                    byte[] imageBytes = Convert.FromBase64String(base64String);
+                    string base64 = base64String?.Split(',').LastOrDefault();
+                    base64 = base64.Trim();
+                    byte[] imageBytes = Convert.FromBase64String(base64);
                     string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
                     s3Urls.Add(uploadedImageUrl);
                 }
@@ -130,6 +134,7 @@ namespace Infrastructure.Items
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Infrastructure Exception {ex.Message}");
                 throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
             }
         }

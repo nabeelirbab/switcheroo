@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Domain.Items;
@@ -68,6 +69,34 @@ namespace API.GraphQL
                     paginatedItems.TotalCount,
                     paginatedItems.HasNextPage);
             }
+        }
+
+        [Authorize]
+        public async Task<Paginated<Items.Models.Item>> GetAllItems(
+                [Service] IHttpContextAccessor httpContextAccessor,
+                [Service] IUserAuthenticationService userAuthenticationService,
+                [Service] IItemRepository itemRepository,
+                Guid userId,
+                int limit,
+                string? cursor
+            )
+        {
+            var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+
+            if (user == null) throw new ApiException("Not logged in");
+            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
+
+            var paginatedItems = await itemRepository.GetAllItems(userId, limit, cursor);
+
+            return new Paginated<Items.Models.Item>(
+                paginatedItems.Data
+                    .Select(Items.Models.Item.FromDomain)
+                    .ToList(),
+                paginatedItems.Cursor,
+                paginatedItems.TotalCount,
+                paginatedItems.HasNextPage);
+
         }
     }
 }

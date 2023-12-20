@@ -15,7 +15,7 @@ namespace API.GraphQL.Users.Models
     {
 
         private User(Guid id, string username, string firstName, string lastName, string email,
-            string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude,
+            string? mobile, string? gender, DateTime? dateOfBirth, int? distance, int? itemCount, int? matchedItemCount, int? unMatchedItemCount, decimal? latitude, decimal? longitude,
             string? fcmToken, string? blurb, string? avatarUrl, bool isMatchNotification, bool isChatNotificationsEnabled, DateTimeOffset? createdAt)
         {
             Id = id;
@@ -27,6 +27,9 @@ namespace API.GraphQL.Users.Models
             Gender = gender;
             DateOfBirth = dateOfBirth;
             Distance = distance;
+            ItemCount = itemCount;
+            MatchedItemCount = matchedItemCount;
+            UnMatchedItemCount = unMatchedItemCount;
             Latitude = latitude;
             Longitude = longitude;
             FCMToken = fcmToken;
@@ -54,6 +57,12 @@ namespace API.GraphQL.Users.Models
         public DateTime? DateOfBirth { get; set; }
 
         public int? Distance { get; set; }
+
+        public int? ItemCount { get; set; }
+
+        public int? MatchedItemCount { get; set; }
+
+        public int? UnMatchedItemCount { get; set; }
 
         public decimal? Latitude { get; set; }
 
@@ -112,6 +121,9 @@ namespace API.GraphQL.Users.Models
                 domUser.Gender,
                 domUser.DateOfBirth,
                 domUser.Distance,
+                domUser.ItemCount,
+                domUser.MatchedItemCount,
+                domUser.UnMatchedItemCount,
                 domUser.Latitude,
                 domUser.Longitude,
                 domUser.FCMToken,
