@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Amazon.S3;
 using System.IO;
 using Amazon.S3.Model;
+using Amazon.Runtime.Internal.Util;
 
 namespace Infrastructure.Items
 {
@@ -230,41 +231,82 @@ namespace Infrastructure.Items
 
         public async Task<Domain.Items.Item> UpdateItemAsync(Domain.Items.Item item)
         {
-            var now = DateTime.UtcNow;
-            var existingDbItem = await db.Items
-                .Include(z => z.ItemCategories)
-                .Include(z => z.ItemImages)
-                .SingleOrDefaultAsync(i => i.Id == item.Id);
-
-            if (existingDbItem == null)
+            try
             {
-                throw new InfrastructureException($"Item not found {item.Id}");
+                var now = DateTime.UtcNow;
+                var existingDbItem = await db.Items
+                    .Include(z => z.ItemCategories)
+                    .Include(z => z.ItemImages)
+                    .SingleOrDefaultAsync(i => i.Id == item.Id);
+
+                if (existingDbItem == null)
+                {
+                    throw new InfrastructureException($"Item not found {item.Id}");
+                }
+
+                if (!item.UpdatedByUserId.HasValue)
+                    throw new InfrastructureException("No updatedByUserId provided");
+
+                existingDbItem.FromDomain(item);
+                existingDbItem.UpdatedAt = now;
+                existingDbItem.UpdatedByUserId = item.UpdatedByUserId.Value;
+
+                // Item categories
+                var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
+                existingDbItem.ItemCategories.RemoveAll(z => true);
+                existingDbItem.ItemCategories.AddRange(dbCategories
+                    .Select(dbCat => new ItemCategory(existingDbItem.Id, dbCat.Id)));
+                if (!string.IsNullOrEmpty(item.MainImageUrl))
+                {
+                    if (item.MainImageUrl.Contains("switcheroofiles.s3.eu-north-1.amazonaws.com"))
+                    {
+
+                        string? base64 = item.MainImageUrl?.Split(',').LastOrDefault();
+                        base64 = base64.Trim();
+                        byte[] mainImageBytes = Convert.FromBase64String(base64);
+                        existingDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
+                    }
+                    else
+                    {
+                        existingDbItem.MainImageUrl = item.ImageUrls[0];
+
+                    }
+                }
+                
+                // Item images
+                List<string> imagesBase64 = item.ImageUrls;
+                List<string> s3Urls = new List<string>();
+                foreach (string base64String in imagesBase64)
+                {
+                    if (base64String.Contains("switcheroofiles.s3.eu-north-1.amazonaws.com"))
+                    {
+                        s3Urls.Add(base64String);
+                    }
+                    else
+                    {
+                        // Upload ImageUrls to S3
+                        string? base64 = base64String?.Split(',').LastOrDefault();
+                        base64 = base64.Trim();
+                        byte[] imageBytes = Convert.FromBase64String(base64);
+                        string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
+                        s3Urls.Add(uploadedImageUrl);
+                    }
+
+                }
+
+                existingDbItem.ItemImages.RemoveAll(z => true);
+                existingDbItem.ItemImages.AddRange(s3Urls
+                    .Select(url => new ItemImage(url, existingDbItem.Id))
+                    .ToList());
+
+                await db.SaveChangesAsync();
+
+                return await GetItemByItemId(existingDbItem.Id);
             }
-
-            if (!item.UpdatedByUserId.HasValue)
-                throw new InfrastructureException("No updatedByUserId provided");
-
-            existingDbItem.FromDomain(item);
-            existingDbItem.UpdatedAt = now;
-            existingDbItem.UpdatedByUserId = item.UpdatedByUserId.Value;
-
-            // Item categories
-            var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
-            existingDbItem.ItemCategories.RemoveAll(z => true);
-            existingDbItem.ItemCategories.AddRange(dbCategories
-                .Select(dbCat => new ItemCategory(existingDbItem.Id, dbCat.Id)));
-
-            existingDbItem.MainImageUrl = item.ImageUrls[0];
-
-            // Item images
-            existingDbItem.ItemImages.RemoveAll(z => true);
-            existingDbItem.ItemImages.AddRange(item.ImageUrls
-                .Select(url => new ItemImage(url, existingDbItem.Id))
-                .ToList());
-
-            await db.SaveChangesAsync();
-
-            return await GetItemByItemId(existingDbItem.Id);
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
+            }
         }
 
         public static bool IsDistanceWithinRange(double sourceLatitude, double sourceLongitude, double destinationLatitude, double destinationLongitude, double desiredDistance, bool isUnitMiles = false)

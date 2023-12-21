@@ -57,18 +57,6 @@ namespace Infrastructure.UserManagement
                 requiredIds = usersIdsSorted.Take(limit);
             }
 
-            if (cursor != null)
-            {
-                requiredIds = usersIdsSorted
-                .SkipWhile(x => cursor != "" && x.ToString() != cursor)
-                .Skip(1)
-                .Take(limit);
-            }
-            else
-            {
-                requiredIds = usersIdsSorted.Take(limit);
-            }
-
             var totalCount = usersIdsSorted.Count();
 
             var data = await db.Users
@@ -77,7 +65,8 @@ namespace Infrastructure.UserManagement
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.User.ToDomain)
                 .ToListAsync();
-
+            
+            //Item count
             foreach (var user in data)
             {
                 var userItems = await db.Items
@@ -85,6 +74,34 @@ namespace Infrastructure.UserManagement
                     .ToListAsync();
                 user.ItemCount = userItems.Count;
             }
+
+            //Matched items
+            foreach (var user in data)
+            {
+                var userItems = await db.Items
+                    .Where(i => i.CreatedByUserId == user.Id)
+                    .ToListAsync();
+
+                if (userItems.Count != 0)
+                {
+                    var sourceItemIds = userItems.Select(item => item.Id).ToList();
+
+                    var offers = await db.Offers
+                        .Where(offer =>
+                            sourceItemIds.Contains(offer.SourceItemId) || sourceItemIds.Contains(offer.TargetItemId))
+                        .Where(offer =>
+                            offer.SourceStatus == Database.Schema.OfferStatus.Initiated &&
+                            offer.TargetStatus == Database.Schema.OfferStatus.Initiated)
+                        .ToListAsync();
+
+                    user.MatchedItemCount = offers.Count;
+                }
+                else
+                {
+                    user.MatchedItemCount = 0;
+                }
+            }
+
 
             var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
 
