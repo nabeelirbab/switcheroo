@@ -12,6 +12,7 @@ using Amazon.S3;
 using System.IO;
 using Amazon.S3.Model;
 using Amazon.Runtime.Internal.Util;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Items
 {
@@ -403,6 +404,7 @@ namespace Infrastructure.Items
             try
             {
                 Console.Clear();
+                // if any dismised item
                 var myDismissedItems = await db.DismissedItem
                     .Where(z => z.SourceItemId.Equals(itemId))
                     .Select(z => z.TargetItemId)
@@ -411,27 +413,29 @@ namespace Infrastructure.Items
                 // For 40% limit
                 var lowerAmountLimit = Decimal.Multiply((decimal)amount, (decimal)0.60);
                 var upperAmountBound = Decimal.Multiply((decimal)amount, (decimal)1.40);
-                /*Expression<Func<Database.Schema.Item, bool>> searchPredicate =
+                Expression<Func<Database.Schema.Item, bool>> searchPredicate =
                      x =>
                      // If there is an amount it must be within the range of the item in question
-                     // (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
+                      (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
                      // If there are categories, they must be on this item
-                     // && 
+                      || 
                      (categories == null || x.ItemCategories.Select(z => z.Category.Name).Any(y => categories.Contains(y)))
 
                      // Skip dismissed items
                      && !myDismissedItems.Contains(x.Id)
 
                      // Skip hidden items
-                     && !x.IsHidden;*/
+                     && !x.IsHidden;
 
                 // Order by newest created
                 var filteredItems = await db.Items
                 .AsNoTracking()
-                //.Where(searchPredicate)
+                .Include(z => z.ItemCategories)
+                .ThenInclude(z => z.Category)
+                .Where(searchPredicate)
                 .Where(z => z.CreatedByUserId != userId)
-                .Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
-                .Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId)
+                //.Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
+                //.Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId)
                 .OrderBy(x => x.Id)
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new { x.Id, x.Latitude, x.Longitude })
@@ -491,6 +495,7 @@ namespace Infrastructure.Items
                     .AsNoTracking()
                     .Where(x => requiredIds.Contains(x.Id))
                     .OrderByDescending(x => x.CreatedAt)
+                    .OrderByDescending(x => x.ItemCategories.Count())
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
