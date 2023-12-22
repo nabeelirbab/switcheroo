@@ -214,6 +214,32 @@ namespace Infrastructure.Items
             }
         }
 
+        public async Task<List<Domain.Items.Item>> GetSourceItem(Guid offerId, Guid? userId)
+        {
+            try
+            {
+                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                {
+                    SourceItemId = o.SourceItemId,
+                    TargetItemId = o.TargetItemId
+                }).FirstOrDefault();
+
+                var sourceItemId = itemIds.SourceItemId;
+                var targetItemId = itemIds.TargetItemId;
+
+                var items = await db.Items
+                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                return items;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
 
         public async Task<Domain.Items.Item> GetItemByItemId(Guid itemId)
         {
