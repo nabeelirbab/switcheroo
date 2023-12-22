@@ -77,7 +77,10 @@ namespace Infrastructure.Items
 
                 if (!item.CreatedByUserId.HasValue)
                     throw new InfrastructureException("No createdByUserId provided");
-
+                if (item.AskingPrice == null)
+                {
+                    throw new InfrastructureException($"Item price not be null");
+                }
                 var newDbItem = new Database.Schema.Item(
                     item.Title,
                     item.Description,
@@ -288,7 +291,10 @@ namespace Infrastructure.Items
                 {
                     throw new InfrastructureException($"Item not found {item.Id}");
                 }
-
+                if(item.AskingPrice == null)
+                {
+                    throw new InfrastructureException($"Item price not be null");
+                }
                 if (!item.UpdatedByUserId.HasValue)
                     throw new InfrastructureException("No updatedByUserId provided");
 
