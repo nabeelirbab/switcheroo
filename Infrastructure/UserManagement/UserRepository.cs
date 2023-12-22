@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Domain;
 using Domain.Users;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Infrastructure.UserManagement
 {
@@ -121,12 +119,12 @@ namespace Infrastructure.UserManagement
             return user;
         }
         
-        public async Task<List<User>> GetUserByUserId(Guid userId)
+        public async Task<List<User>> GetUserByUserId(List<Guid> userIds)
         {
             
             var users = await db.Users
                 .AsNoTracking()
-                .Where(user => user.Id == userId)
+                .Where(user => userIds.Contains(user.Id))
                 .Select(Database.Schema.User.ToDomain)
                 .ToListAsync();
 
@@ -304,23 +302,24 @@ namespace Infrastructure.UserManagement
             return await GetById(id);
         }
 
-        public async Task<bool> DeleteUser(Guid id)
+        public async Task<bool> DeleteUser(List<Guid> ids)
         {
             try
             {
-                var user = await db.Users
-                    .Where(u => u.Id == id)
-                    .SingleOrDefaultAsync();
-                if (user == null)
+                var users = await db.Users
+                    .Where(u => ids.Contains(u.Id))
+                    .ToListAsync();
+                if (users.Count == 0)
                 {
                     throw new InfrastructureException("User not found.");
                 }
-                var items = await db.Items.Where(u => u.CreatedByUserId.Equals(id)).ToListAsync();
+                var items = await db.Items.Where(u => ids.Contains(u.CreatedByUserId)).ToListAsync();
 
                 var itemIds = items.Select(item => item.Id);
 
+                // get offers either created by these users or target to this user
                 var offers = await db.Offers
-                    .Where(u => u.CreatedByUserId.Equals(id) || itemIds.Contains(u.TargetItemId))
+                    .Where(u => ids.Contains(u.CreatedByUserId) || itemIds.Contains(u.TargetItemId))
                     .ToListAsync();
 
                 // delete messages
@@ -336,21 +335,21 @@ namespace Infrastructure.UserManagement
                 else { db.Offers.RemoveRange(offers); }
 
                 // delete items
-                var itemsToDelete = await db.Items.Where(u => u.CreatedByUserId.Equals(id)).ToListAsync();
+                var itemsToDelete = await db.Items.Where(u => ids.Contains(u.CreatedByUserId)).ToListAsync();
                 if (itemsToDelete == null) { _logger.LogInformation($"No item Found"); }
                 else { db.Items.RemoveRange(itemsToDelete); }
 
                 // delete user
-                db.Users.Remove(user);
+                db.Users.RemoveRange(users);
                 await db.SaveChangesAsync();
 
-                var checkUser = await db.Users
+                var checkUsers = await db.Users
                     .AsNoTracking()
-                    .Where(user => user.Id == id)
+                    .Where(user => ids.Contains(user.Id))
                     .Select(Database.Schema.User.ToDomain)
-                    .SingleOrDefaultAsync();
+                    .ToListAsync();
 
-                if (checkUser == null)
+                if (checkUsers.Count == 0)
                 {
                     return true;
                 }

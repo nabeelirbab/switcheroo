@@ -1,7 +1,5 @@
-using Domain.Offers;
 using System;
 using System.Collections.Generic;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Domain.Users
@@ -10,7 +8,7 @@ namespace Domain.Users
     {
         Task<User> GetById(Guid? id);
 
-        Task<List<User>> GetUserByUserId(Guid userId);
+        Task<List<User>> GetUserByUserId(List<Guid> userIds);
 
         Task<Paginated<User>> GetAllUsers(int limit, string? cursor);
 
@@ -36,7 +34,7 @@ namespace Domain.Users
 
         Task<User> UpdateUserFCMToken(Guid id, string? fcmToken);
 
-        Task<bool> DeleteUser(Guid id);
+        Task<bool> DeleteUser(List<Guid> ids);
 
     }
 }

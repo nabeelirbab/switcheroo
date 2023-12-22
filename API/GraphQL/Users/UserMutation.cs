@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using API.GraphQL.Users.Models;
 using API.HtmlTemplates;
@@ -308,14 +309,14 @@ namespace API.GraphQL
 
         public async Task<bool> DeleteUser(
             [Service] IUserRepository userRepository,
-            Guid userId
+            List<Guid> userIds
         )
         {
-            var user = await userRepository.GetById(userId);
+            var user = await userRepository.GetUserByUserId(userIds);
 
-            if (user == null) return false;
+            if (user.Count == 0) return false;
 
-            await userRepository.DeleteUser(userId);
+            await userRepository.DeleteUser(userIds);
             return true;
 
         }
