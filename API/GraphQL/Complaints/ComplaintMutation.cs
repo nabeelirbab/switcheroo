@@ -51,7 +51,9 @@ namespace API.GraphQL
                 var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
                     complaint.Title,
                     complaint.Description,
-                    user.Id.Value
+                    user.Id.Value,
+                    complaint.TargetUserId= userId,
+                    null
                 ));
 
                 var complaintUser = await userRepository.GetById(userId);
@@ -94,7 +96,9 @@ namespace API.GraphQL
             var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
                 complaint.Title,
                 complaint.Description,
-                user.Id.Value
+                user.Id.Value,
+                null,
+                complaint.TargetItemId= itemId
             ));
 
             var complaintItem = await itemRepository.GetItemByItemId(itemId);

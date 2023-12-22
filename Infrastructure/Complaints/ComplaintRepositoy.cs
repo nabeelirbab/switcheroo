@@ -34,7 +34,9 @@ namespace Infrastructure.Complaints
                 var newDbComplaints = new Database.Schema.Complaint(
                     complaint.Title,
                     complaint.Description,
-                    complaint.IsSolved
+                    complaint.IsSolved,
+                    complaint.TargetUserId,
+                    complaint.TargetItemId
                 )
                 {
                     CreatedByUserId = complaint.CreatedByUserId.Value,
@@ -66,5 +68,11 @@ namespace Infrastructure.Complaints
             return item;
         }
 
+        public async Task<List<Complaint>> GetComplaints()
+        {
+            return await db.Complaints
+                .Select(Database.Schema.Complaint.ToDomain)
+                .ToListAsync();
+        }
     }
 }

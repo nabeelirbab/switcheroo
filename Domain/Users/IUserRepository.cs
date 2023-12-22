@@ -12,6 +12,7 @@ namespace Domain.Users
 
         Task<Paginated<User>> GetAllUsers(int limit, string? cursor);
 
+        Task<List<User>> GetUserById(Guid? userId);
         Task<List<User>> GetTargetUser(Guid? userId, Guid offerId);
 
         Task<User> GetByEmail(string email);

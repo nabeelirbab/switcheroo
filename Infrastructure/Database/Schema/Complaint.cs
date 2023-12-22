@@ -6,11 +6,13 @@ namespace Infrastructure.Database.Schema
 {
     public class Complaint : Audit
     {
-        public Complaint(string title, string description, bool? isSolved)
+        public Complaint(string title, string description, bool isSolved, Guid? targetUserId, Guid? targetItemId)
         {
             Title = title;
             Description = description;
             IsSolved = isSolved;
+            TargetUserId = targetUserId;
+            TargetItemId = targetItemId;
         }
 
         [Required]
@@ -20,7 +22,9 @@ namespace Infrastructure.Database.Schema
         [Required]
         public string Description { get; set; }
         [Required]
-        public bool? IsSolved { get; set; }
+        public bool IsSolved { get; set; }
+        public Guid? TargetUserId { get; set; }
+        public Guid? TargetItemId { get; set; }
 
         public void FromDomain(Domain.Complaints.Complaint domaincomplaint)
         {
@@ -35,7 +39,9 @@ namespace Infrastructure.Database.Schema
                 complaint.Description,
                 complaint.IsSolved,
                 complaint.CreatedByUserId,
-                complaint.UpdatedByUserId
+                complaint.UpdatedByUserId,
+                complaint.TargetUserId,
+                complaint.TargetItemId
             );
 
     }

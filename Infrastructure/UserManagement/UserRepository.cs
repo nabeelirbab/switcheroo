@@ -164,6 +164,25 @@ namespace Infrastructure.UserManagement
                 throw new InfrastructureException($"Exception {ex.Message}");
             }
         }
+
+        public async Task<List<User>> GetUserById(Guid? userId)
+        {
+            try
+            {
+                var users = await db.Users
+                    .AsNoTracking()
+                    .Where(user => user.Id==userId)
+                    .Select(Database.Schema.User.ToDomain)
+                    .ToListAsync();
+
+                return users;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
         public async Task<User> UpdateUserDateOfBirth(Guid id, DateTime? dateOfBirth)
         {
             var dbUser = await db.Users.SingleOrDefaultAsync(x => x.Id == id);

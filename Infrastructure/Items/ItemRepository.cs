@@ -214,6 +214,25 @@ namespace Infrastructure.Items
             }
         }
 
+        public async Task<List<Domain.Items.Item>> GetTargetItemById(Guid? itemId)
+        {
+            try
+            {
+                
+                var items = await db.Items
+                    .Where(item => item.Id == itemId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                return items;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
+
         public async Task<List<Domain.Items.Item>> GetSourceItem(Guid offerId, Guid? userId)
         {
             try

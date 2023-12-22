@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Domain.Complaints
@@ -7,5 +8,7 @@ namespace Domain.Complaints
     {
         Task<Complaint> CreateComplaintAsync(Complaint complaint);
         Task<Complaint> GetComplaintById(Guid complaintId);
+
+        Task<List<Complaint>> GetComplaints();
     }
 }
