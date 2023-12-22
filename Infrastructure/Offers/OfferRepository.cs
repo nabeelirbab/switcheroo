@@ -27,52 +27,53 @@ namespace Infrastructure.Offers
 
         public async Task<Offer>? CreateOffer(Offer offer)
         {
-            var now = DateTime.UtcNow;
-            Offer? myoffer = null;
-
-            var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
-                       .Select(x => x.CreatedByUserId).FirstOrDefault();
-
-            var userFCMToken = db.Users
-                .Where(x => x.Id == targetUserId)
-                .Select(x => x.FCMToken).FirstOrDefault();
-
-
-            if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
-                throw new InfrastructureException("No createdByUserId provided");
-
-            var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
-            if (match != null)
+            try
             {
-                match.TargetStatus = Database.Schema.OfferStatus.Initiated;
-                if (!string.IsNullOrEmpty(userFCMToken))
-                {
-                    var app = FirebaseApp.DefaultInstance;
-                    var messaging = FirebaseMessaging.GetMessaging(app);
+                var now = DateTime.UtcNow;
+                Offer? myoffer = null;
 
-                    var message = new FirebaseAdmin.Messaging.Message()
+                var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
+                           .Select(x => x.CreatedByUserId).FirstOrDefault();
+
+                var userFCMToken = db.Users
+                    .Where(x => x.Id == targetUserId)
+                    .Select(x => x.FCMToken).FirstOrDefault();
+
+
+                if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
+                    throw new InfrastructureException("No createdByUserId provided");
+
+                var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
+                if (match != null)
+                {
+                    match.TargetStatus = Database.Schema.OfferStatus.Initiated;
+                    if (!string.IsNullOrEmpty(userFCMToken))
                     {
-                        Token = userFCMToken,
-                        Notification = new Notification
+                        var app = FirebaseApp.DefaultInstance;
+                        var messaging = FirebaseMessaging.GetMessaging(app);
+
+                        var message = new FirebaseAdmin.Messaging.Message()
                         {
-                            Title = "Product Matched",
-                            Body = "One of your product is matched"
-                            // Other notification parameters can be added here
-                        }
-                    };
-                    string response = await messaging.SendAsync(message);
+                            Token = userFCMToken,
+                            Notification = new Notification
+                            {
+                                Title = "Product Matched",
+                                Body = "One of your product is matched"
+                                // Other notification parameters can be added here
+                            }
+                        };
+                        string response = await messaging.SendAsync(message);
+                    }
+                    else
+                    {
+                        throw new InfrastructureException($"No FCM Token exists for this user");
+                    }
+                    await db.SaveChangesAsync();
+                    myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
                 }
                 else
                 {
-                    throw new InfrastructureException($"No FCM Token exists for this user");
-                }
-                await db.SaveChangesAsync();
-                myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
-            }
-            else
-            {
-                try
-                {
+
                     if (offer.Cash != null)
                     {
                         var targetitem = db.Items.Where(i => i.Id.Equals(offer.TargetItemId)).FirstOrDefault();
@@ -152,17 +153,18 @@ namespace Infrastructure.Offers
 
                         await db.Offers.AddAsync(newDbOffer);
                         await db.SaveChangesAsync();
-                        
+
                         myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _loggerManager.LogError($"Exception: {ex.Message}");
-                    throw new InfrastructureException($"Exception: {ex.Message}");
-                }
+                return myoffer;
             }
-            return myoffer;
+
+            catch (Exception ex)
+            {
+                _loggerManager.LogError($"Exception: {ex.Message}");
+                throw new InfrastructureException($"Exception: {ex.Message}");
+            }
         }
 
         public async Task<bool> DeleteOffer(Guid Id, Guid userId)
@@ -188,7 +190,7 @@ namespace Infrastructure.Offers
 
                 if (userId != sourceUserId)
                 {
-                    
+
                     var userFCMToken = db.Users
                     .Where(x => x.Id == sourceUserId)
                     .Select(x => x.FCMToken).FirstOrDefault();
@@ -478,7 +480,7 @@ namespace Infrastructure.Offers
                 throw new InfrastructureException(ex.Message);
             }
         }
-        
+
         public async Task<IEnumerable<Offer>> GetAllOffersByItemId(Guid itemId)
         {
             try

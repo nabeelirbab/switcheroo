@@ -51,7 +51,7 @@ namespace Infrastructure.Items
             var existing = await db.DismissedItem
                 .SingleOrDefaultAsync(x => x.SourceItemId == item.SourceItemId && x.TargetItemId == item.TargetItemId);
 
-            if (existing != null) return false;
+            if (existing == null) return false;
 
             if (!item.CreatedByUserId.HasValue)
                 throw new InfrastructureException("No createdByUserId provided");
@@ -435,7 +435,7 @@ namespace Infrastructure.Items
                 .Where(searchPredicate)
                 .Where(z => z.CreatedByUserId != userId)
                 //.Where(z => z.AskingPrice >= lowerAmountLimit && z.AskingPrice <= upperAmountBound)
-                //.Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId)
+                .Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId)
                 .OrderBy(x => x.Id)
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new { x.Id, x.Latitude, x.Longitude })
@@ -465,7 +465,11 @@ namespace Infrastructure.Items
                 }
 
                 // remove already created offer against this item
-                var offer = db.Offers.Where(x => x.SourceItemId.Equals(itemId) || x.TargetItemId.Equals(itemId)).ToList();
+                var offer = db.Offers.Where(x =>
+                (x.SourceStatus == OfferStatus.Initiated && x.TargetStatus == OfferStatus.Initiated)
+                && (x.SourceItemId.Equals(itemId) || x.TargetItemId.Equals(itemId))
+                ).ToList();
+
                 var filteredItemsWithoutOffers = filteredItems
                         .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id || offerItem.SourceItemId == item.Id))
                         .ToList();
