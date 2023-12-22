@@ -34,13 +34,22 @@ namespace API.GraphQL
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IMessageRepository messageRepository)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
+            try
+            {
+                var claimsPrinciple = httpContextAccessor.HttpContext.User;
+                var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+                if (!user.Id.HasValue) throw new ApiException("Fatal.");
 
-            if (user == null) throw new ApiException("Not logged in");
+                if (user == null) throw new ApiException("Not logged in");
 
-            return Message.FromDomain(await messageRepository.GetChat((Guid)user.Id));
+                var chats = Message.FromDomain(await messageRepository.GetChat((Guid)user.Id));
+
+                return chats;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Api Exception {ex.Message}");
+            }
         }
 
         [Authorize]

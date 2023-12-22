@@ -41,92 +41,100 @@ namespace Infrastructure.Offers
 
         public async Task<List<Domain.Offers.Message>> GetChat(Guid userId)
         {
-            var myItems = await db.Items
+            try
+            {
+                var myItems = await db.Items
                    .Where(z => z.CreatedByUserId == userId)
                    .Select(z => z.Id)
                    .ToArrayAsync();
-            var offers = await db.Offers
-                    .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
-                    .Where(z => z.SourceStatus == z.TargetStatus)
-                    .ToListAsync();
-            _loggerManager.LogError($"offers: {offers.Count}");
-            // Offer IDs with messages
-            var lastMessages = await db.Messages
-                    .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
-                    .GroupBy(message => message.OfferId)
-                    .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
-                    .ToListAsync();
-            _loggerManager.LogError($"lastMessages: {lastMessages.Count}");
-            // Offer IDs without any messages
-            var offerIdsWithNoMessages = offers
-                .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
-                .Select(offer => offer.Id)
-                .ToList();
-            _loggerManager.LogError($"offerIdsWithNoMessages: {offerIdsWithNoMessages.Count}");
-            // Offer without any messages
-            var offersWithNoMessages = offers
-                .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
-                .ToList();
-            _loggerManager.LogWarn($"offersWithNoMessages: {offersWithNoMessages.Count}");
-            var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
+                var offers = await db.Offers
+                        .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
+                        .Where(z => z.SourceStatus == z.TargetStatus)
+                        .ToListAsync();
+                _loggerManager.LogError($"offers: {offers.Count}");
+                // Offer IDs with messages
+                var lastMessages = await db.Messages
+                        .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
+                        .GroupBy(message => message.OfferId)
+                        .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
+                        .ToListAsync();
+                _loggerManager.LogError($"lastMessages: {lastMessages.Count}");
+                // Offer IDs without any messages
+                var offerIdsWithNoMessages = offers
+                    .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
+                    .Select(offer => offer.Id)
+                    .ToList();
+                _loggerManager.LogError($"offerIdsWithNoMessages: {offerIdsWithNoMessages.Count}");
+                // Offer without any messages
+                var offersWithNoMessages = offers
+                    .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
+                    .ToList();
+                _loggerManager.LogWarn($"offersWithNoMessages: {offersWithNoMessages.Count}");
+                var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
 
-            var items = await db.Items
-                .Where(item => itemIds.Contains(item.Id))
-                .ToListAsync();
+                var items = await db.Items
+                    .Where(item => itemIds.Contains(item.Id))
+                    .ToListAsync();
 
-            var UsersIds = items
-                .Where(i => i.CreatedByUserId != userId)
-                .Select(i => i.CreatedByUserId)
-                .ToList();
-            _loggerManager.LogError($"UsersIds: {UsersIds.Count}");
-            // Create dummy messages for offerIds without associated messages
-            string message = "";
-            var dummyMessages = new List<Domain.Offers.Message>();
-            foreach (var offerId in offerIdsWithNoMessages)
-            {
-                foreach (var user in UsersIds)
+                var UsersIds = items
+                    .Where(i => i.CreatedByUserId != userId)
+                    .Select(i => i.CreatedByUserId)
+                    .ToList();
+                _loggerManager.LogError($"UsersIds: {UsersIds.Count}");
+                // Create dummy messages for offerIds without associated messages
+                string message = "";
+                var dummyMessages = new List<Domain.Offers.Message>();
+                foreach (var offerId in offerIdsWithNoMessages)
                 {
-                    var newDummyMessage = new Domain.Offers.Message(
-                        Guid.NewGuid(),
-                        user,
-                        offerId,
-                        userId,
-                        message,
-                        null,
-                        null,
-                        false
-                    );
-                    dummyMessages.Add(newDummyMessage);
+                    foreach (var user in UsersIds)
+                    {
+                        var newDummyMessage = new Domain.Offers.Message(
+                            Guid.NewGuid(),
+                            user,
+                            offerId,
+                            userId,
+                            message,
+                            null,
+                            null,
+                            false
+                        );
+                        dummyMessages.Add(newDummyMessage);
+                    }
                 }
-            }
 
 
-            // Merge lastMessages and dummyMessages
-            var mergedMessages = lastMessages
-                .Select(message => new Domain.Offers.Message(
-                    message.Id,
-                    message.CreatedByUserId,
-                    message.OfferId,
-                    message.UserId= userId,
-                    message.MessageText,
-                    message.MessageReadAt,
-                    message.CreatedAt,
-                    message.IsRead
-                ))
-                .Concat(dummyMessages
+                // Merge lastMessages and dummyMessages
+                var mergedMessages = lastMessages
                     .Select(message => new Domain.Offers.Message(
                         message.Id,
                         message.CreatedByUserId,
                         message.OfferId,
-                        message.UserId= userId,
+                        message.UserId = userId,
                         message.MessageText,
                         message.MessageReadAt,
                         message.CreatedAt,
                         message.IsRead
                     ))
-                )
-                .ToList();
-            return mergedMessages;
+                    .Concat(dummyMessages
+                        .Select(message => new Domain.Offers.Message(
+                            message.Id,
+                            message.CreatedByUserId,
+                            message.OfferId,
+                            message.UserId = userId,
+                            message.MessageText,
+                            message.MessageReadAt,
+                            message.CreatedAt,
+                            message.IsRead
+                        ))
+                    )
+                    .ToList();
+                _loggerManager.LogError($"mergedMessages: {mergedMessages.Count}");
+                return mergedMessages;
+            }
+            catch( Exception ex )
+            {
+                throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
+            }
         }
 
         public async Task<int> GetChatCount(Guid userId)
