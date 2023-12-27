@@ -16,7 +16,11 @@ namespace Infrastructure.Email
         // This is used for SMPT4DEV
         public string? SMTP_UI_PORT { get; set; }
 
-        public string SMTP_FROM_SUPPORT_ADDRESS { get; set; } = null!;
+        public string SMTP_ITEM_SUPPORT_ADDRESS { get; set; } = null!;
+
+        public string SMTP_USER_SUPPORT_ADDRESS { get; set; } = null!;
+
+        public string SMTP_CONTACT_ADDRESS { get; set; } = null!;
 
         [Required]
         public string EMAIL_API_KEY { get; set; } = null!;
