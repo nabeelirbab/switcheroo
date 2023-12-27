@@ -32,13 +32,19 @@ namespace API.GraphQL.Models
         public int SourceStatus { get; set; }
         public int? TargeteStatus { get; set; }
 
-        [GraphQLNonNullType]
-        public async Task<Item> GetSourceItem(
+        public async Task<Item?> GetSourceItem(
             [Service] IItemRepository itemRepository
         )
         {
-            var retVal = await itemRepository.GetItemByItemId(SourceItemId);
-            return Item.FromDomain(retVal);
+            if (Cash == null)
+            {
+                var retVal = await itemRepository.GetItemByItemId(SourceItemId);
+                return Item.FromDomain(retVal);
+            }
+            else
+            {
+                return null;
+            }
         }
         
         [GraphQLNonNullType]
