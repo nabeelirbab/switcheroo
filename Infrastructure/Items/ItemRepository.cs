@@ -315,7 +315,7 @@ namespace Infrastructure.Items
                         .Select(dbCat => new ItemCategory(existingDbItem.Id, dbCat.Id)));
                     if (!string.IsNullOrEmpty(item.MainImageUrl))
                     {
-                        if (item.MainImageUrl.Contains("switcheroofiles.s3.eu-north-1.amazonaws.com"))
+                        if (!item.MainImageUrl.Contains("switcheroofiles.s3.eu-north-1.amazonaws.com"))
                         {
 
                             string? base64 = item.MainImageUrl?.Split(',').LastOrDefault();
@@ -325,7 +325,7 @@ namespace Infrastructure.Items
                         }
                         else
                         {
-                            existingDbItem.MainImageUrl = item.ImageUrls[0];
+                            existingDbItem.MainImageUrl = item.MainImageUrl;
 
                         }
                     }
@@ -335,7 +335,7 @@ namespace Infrastructure.Items
                     List<string> s3Urls = new List<string>();
                     foreach (string base64String in imagesBase64)
                     {
-                        if (base64String.Contains("switcheroofiles.s3.eu-north-1.amazonaws.com"))
+                        if (!base64String.Contains("switcheroofiles.s3.eu-north-1.amazonaws.com"))
                         {
                             s3Urls.Add(base64String);
                         }
