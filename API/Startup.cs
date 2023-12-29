@@ -39,6 +39,8 @@ using Google.Apis.Auth.OAuth2;
 using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 using Path = System.IO.Path;
 using Infrastructure.Complaints;
+using Domain.ContactUs;
+using Infrastructure.ContactUs;
 
 namespace API
 {
@@ -103,6 +105,7 @@ namespace API
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IMessageRepository, MessageRepository>();
             services.AddTransient<IComplaintRepository, ComplaintRepositoy>();
+            services.AddTransient<IContactUsRepository, ContactUsRepositoy>();
         }
 
         private void AddUserManagement(IServiceCollection services)

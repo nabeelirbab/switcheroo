@@ -57,12 +57,18 @@ namespace API.GraphQL.Models
                 .ToList();
         }
 
-        [GraphQLNonNullType]
         public async Task<List<Items.Models.Item>> GetSourceItem(
             [Service] IItemRepository itemRepository
-        )
+)
         {
-            return (await itemRepository.GetSourceItem(OfferId, UserId))
+            var domainItems = await itemRepository.GetSourceItem(OfferId, UserId);
+
+            if (domainItems == null)
+            {
+                return new List<Items.Models.Item>();
+            }
+
+            return domainItems
                 .Select(Items.Models.Item.FromDomain)
                 .ToList();
         }

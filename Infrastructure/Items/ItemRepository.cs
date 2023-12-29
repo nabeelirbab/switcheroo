@@ -51,7 +51,7 @@ namespace Infrastructure.Items
             var existing = await db.DismissedItem
                 .SingleOrDefaultAsync(x => x.SourceItemId == item.SourceItemId && x.TargetItemId == item.TargetItemId);
 
-            if (existing == null) return false;
+            if (existing != null) return false;
 
             if (!item.CreatedByUserId.HasValue)
                 throw new InfrastructureException("No createdByUserId provided");
@@ -257,8 +257,14 @@ namespace Infrastructure.Items
                     .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
-
-                return items;
+                if (items.Any(item => !item.IsSwapOnly))
+                {
+                    return null;
+                }
+                else
+                {
+                    return items;
+                }
             }
             catch (Exception ex)
             {
@@ -473,11 +479,11 @@ namespace Infrastructure.Items
                 // remove already created offer against this item
                 var offer = db.Offers.Where(x =>
                 (x.SourceStatus == OfferStatus.Initiated && x.TargetStatus == OfferStatus.Initiated)
-                && (x.SourceItemId.Equals(itemId) || x.TargetItemId.Equals(itemId))
+                || (x.SourceItemId.Equals(itemId))
                 ).ToList();
 
                 var filteredItemsWithoutOffers = filteredItems
-                        .Where(item => !offer.Any(offerItem => offerItem.TargetItemId == item.Id || offerItem.SourceItemId == item.Id))
+                       .Where(item => !offer.Any(offerItem => offerItem.SourceItemId == itemId))
                         .ToList();
                 if (filteredItems.Count == 0)
                 {
