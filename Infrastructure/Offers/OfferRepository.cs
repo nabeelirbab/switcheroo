@@ -278,13 +278,13 @@ namespace Infrastructure.Offers
             {
                 // Step 1: Retrieve myItems
                 var myItems = await db.Items
-                   .Where(z => z.CreatedByUserId == userId)
+                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == true)
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
-                    .Where(z => myItems.Contains(z.SourceItemId))
+                    .Where(z => myItems.Contains(z.SourceItemId) && z.Cash != null)
                     .Select(offer => new Offer(
                     offer.Id,
                     offer.SourceItemId,
@@ -313,13 +313,13 @@ namespace Infrastructure.Offers
             {
                 // Step 1: Retrieve myItems
                 var myItems = await db.Items
-                   .Where(z => z.CreatedByUserId == userId)
+                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == true)
                    .Select(z => z.Id)
                    .ToArrayAsync();
 
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
-                    .Where(z => myItems.Contains(z.TargetItemId))
+                    .Where(z => myItems.Contains(z.TargetItemId) && z.Cash != null)
                     .Select(offer => new Offer(
                     offer.Id,
                     offer.SourceItemId,
