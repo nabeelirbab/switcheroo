@@ -127,6 +127,8 @@ namespace Infrastructure.Offers
                             message.IsRead
                         ))
                     )
+                    .GroupBy(message => message.OfferId)
+                    .Select(group => group.First())
                     .ToList();
                 _loggerManager.LogError($"mergedMessages: {mergedMessages.Count}");
                 return mergedMessages;
