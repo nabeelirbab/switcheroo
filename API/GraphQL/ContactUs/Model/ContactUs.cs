@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace API.GraphQL.ContactUs.Model
 {
@@ -45,6 +47,23 @@ namespace API.GraphQL.ContactUs.Model
                 domcontactus.CreatedByUserId.Value,
                 domcontactus.UpdatedByUserId.Value
                 );
+        }
+        public static List<ContactUs> FromDomains(List<Domain.ContactUs.ContactUs> domcontactus)
+        {
+            if (domcontactus == null || domcontactus.Count == 0)
+            {
+                // Handle the case where there are no messages if needed.
+                return new List<ContactUs>();
+            }
+            return domcontactus.Select(newContactUs => new ContactUs(
+                newContactUs.Id,
+                newContactUs.Title,
+                newContactUs.Description,
+                newContactUs.Name,
+                newContactUs.Email,
+                newContactUs.CreatedByUserId,
+                newContactUs.UpdatedByUserId))
+                .ToList();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Domain.ContactUs;
+using Domain.Services;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -12,6 +13,11 @@ namespace Infrastructure.ContactUs
     public class ContactUsRepositoy : IContactUsRepository
     {
         private readonly SwitcherooContext db;
+        public ContactUsRepositoy(SwitcherooContext db)
+        {
+            this.db = db;
+        }
+
         public async Task<Domain.ContactUs.ContactUs> CreateContactUsAsync(Domain.ContactUs.ContactUs contactUs)
         {
             try
