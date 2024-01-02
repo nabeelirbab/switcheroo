@@ -343,16 +343,16 @@ namespace Infrastructure.Items
                     {
                         if (!base64String.Contains("switcheroofiles.s3.eu-north-1.amazonaws.com"))
                         {
-                            s3Urls.Add(base64String);
-                        }
-                        else
-                        {
                             // Upload ImageUrls to S3
                             string? base64 = base64String?.Split(',').LastOrDefault();
                             base64 = base64.Trim();
                             byte[] imageBytes = Convert.FromBase64String(base64);
                             string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
                             s3Urls.Add(uploadedImageUrl);
+                        }
+                        else
+                        {
+                            s3Urls.Add(base64String);
                         }
 
                     }
