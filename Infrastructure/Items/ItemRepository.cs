@@ -244,7 +244,14 @@ namespace Infrastructure.Items
         {
             try
             {
-                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                var offer = db.Offers.Where(x=>x.Id == offerId).FirstOrDefault();
+                if(offer.Cash == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
                 {
                     SourceItemId = o.SourceItemId,
                     TargetItemId = o.TargetItemId
@@ -257,12 +264,7 @@ namespace Infrastructure.Items
                     .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
-                if (items.Any(item => !item.IsSwapOnly))
-                {
-                    return null;
-                }
-                else
-                {
+                
                     return items;
                 }
             }
