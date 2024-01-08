@@ -395,10 +395,9 @@ namespace Infrastructure.UserManagement
                 }
                 else
                 {
-                    var userFCMToken = "c3H8xXLpSw-k1AgUdS2uqk:APA91bEP_NuFk4xXw7BwLW-I43ymlFyPRBWmlU5qJbQIQGFhTWeanVU7YzrdtdGmfWTlxW1BoFyUlveBo45nBR1aEGAl6fhdDnPEqnpPZRLZJAoa2UlIbEWNcAOcWGTnCN6ENzd-Vs35";
-                      /*  db.Users
+                    var userFCMToken =   db.Users
                     .Where(x => x.Id == id)
-                    .Select(x => x.FCMToken).FirstOrDefault();*/
+                    .Select(x => x.FCMToken).FirstOrDefault();
 
                     if (!string.IsNullOrEmpty(userFCMToken))
                     {

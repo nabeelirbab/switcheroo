@@ -43,6 +43,7 @@ namespace Infrastructure.Offers
         {
             try
             {
+                var now = DateTime.Now;
                 var myItems = await db.Items
                    .Where(z => z.CreatedByUserId == userId)
                    .Select(z => z.Id)
@@ -131,6 +132,13 @@ namespace Infrastructure.Offers
                     .Select(group => group.First())
                     .ToList();
                 _loggerManager.LogError($"mergedMessages: {mergedMessages.Count}");
+                foreach (var readeMessage in mergedMessages.Where(m => m.CreatedByUserId == userId))
+                {
+                    if (readeMessage.MessageReadAt == null)
+                    {
+                        readeMessage.MessageReadAt = now;
+                    }
+                }
                 return mergedMessages;
             }
             catch( Exception ex )

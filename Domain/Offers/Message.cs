@@ -31,7 +31,7 @@ namespace Domain.Offers
         [Required]
         public Guid CreatedByUserId { get; private set; }
         
-        public DateTime? MessageReadAt { get; private set; }
+        public DateTime? MessageReadAt { get; set; }
         public DateTimeOffset? CreatedAt { get; set; }
 
         public bool? IsRead { get; set; }
