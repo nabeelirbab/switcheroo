@@ -60,6 +60,10 @@ namespace Infrastructure.Offers
                                 Title = "Product Matched",
                                 Body = "One of your product is matched"
                                 // Other notification parameters can be added here
+                            },
+                            Data = new Dictionary<string, string>
+                            {
+                                {"IsMatch","true" }
                             }
                         };
                         string response = await messaging.SendAsync(message);
