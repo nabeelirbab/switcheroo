@@ -475,22 +475,37 @@ namespace Infrastructure.Items
                 {
                     throw new InfrastructureException($"no filteredItems found in this distance against this filter");
                 }
+                //get created offers created by this item
+                var createdOffers = db.Offers.Where(x => x.SourceItemId == itemId && x.TargetStatus==0).Select(offer => offer.TargetItemId).ToList();
 
-                // remove already created offer against this item
-                var offer = db.Offers.Where(x =>
-                (x.SourceStatus == OfferStatus.Initiated && x.TargetStatus == OfferStatus.Initiated)
-                || (x.SourceItemId.Equals(itemId))
-                ).ToList();
+                if (createdOffers.Count != 0)
+                {
+                    filteredItems = filteredItems
+                       .Where(item => !createdOffers.Contains(item.Id)).ToList();
+                }
 
-                var filteredItemsWithoutOffers = filteredItems
-                       .Where(item => !offer.Any(offerItem => offerItem.SourceItemId == itemId))
-                        .ToList();
+                //get initiated offers created by this item
+                var initiatedOffers = db.Offers.Where(x => x.SourceItemId == itemId && x.TargetStatus == OfferStatus.Initiated).Select(offer => offer.TargetItemId).ToList();
+                if (initiatedOffers.Count != 0)
+                {
+                    filteredItems = filteredItems
+                       .Where(item => !initiatedOffers.Contains(item.Id)).ToList();
+                }
+
+                //get initiated offer for this item
+                var matchedOffers = db.Offers.Where(x => x.TargetItemId == itemId && x.TargetStatus == OfferStatus.Initiated).Select(offer => offer.SourceItemId).ToList();
+                if (matchedOffers.Count != 0)
+                {
+                    filteredItems = filteredItems
+                       .Where(item => !matchedOffers.Contains(item.Id)).ToList();
+                }
+
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"All offers are created against this items and filteres");
                 }
 
-                var itemIdsSorted = filteredItemsWithoutOffers.Select(x => x.Id).ToList();
+                var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
                 IEnumerable<Guid> requiredIds;
 
                 if (cursor != null)
