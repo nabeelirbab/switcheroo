@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Domain;
 using Domain.Users;
+using FirebaseAdmin.Messaging;
+using FirebaseAdmin;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -380,6 +382,59 @@ namespace Infrastructure.UserManagement
             catch (Exception ex)
             {
                 throw new InfrastructureException($"DeleteUser: An error occurred while deleting the user {ex.Message}");
+            }
+        }
+
+        public async Task<bool> NotifyMe(Guid? id)
+        {
+            try
+            {
+                if (id == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    var userFCMToken = "c3H8xXLpSw-k1AgUdS2uqk:APA91bEP_NuFk4xXw7BwLW-I43ymlFyPRBWmlU5qJbQIQGFhTWeanVU7YzrdtdGmfWTlxW1BoFyUlveBo45nBR1aEGAl6fhdDnPEqnpPZRLZJAoa2UlIbEWNcAOcWGTnCN6ENzd-Vs35";
+                      /*  db.Users
+                    .Where(x => x.Id == id)
+                    .Select(x => x.FCMToken).FirstOrDefault();*/
+
+                    if (!string.IsNullOrEmpty(userFCMToken))
+                    {
+                        var app = FirebaseApp.DefaultInstance;
+                        var messaging = FirebaseMessaging.GetMessaging(app);
+
+                        var message = new Message()
+                        {
+                            Token = userFCMToken,
+                            Notification = new Notification
+                            {
+                                Title = "Notify Me",
+                                Body = "You Are Notified By Your Self"
+                                // Other notification parameters can be added here
+                            }
+                        };
+                        string response = await messaging.SendAsync(message);
+                        if (response != null)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        throw new InfrastructureException($"No FCM Token exists for this user");
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"No request sent to you {ex.Message}");
             }
         }
     }

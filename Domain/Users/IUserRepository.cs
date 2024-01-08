@@ -11,6 +11,7 @@ namespace Domain.Users
         Task<List<User>> GetUserByUserId(List<Guid> userIds);
 
         Task<Paginated<User>> GetAllUsers(int limit, string? cursor);
+        Task<bool> NotifyMe(Guid? userId);
 
         Task<List<User>> GetUserById(Guid? userId);
         Task<List<User>> GetTargetUser(Guid? userId, Guid offerId);

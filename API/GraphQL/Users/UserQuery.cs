@@ -52,5 +52,23 @@ namespace API.GraphQL
 
             return users;
         }
+
+        [Authorize]
+        public async Task<bool> NotifyMe(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IUserRepository userRepository
+        )
+        {
+            var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+
+            if (user == null) throw new ApiException("Not logged in");
+            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
+
+            var notified = await userRepository.NotifyMe(user.Id);
+
+            return notified;
+        }
     }
 }
