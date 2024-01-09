@@ -549,6 +549,7 @@ namespace Infrastructure.Items
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
                 Console.WriteLine($"\nnewCursor:, {newCursor}");
                 _loggerManager.LogError($"Returning Items: {data.Count}");
+                _loggerManager.LogError("-----------------------------------------------");
                 return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
             }
             catch (Exception ex)
