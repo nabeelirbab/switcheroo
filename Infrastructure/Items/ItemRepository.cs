@@ -505,6 +505,7 @@ namespace Infrastructure.Items
                     filteredItems = filteredItems
                        .Where(item => !matchedOffers.Contains(item.Id)).ToList();
                 }
+                _loggerManager.LogError($"Item Count after offer filter calculations: {filteredItems.Count}");
 
                 if (filteredItems.Count == 0)
                 {
