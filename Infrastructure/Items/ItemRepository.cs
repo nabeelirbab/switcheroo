@@ -13,6 +13,8 @@ using System.IO;
 using Amazon.S3.Model;
 using Amazon.Runtime.Internal.Util;
 using System.Linq.Expressions;
+using Domain.Services;
+using Infrastructure.Services;
 
 namespace Infrastructure.Items
 {
@@ -20,11 +22,13 @@ namespace Infrastructure.Items
     {
         private readonly SwitcherooContext db;
         private readonly ICategoryRepository categoryRepository;
+        private readonly ILoggerManager _loggerManager;
 
-        public ItemRepository(SwitcherooContext db, ICategoryRepository categoryRepository)
+        public ItemRepository(SwitcherooContext db, ICategoryRepository categoryRepository, ILoggerManager loggerManager)
         {
             this.db = db;
             this.categoryRepository = categoryRepository;
+            _loggerManager = loggerManager;
         }
 
         public async Task<bool> ArchiveItemAsync(Guid itemId, Guid updatedByUserId)
@@ -454,7 +458,7 @@ namespace Infrastructure.Items
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new { x.Id, x.Latitude, x.Longitude })
                 .ToListAsync();
-
+                _loggerManager.LogError($"Item Count before distance calculations: {filteredItems.Count}");
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"No Item found against this price range");
@@ -472,7 +476,7 @@ namespace Infrastructure.Items
                         (bool)inMiles));
 
                 }
-
+                _loggerManager.LogError($"Item Count after distance calculations: {filteredItems.Count}");
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"no filteredItems found in this distance against this filter");
