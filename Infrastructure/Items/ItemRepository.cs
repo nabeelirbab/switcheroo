@@ -458,7 +458,7 @@ namespace Infrastructure.Items
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new { x.Id, x.Latitude, x.Longitude })
                 .ToListAsync();
-                _loggerManager.LogError($"Item Count before distance calculations: {filteredItems.Count}");
+
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"No Item found against this price range");
@@ -476,7 +476,7 @@ namespace Infrastructure.Items
                         (bool)inMiles));
 
                 }
-                _loggerManager.LogError($"Item Count after distance calculations: {filteredItems.Count}");
+
                 if (filteredItems.Count == 0)
                 {
                     throw new InfrastructureException($"no filteredItems found in this distance against this filter");
@@ -505,7 +505,7 @@ namespace Infrastructure.Items
                     filteredItems = filteredItems
                        .Where(item => !matchedOffers.Contains(item.Id)).ToList();
                 }
-                _loggerManager.LogError($"Item Count after offer filter calculations: {filteredItems.Count}");
+
 
                 if (filteredItems.Count == 0)
                 {
@@ -547,9 +547,9 @@ namespace Infrastructure.Items
                     item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
                 }
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
-                Console.WriteLine($"\nnewCursor:, {newCursor}");
-                _loggerManager.LogError($"Returning Items: {data.Count}");
-                _loggerManager.LogError("-----------------------------------------------");
+
+                _loggerManager.LogWarn($"Returning Items from database: {data.Count}");
+                _loggerManager.LogWarn("-----------------------------------------------");
                 return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
             }
             catch (Exception ex)

@@ -3,15 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Domain.Items;
+using Domain.Services;
 using Domain.Users;
 using HotChocolate;
 using HotChocolate.AspNetCore.Authorization;
+using Infrastructure.Database;
 using Microsoft.AspNetCore.Http;
 
 namespace API.GraphQL
 {
+
     public partial class Query
     {
+        private readonly ILoggerManager _loggerManager;
+
+        public Query(ILoggerManager loggerManager)
+        {
+            _loggerManager = loggerManager;
+        }
         [Authorize]
         public async Task<Items.Models.Item> GetItem(
             [Service] IItemRepository itemRepository,
@@ -48,7 +57,7 @@ namespace API.GraphQL
             if (amount.HasValue)
             {
                 var paginatedItemsResult = await itemRepository.GetItems(user.Id.Value, itemId, amount, categories, limit, cursor, latitude, longitude, distance, inMiles);
-
+                _loggerManager.LogWarn($"API return Items Result to frontend: {paginatedItemsResult.Data.Count}");
                 return new Paginated<Items.Models.Item>(
                     paginatedItemsResult.Data
                         .Select(Items.Models.Item.FromDomain)
@@ -60,7 +69,7 @@ namespace API.GraphQL
             else
             {
                 var paginatedItems = await itemRepository.GetAllItems(user.Id.Value, limit, cursor);
-
+                _loggerManager.LogError($"paginatedItems: {paginatedItems.Data.Count}");
                 return new Paginated<Items.Models.Item>(
                     paginatedItems.Data
                         .Select(Items.Models.Item.FromDomain)
