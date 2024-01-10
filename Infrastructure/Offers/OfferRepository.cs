@@ -120,6 +120,14 @@ namespace Infrastructure.Offers
                                         }
                                     };
                                     string response = await messaging.SendAsync(message);
+                                    /*try
+                                    {
+                                        
+                                    }
+                                    catch (FirebaseMessagingException ex)
+                                    {
+                                        _loggerManager.LogError($"Invalid FCM token: {ex.Message}");
+                                    }*/
                                 }
                                 else
                                 {

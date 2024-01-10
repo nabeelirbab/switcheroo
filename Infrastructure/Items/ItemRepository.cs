@@ -249,7 +249,7 @@ namespace Infrastructure.Items
             try
             {
                 var offer = db.Offers.Where(x=>x.Id == offerId).FirstOrDefault();
-                if(offer.Cash == null)
+                if(offer.Cash != null)
                 {
                     return null;
                 }
