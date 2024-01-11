@@ -47,7 +47,6 @@ namespace API.GraphQL.Models
                 .ToList();
         }
 
-        [GraphQLNonNullType]
         public async Task<List<Items.Models.Item>> GetTargetItem(
             [Service] IItemRepository itemRepository
         )
