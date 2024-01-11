@@ -34,7 +34,7 @@ namespace Infrastructure.Offers
 
             var msg = messages
                 .OrderByDescending(_messageOrderingExpression)
-                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.CreatedByUserId, message.MessageText, message.MessageReadAt, message.CreatedAt, message.IsRead))
+                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId,message.Cash, message.CreatedByUserId, message.MessageText, message.MessageReadAt, message.CreatedAt, message.IsRead))
                 .ToList();
             return msg;
         }
@@ -87,12 +87,14 @@ namespace Infrastructure.Offers
                 var dummyMessages = new List<Domain.Offers.Message>();
                 foreach (var offerId in offerIdsWithNoMessages)
                 {
+                    var cash = db.Offers.Where(x=>x.Id==offerId).Select(x=>x.Cash).FirstOrDefault();
                     foreach (var user in UsersIds)
                     {
                         var newDummyMessage = new Domain.Offers.Message(
                             Guid.NewGuid(),
                             user,
                             offerId,
+                            cash,
                             userId,
                             message,
                             null,
@@ -110,6 +112,7 @@ namespace Infrastructure.Offers
                         message.Id,
                         message.CreatedByUserId,
                         message.OfferId,
+                        message.Cash,
                         message.UserId = userId,
                         message.MessageText,
                         message.MessageReadAt,
@@ -121,6 +124,7 @@ namespace Infrastructure.Offers
                             message.Id,
                             message.CreatedByUserId,
                             message.OfferId,
+                            message.Cash,
                             message.UserId = userId,
                             message.MessageText,
                             message.MessageReadAt,
@@ -202,7 +206,7 @@ namespace Infrastructure.Offers
             var dbMessage = await db.Messages
                 .SingleOrDefaultAsync(z => z.Id == messageId);
 
-            return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId, dbMessage.CreatedByUserId, dbMessage.MessageText,
+            return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId,dbMessage.Cash, dbMessage.CreatedByUserId, dbMessage.MessageText,
                 dbMessage.MessageReadAt, dbMessage.CreatedAt, dbMessage.IsRead);
         }
 

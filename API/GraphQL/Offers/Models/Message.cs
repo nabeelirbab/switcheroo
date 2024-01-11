@@ -12,10 +12,11 @@ namespace API.GraphQL.Models
 {
     public class Message
     {
-        public Message(Guid id, Guid createdByUserId, Guid offerId, Guid? userId, string messageText, DateTime? messageReadAt, DateTimeOffset? createdAt)
+        public Message(Guid id, Guid createdByUserId, Guid offerId, int? cash, Guid? userId, string messageText, DateTime? messageReadAt, DateTimeOffset? createdAt)
         {
             Id = id;
             OfferId = offerId;
+            Cash = cash;
             UserId = userId;
             CreatedByUserId = createdByUserId;
             MessageText = messageText;
@@ -26,6 +27,8 @@ namespace API.GraphQL.Models
         public Guid Id { get; private set; }
 
         public Guid OfferId { get; private set; }
+        public int? Cash { get; private set; }
+
 
         public Guid? UserId { get; set; }
 
@@ -83,7 +86,7 @@ namespace API.GraphQL.Models
         public static Message FromDomain(Domain.Offers.Message domMessage) {
             if (!domMessage.Id.HasValue) throw new ApiException("Mapping error. Invalid message");
 
-            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId, domMessage.UserId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt);
+            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId,domMessage.Cash, domMessage.UserId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt);
         }
 
         public static List<Message> FromDomain(List<Domain.Offers.Message> domMessages)
@@ -98,6 +101,7 @@ namespace API.GraphQL.Models
                 domMessage.Id.Value,
                 domMessage.CreatedByUserId,
                 domMessage.OfferId,
+                domMessage.Cash,
                 domMessage.UserId,
                 domMessage.MessageText,
                 domMessage.MessageReadAt,

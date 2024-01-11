@@ -31,6 +31,7 @@ namespace API.GraphQL
                 var newDomainMessage = await messageRepository.CreateMessageAsync(
                     Domain.Offers.Message.CreateMessage(
                         message.OfferId,
+                        message.Cash,
                         user.Id.Value,
                         user.Id.Value,
                         message.MessageText

@@ -5,11 +5,12 @@ namespace Domain.Offers
 {
     public class Message
     {
-        public Message(Guid? id, Guid createdByUserId, Guid offerId, Guid? userId, string messageText, DateTime? messageReadAt, DateTimeOffset? createdAt, bool? isRead)
+        public Message(Guid? id, Guid createdByUserId, Guid offerId, int? cash, Guid? userId, string messageText, DateTime? messageReadAt, DateTimeOffset? createdAt, bool? isRead)
         {
             Id = id;
             CreatedByUserId = createdByUserId;
             OfferId = offerId;
+            Cash = cash;
             UserId = userId;
             MessageText = messageText;
             MessageReadAt = messageReadAt;
@@ -22,6 +23,8 @@ namespace Domain.Offers
 
         [Required]
         public Guid OfferId { get; private set; }
+        public int? Cash { get; private set; }
+
 
         public Guid? UserId { get; set; }
 
@@ -38,6 +41,7 @@ namespace Domain.Offers
 
         public static Message CreateMessage(
             Guid offerId,
+            int? cash,
             Guid? userId,
             Guid currentUserId,
             string messageText
@@ -47,6 +51,7 @@ namespace Domain.Offers
                 null,
                 currentUserId,
                 offerId,
+                cash,
                 userId,
                 messageText,
                 null,
