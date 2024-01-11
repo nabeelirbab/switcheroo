@@ -15,6 +15,7 @@ using Amazon.Runtime.Internal.Util;
 using System.Linq.Expressions;
 using Domain.Services;
 using Infrastructure.Services;
+using Domain.Offers;
 
 namespace Infrastructure.Items
 {
@@ -203,7 +204,15 @@ namespace Infrastructure.Items
         {
             try
             {
-                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                var offer = db.Offers.Where(x => x.Id == offerId).FirstOrDefault();
+
+                if (offer.Cash != null)
+                {
+                    return null;
+                }
+                else
+                {
+                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
                 {
                     SourceItemId = o.SourceItemId,
                     TargetItemId = o.TargetItemId
@@ -218,6 +227,7 @@ namespace Infrastructure.Items
                     .ToListAsync();
 
                 return items;
+                }
             }
             catch (Exception ex)
             {
@@ -249,26 +259,38 @@ namespace Infrastructure.Items
             try
             {
                 var offer = db.Offers.Where(x=>x.Id == offerId).FirstOrDefault();
-                if(offer.Cash != null)
+                if (offer.Cash != null)
                 {
-                    return null;
+                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                    {
+                        SourceItemId = o.SourceItemId
+                    }).FirstOrDefault();
+
+                    var sourceItemId = itemIds.SourceItemId;
+
+                    var items = await db.Items
+                        .Where(item => (item.Id == sourceItemId) && item.CreatedByUserId == userId)
+                        .Select(Database.Schema.Item.ToDomain)
+                        .ToListAsync();
+
+                    return items;
                 }
                 else
                 {
                     var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
-                {
-                    SourceItemId = o.SourceItemId,
-                    TargetItemId = o.TargetItemId
-                }).FirstOrDefault();
+                    {
+                        SourceItemId = o.SourceItemId,
+                        TargetItemId = o.TargetItemId
+                    }).FirstOrDefault();
 
-                var sourceItemId = itemIds.SourceItemId;
-                var targetItemId = itemIds.TargetItemId;
+                    var sourceItemId = itemIds.SourceItemId;
+                    var targetItemId = itemIds.TargetItemId;
 
-                var items = await db.Items
-                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
-                    .Select(Database.Schema.Item.ToDomain)
-                    .ToListAsync();
-                
+                    var items = await db.Items
+                        .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
+                        .Select(Database.Schema.Item.ToDomain)
+                        .ToListAsync();
+
                     return items;
                 }
             }
