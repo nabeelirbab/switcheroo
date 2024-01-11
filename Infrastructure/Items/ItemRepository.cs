@@ -205,60 +205,6 @@ namespace Infrastructure.Items
             try
             {
                 var offer = db.Offers.Where(x => x.Id == offerId).FirstOrDefault();
-
-                if (offer.Cash != null)
-                {
-                    return null;
-                }
-                else
-                {
-                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
-                {
-                    SourceItemId = o.SourceItemId,
-                    TargetItemId = o.TargetItemId
-                }).FirstOrDefault();
-
-                var sourceItemId = itemIds.SourceItemId;
-                var targetItemId = itemIds.TargetItemId;
-
-                var items = await db.Items
-                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
-                    .Select(Database.Schema.Item.ToDomain)
-                    .ToListAsync();
-
-                return items;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new InfrastructureException($"Exception {ex.Message}");
-            }
-        }
-
-        public async Task<List<Domain.Items.Item>> GetTargetItemById(Guid? itemId)
-        {
-            try
-            {
-                
-                var items = await db.Items
-                    .Where(item => item.Id == itemId)
-                    .Select(Database.Schema.Item.ToDomain)
-                    .ToListAsync();
-
-                return items;
-            }
-            catch (Exception ex)
-            {
-                throw new InfrastructureException($"Exception {ex.Message}");
-            }
-        }
-
-
-        public async Task<List<Domain.Items.Item>> GetSourceItem(Guid offerId, Guid? userId)
-        {
-            try
-            {
-                var offer = db.Offers.Where(x=>x.Id == offerId).FirstOrDefault();
                 if (offer.Cash != null)
                 {
                     var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
@@ -279,6 +225,61 @@ namespace Infrastructure.Items
                 }
                 else
                 {
+
+                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                    {
+                        SourceItemId = o.SourceItemId,
+                        TargetItemId = o.TargetItemId
+                    }).FirstOrDefault();
+
+                    var sourceItemId = itemIds.SourceItemId;
+                    var targetItemId = itemIds.TargetItemId;
+
+                    var items = await db.Items
+                        .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
+                        .Select(Database.Schema.Item.ToDomain)
+                        .ToListAsync();
+
+                    return items;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
+        public async Task<List<Domain.Items.Item>> GetTargetItemById(Guid? itemId)
+        {
+            try
+            {
+
+                var items = await db.Items
+                    .Where(item => item.Id == itemId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                return items;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
+
+        public async Task<List<Domain.Items.Item>> GetSourceItem(Guid offerId, Guid? userId)
+        {
+            try
+            {
+                var offer = db.Offers.Where(x => x.Id == offerId).FirstOrDefault();
+                if (offer.Cash != null)
+                {
+                    return null;
+                }
+                else
+                {
+
                     var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
                     {
                         SourceItemId = o.SourceItemId,
@@ -331,7 +332,7 @@ namespace Infrastructure.Items
                 {
                     throw new InfrastructureException($"Item not found {item.Id}");
                 }
-                if(item.Equals(null))
+                if (item.Equals(null))
                 {
                     throw new InfrastructureException($"Item price not be null");
                 }
@@ -460,7 +461,7 @@ namespace Infrastructure.Items
                      // If there is an amount it must be within the range of the item in question
                       (amount == null || x.AskingPrice >= lowerAmountLimit && x.AskingPrice <= upperAmountBound)
                      // If there are categories, they must be on this item
-                      || 
+                      ||
                      (categories == null || x.ItemCategories.Select(z => z.Category.Name).Any(y => categories.Contains(y)))
 
                      // Skip dismissed items
@@ -506,7 +507,7 @@ namespace Infrastructure.Items
                     throw new InfrastructureException($"no filteredItems found in this distance against this filter");
                 }
                 //get created offers created by this item
-                var createdOffers = db.Offers.Where(x => x.SourceItemId == itemId && x.TargetStatus==0).Select(offer => offer.TargetItemId).ToList();
+                var createdOffers = db.Offers.Where(x => x.SourceItemId == itemId && x.TargetStatus == 0).Select(offer => offer.TargetItemId).ToList();
 
                 if (createdOffers.Count != 0)
                 {
