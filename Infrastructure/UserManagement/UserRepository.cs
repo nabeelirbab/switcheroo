@@ -409,9 +409,13 @@ namespace Infrastructure.UserManagement
                             Token = userFCMToken,
                             Notification = new Notification
                             {
-                                Title = "Notify Me",
-                                Body = "You Are Notified By Your Self"
+                                Title = "Product Matched",
+                                Body = "One of your product is matched"
                                 // Other notification parameters can be added here
+                            },
+                            Data = new Dictionary<string, string>
+                            {
+                                {"IsMatch","true" }
                             }
                         };
                         string response = await messaging.SendAsync(message);
