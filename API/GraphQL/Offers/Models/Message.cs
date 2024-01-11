@@ -51,7 +51,14 @@ namespace API.GraphQL.Models
             [Service] IItemRepository itemRepository
         )
         {
-            return (await itemRepository.GetTargetItem(OfferId, UserId))
+            var domainItems = await itemRepository.GetTargetItem(OfferId, UserId);
+
+            if (domainItems == null)
+            {
+                return new List<Items.Models.Item>();
+            }
+
+            return domainItems
                 .Select(Items.Models.Item.FromDomain)
                 .ToList();
         }

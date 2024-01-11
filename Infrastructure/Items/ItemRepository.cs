@@ -271,7 +271,7 @@ namespace Infrastructure.Items
                     var targetItemId = itemIds.TargetItemId;
 
                     var items = await db.Items
-                        .Where(item => item.Id == targetItemId && item.CreatedByUserId == userId)
+                        .Where(item => item.Id == targetItemId)
                         .Select(Database.Schema.Item.ToDomain)
                         .ToListAsync();
 
