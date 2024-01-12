@@ -209,17 +209,17 @@ namespace Infrastructure.Items
                 {
                     var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
                     {
-                        //SourceItemId = o.SourceItemId,
+                        SourceItemId = o.SourceItemId,
                         TargetItemId = o.TargetItemId
                     }).FirstOrDefault();
 
-                    //var sourceItemId = itemIds.SourceItemId;
+                    var sourceItemId = itemIds.SourceItemId;
                     var targetItemId = itemIds.TargetItemId;
 
                     var items = await db.Items
-                        .Where(item => item.Id == targetItemId)
-                        .Select(Database.Schema.Item.ToDomain)
-                        .ToListAsync();
+                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
 
                     return items;
                 }
@@ -293,7 +293,6 @@ namespace Infrastructure.Items
                         .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
                         .Select(Database.Schema.Item.ToDomain)
                         .ToListAsync();
-
                     return items;
                 }
             }

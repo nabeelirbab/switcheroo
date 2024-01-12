@@ -52,25 +52,25 @@ namespace Infrastructure.Offers
                         .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
                         .Where(z => z.SourceStatus == z.TargetStatus)
                         .ToListAsync();
-                _loggerManager.LogError($"offers: {offers.Count}");
+
                 // Offer IDs with messages
                 var lastMessages = await db.Messages
                         .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
                         .GroupBy(message => message.OfferId)
                         .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
                         .ToListAsync();
-                _loggerManager.LogError($"lastMessages: {lastMessages.Count}");
+
                 // Offer IDs without any messages
                 var offerIdsWithNoMessages = offers
                     .Where(offer => !db.Messages.Any(message => message.OfferId == offer.Id))
                     .Select(offer => offer.Id)
                     .ToList();
-                _loggerManager.LogError($"offerIdsWithNoMessages: {offerIdsWithNoMessages.Count}");
+
                 // Offer without any messages
                 var offersWithNoMessages = offers
                     .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
                     .ToList();
-                _loggerManager.LogWarn($"offersWithNoMessages: {offersWithNoMessages.Count}");
+
                 var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
 
                 var items = await db.Items
@@ -81,7 +81,7 @@ namespace Infrastructure.Offers
                     .Where(i => i.CreatedByUserId != userId)
                     .Select(i => i.CreatedByUserId)
                     .ToList();
-                _loggerManager.LogError($"UsersIds: {UsersIds.Count}");
+
                 // Create dummy messages for offerIds without associated messages
                 string message = "";
                 var dummyMessages = new List<Domain.Offers.Message>();
@@ -135,7 +135,7 @@ namespace Infrastructure.Offers
                     .GroupBy(message => message.OfferId)
                     .Select(group => group.First())
                     .ToList();
-                _loggerManager.LogError($"mergedMessages: {mergedMessages.Count}");
+
                 foreach (var readeMessage in mergedMessages.Where(m => m.CreatedByUserId == userId))
                 {
                     if (readeMessage.MessageReadAt == null)
