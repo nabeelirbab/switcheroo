@@ -20,7 +20,7 @@ namespace Infrastructure.Database.Schema
 
         [Required]
         public Guid OfferId { get; private set; }
-        public int? Cash { get; private set; }
+        public int? Cash { get; set; }
 
         public Guid? UserId { get; set; }
 

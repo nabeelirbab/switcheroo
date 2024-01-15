@@ -218,6 +218,7 @@ namespace Infrastructure.Offers
             {
                 CreatedByUserId = message.CreatedByUserId,
                 CreatedAt = now,
+                Cash=message.Cash,
                 UpdatedAt = now,
                 UpdatedByUserId = message.CreatedByUserId,
                 IsRead=false
