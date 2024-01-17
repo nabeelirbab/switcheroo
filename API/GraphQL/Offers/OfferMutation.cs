@@ -66,6 +66,26 @@ namespace API.GraphQL
             
             return Offer.FromDomain(domainOffer);
         }
+        public async Task<Offer> CreateCashOffer(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IOfferRepository offerRepository,
+            Guid targetItemId,
+            int sourceStatus,
+            int? cash,
+            int? targeteStatus
+        )
+        {
+            var userCp = httpContextAccessor?.HttpContext?.User;
+            bool isRead = false;
+            if (userCp == null) throw new ApiException("Not authenticated");
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            if (!user.Id.HasValue) throw new ApiException("Database failure");
+
+            var domainOffer = await offerRepository.CreateCashOffer(Domain.Offers.Offer.CreateNewCahOffer(targetItemId, cash, user.Id.Value, sourceStatus, targeteStatus, isRead));
+
+            return Offer.FromDomain(domainOffer);
+        }
 
         public async Task<bool> DeleteOffer(
             [Service] IHttpContextAccessor httpContextAccessor,

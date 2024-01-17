@@ -48,10 +48,31 @@ namespace Infrastructure.Offers
                    .Where(z => z.CreatedByUserId == userId)
                    .Select(z => z.Id)
                    .ToArrayAsync();
-                var offers = await db.Offers
+                var simpleOffers = await db.Offers
                         .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
                         .Where(z => z.SourceStatus == z.TargetStatus)
                         .ToListAsync();
+
+                //get created cashed offer
+                var createdCashffer = await db.Offers
+                    .Where(o => o.SourceItemId == Guid.Empty && o.CreatedByUserId == userId)
+                    .Where(z => z.SourceStatus == z.TargetStatus)
+                    .ToListAsync();
+
+                //get received cashed offer
+                var receivedCashffer = await db.Offers
+                    .Where(o => myItems.Contains(o.TargetItemId))
+                    .Where(z => z.SourceStatus == z.TargetStatus)
+                    .ToListAsync();
+
+                //merge all offers
+                var offers = simpleOffers
+                    .Union(createdCashffer)
+                    .Union(receivedCashffer)
+                    .GroupBy(o => o.Id)
+                    .Select(g => g.First())
+                    .ToList();
+
 
                 // Offer IDs with messages
                 var lastMessages = await db.Messages
@@ -73,14 +94,28 @@ namespace Infrastructure.Offers
 
                 var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
 
+                var validItemIds = itemIds.Where(id => id != null && id != Guid.Empty).ToList();
+
                 var items = await db.Items
-                    .Where(item => itemIds.Contains(item.Id))
+                    .Where(item => validItemIds.Contains(item.Id))
                     .ToListAsync();
 
-                var UsersIds = items
+                // target user here userId is source User
+                var usersIds = items
                     .Where(i => i.CreatedByUserId != userId)
                     .Select(i => i.CreatedByUserId)
                     .ToList();
+
+                // get target user of cashed offer
+                var targetUserIds = offers.Select(c => c.CreatedByUserId).ToList();
+                Console.WriteLine(targetUserIds.Count);
+
+                // merge both users
+                // Merge both lists of user IDs without duplicates
+                var mergedUserIds = usersIds
+                        .Concat(targetUserIds.Except(usersIds))
+                        .ToList();
+
 
                 // Create dummy messages for offerIds without associated messages
                 string message = "";
@@ -88,7 +123,7 @@ namespace Infrastructure.Offers
                 foreach (var offerId in offerIdsWithNoMessages)
                 {
                     var cash = db.Offers.Where(x=>x.Id==offerId).Select(x=>x.Cash).FirstOrDefault();
-                    foreach (var user in UsersIds)
+                    foreach (var user in mergedUserIds)
                     {
                         var newDummyMessage = new Domain.Offers.Message(
                             Guid.NewGuid(),
