@@ -584,7 +584,7 @@ namespace Infrastructure.Items
             }
         }
 
-        /*public async Task<Paginated<Domain.Items.Item>> GetCashItems(Guid userId, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
+        public async Task<Paginated<Domain.Items.Item>> GetCashItems(Guid userId, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
         {
             try
             {
@@ -687,7 +687,7 @@ namespace Infrastructure.Items
                 throw new InfrastructureException(ex.Message);
             }
         }
-*/
+
         public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor)
         {
             var myDismissedItems = await db.DismissedItem
