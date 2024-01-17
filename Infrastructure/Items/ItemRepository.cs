@@ -310,7 +310,7 @@ namespace Infrastructure.Items
                 .Select(Database.Schema.Item.ToDomain)
                 .SingleOrDefaultAsync();
 
-            item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+            //item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
 
             if (item == null) throw new InfrastructureException($"Unable to locate item {itemId}");
 
