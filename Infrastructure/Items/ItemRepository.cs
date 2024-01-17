@@ -584,6 +584,110 @@ namespace Infrastructure.Items
             }
         }
 
+        /*public async Task<Paginated<Domain.Items.Item>> GetCashItems(Guid userId, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false)
+        {
+            try
+            {
+                Console.Clear();
+                // if any dismised item
+                var myDismissedItems = await db.DismissedItem
+                    .Where(z => z.CreatedByUserId.Equals(userId))
+                    .Select(z => z.TargetItemId)
+                    .ToListAsync();
+
+                Expression<Func<Database.Schema.Item, bool>> searchPredicate =
+                     x =>
+                     // Skip dismissed items
+                     !myDismissedItems.Contains(x.Id)
+
+                     // Skip hidden items
+                     && !x.IsHidden;
+
+                //get created offers created by this user
+                var createdOfferByUser = await db.Offers.Where(o => o.CreatedByUserId.Equals(userId)).ToListAsync();
+
+                // Order by newest created
+                var filteredItems = await db.Items
+                .AsNoTracking()
+                .Include(z => z.ItemCategories)
+                .ThenInclude(z => z.Category)
+                .Where(searchPredicate)
+                .Where(z => z.CreatedByUserId != userId)
+                .Where(z => z.IsSwapOnly == true)
+                .Where(x => !myDismissedItems.Contains(x.Id) && !x.IsHidden && x.CreatedByUserId != userId)
+                .Where(x => !createdOfferByUser.Select(o => o.TargetItemId).Contains(x.Id))
+                .OrderBy(x => x.Id)
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new { x.Id, x.Latitude, x.Longitude })
+                .ToListAsync();
+
+                if (filteredItems.Count == 0)
+                {
+                    throw new InfrastructureException($"No Item found against this price range");
+                }
+
+                // Check distance if latitude, longitude, and distance values are provided
+                if (latitude.HasValue && longitude.HasValue && distance.HasValue)
+                {
+                    filteredItems.RemoveAll(x => !IsDistanceWithinRange(
+                        (double)latitude.Value,
+                        (double)longitude.Value,
+                        (double)x.Latitude,
+                        (double)x.Longitude,
+                        (double)distance.Value,
+                        (bool)inMiles));
+
+                }
+
+                if (filteredItems.Count == 0)
+                {
+                    throw new InfrastructureException($"no filteredItems found in this distance against this filter");
+                }
+
+                var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
+                IEnumerable<Guid> requiredIds;
+
+                if (cursor != null)
+                {
+                    requiredIds = itemIdsSorted
+                    .SkipWhile(x => cursor != "" && x.ToString() != cursor)
+                    .Skip(1)
+                    .Take(limit);
+                }
+                else
+                {
+                    requiredIds = itemIdsSorted.Take(limit);
+                }
+
+                var totalCount = itemIdsSorted.Count();
+
+                var data = await db.Items
+                    .AsNoTracking()
+                    .Where(x => requiredIds.Contains(x.Id))
+                    .OrderByDescending(x => x.CreatedAt)
+                    .OrderByDescending(x => x.ItemCategories.Count())
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    throw new InfrastructureException($"No data found against");
+                }
+                foreach (var item in data)
+                {
+                    // Create a new list excluding the main image URL for each item
+                    item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+                }
+                var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
+
+                return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+*/
         public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor)
         {
             var myDismissedItems = await db.DismissedItem
