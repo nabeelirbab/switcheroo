@@ -556,10 +556,12 @@ namespace Infrastructure.Items
                 var data = await db.Items
                     .AsNoTracking()
                     .Where(x => requiredIds.Contains(x.Id))
-                    .OrderByDescending(x => x.CreatedAt)
-                    .OrderByDescending(x => x.ItemCategories.Count())
+                    .OrderBy(x => x.ItemCategories.Any(ic => categories.Contains(ic.Category.Name)) ? 0 : 1)
+                    .ThenByDescending(x => x.CreatedAt)
+                    .ThenByDescending(x => x.ItemCategories.Count())
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
+
 
                 if (data.Count == 0)
                 {
