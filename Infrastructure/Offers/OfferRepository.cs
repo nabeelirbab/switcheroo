@@ -179,105 +179,6 @@ namespace Infrastructure.Offers
             }
         }
 
-        public async Task<Offer>? CreateCashOffer(Offer offer)
-        {
-            try
-            {
-                var now = DateTime.UtcNow;
-                Offer? myoffer = null;
-
-                var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
-                           .Select(x => x.CreatedByUserId).FirstOrDefault();
-
-                var userFCMToken = db.Users
-                    .Where(x => x.Id == targetUserId)
-                    .Select(x => x.FCMToken).FirstOrDefault();
-
-
-                if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
-                    throw new InfrastructureException("No createdByUserId provided");
-
-                var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
-
-                var targetitem = db.Items.Where(i => i.Id.Equals(offer.TargetItemId)).FirstOrDefault();
-                if (targetitem.IsSwapOnly)
-                {
-                    if (offer.Cash >= 1)
-                    {
-                        // For 20% limit
-                        // var lowerAmountLimit = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)0.60);
-                        // var upperAmountBound = Decimal.Multiply((decimal)targetitem.AskingPrice, (decimal)1.40);
-
-                        // if (lowerAmountLimit < offer.Cash && offer.Cash < upperAmountBound)
-                        // {
-                        var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
-                        {
-                            CreatedByUserId = offer.CreatedByUserId.Value,
-                            UpdatedByUserId = offer.UpdatedByUserId.Value,
-                            CreatedAt = now,
-                            UpdatedAt = now,
-                            Cash = offer.Cash,
-                            SourceStatus = Database.Schema.OfferStatus.Initiated,
-                            IsRead = false
-                        };
-
-                        await db.Offers.AddAsync(newDbOffer);
-
-                        /*if (!string.IsNullOrEmpty(userFCMToken))
-                        {
-                            var app = FirebaseApp.DefaultInstance;
-                            var messaging = FirebaseMessaging.GetMessaging(app);
-
-                            var message = new FirebaseAdmin.Messaging.Message()
-                            {
-                                Token = userFCMToken,
-                                Notification = new Notification
-                                {
-                                    Title = "New Cash Offer",
-                                    Body = "You have a new cash offer"
-                                    // Other notification parameters can be added here
-                                }
-                            };
-                            string response = await messaging.SendAsync(message);
-                            *//*try
-                            {
-
-                            }
-                            catch (FirebaseMessagingException ex)
-                            {
-                                _loggerManager.LogError($"Invalid FCM token: {ex.Message}");
-                            }*//*
-                        }
-                        else
-                        {
-                            throw new InfrastructureException($"No FCM Token exist against this user");
-                        }*/
-                        await db.SaveChangesAsync();
-                        myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
-                        // }
-                        // else
-                        // {
-                        //    throw new InfrastructureException($"You can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
-                        //}
-                    }
-                    else
-                    {
-                        throw new InfrastructureException("Pleas give a valid cash offer");
-                    }
-                }
-                else
-                {
-                    throw new InfrastructureException("you cannot give cash offer to this user");
-                }
-                return myoffer;
-            }
-
-            catch (Exception ex)
-            {
-                throw new InfrastructureException($"Exception: {ex.Message}");
-            }
-        }
-
         public async Task<bool> DeleteOffer(Guid Id, Guid userId)
         {
             try
@@ -337,8 +238,11 @@ namespace Infrastructure.Offers
 
                 offer.TargetStatus = Database.Schema.OfferStatus.Initiated;
 
+                var sourceUserId = db.Items.Where(x => x.Id.Equals(offer.SourceItemId))
+                        .Select(x => x.CreatedByUserId).FirstOrDefault();
+
                 var userFCMToken = db.Users
-                    .Where(x => x.Id == offer.CreatedByUserId)
+                    .Where(x => x.Id == sourceUserId)
                     .Select(x => x.FCMToken).FirstOrDefault();
 
                 var app = FirebaseApp.DefaultInstance;
@@ -516,6 +420,11 @@ namespace Infrastructure.Offers
 
             var offer = await db.Offers
                 .SingleOrDefaultAsync(z => z.Id == offerId);
+
+            if (!myItems.Contains(offer.SourceItemId) && !myItems.Contains(offer.TargetItemId))
+            {
+                throw new SecurityException("You cant access this offer");
+            }
 
             return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead);
         }
