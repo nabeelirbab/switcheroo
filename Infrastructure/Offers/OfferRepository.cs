@@ -48,34 +48,76 @@ namespace Infrastructure.Offers
                 {
                     if ((match.Cash == null && offer.Cash == null) || (match.Cash != null && offer.Cash != null))
                     {
-                        match.TargetStatus = Database.Schema.OfferStatus.Initiated;
-                        if (!string.IsNullOrEmpty(userFCMToken))
+                        if (offer.Cash != match.Cash)
                         {
-                            var app = FirebaseApp.DefaultInstance;
-                            var messaging = FirebaseMessaging.GetMessaging(app);
-
-                            var message = new FirebaseAdmin.Messaging.Message()
+                            var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
                             {
-                                Token = userFCMToken,
-                                Notification = new Notification
-                                {
-                                    Title = "Product Matched",
-                                    Body = "One of your product is matched"
-                                    // Other notification parameters can be added here
-                                },
-                                Data = new Dictionary<string, string>
-                            {
-                                {"IsMatch","true" }
-                            }
+                                CreatedByUserId = offer.CreatedByUserId.Value,
+                                UpdatedByUserId = offer.UpdatedByUserId.Value,
+                                CreatedAt = now,
+                                UpdatedAt = now,
+                                Cash = offer.Cash,
+                                SourceStatus = Database.Schema.OfferStatus.Initiated,
+                                IsRead = false
                             };
-                            string response = await messaging.SendAsync(message);
+
+                            await db.Offers.AddAsync(newDbOffer);
+                            if (!string.IsNullOrEmpty(userFCMToken))
+                            {
+                                var app = FirebaseApp.DefaultInstance;
+                                var messaging = FirebaseMessaging.GetMessaging(app);
+
+                                var message = new FirebaseAdmin.Messaging.Message()
+                                {
+                                    Token = userFCMToken,
+                                    Notification = new Notification
+                                    {
+                                        Title = "New Cash Offer",
+                                        Body = "You have a new cash offer"
+                                        // Other notification parameters can be added here
+                                    }
+                                };
+                                string response = await messaging.SendAsync(message);
+                            }
+                            else
+                            {
+                                throw new InfrastructureException($"No FCM Token exist against this user");
+                            }
+                            await db.SaveChangesAsync();
+                            myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                            return myoffer;
                         }
                         else
                         {
-                            throw new InfrastructureException($"No FCM Token exists for this user");
+                            match.TargetStatus = Database.Schema.OfferStatus.Initiated;
+                            if (!string.IsNullOrEmpty(userFCMToken))
+                            {
+                                var app = FirebaseApp.DefaultInstance;
+                                var messaging = FirebaseMessaging.GetMessaging(app);
+
+                                var message = new FirebaseAdmin.Messaging.Message()
+                                {
+                                    Token = userFCMToken,
+                                    Notification = new Notification
+                                    {
+                                        Title = "Product Matched",
+                                        Body = "One of your product is matched"
+                                        // Other notification parameters can be added here
+                                    },
+                                    Data = new Dictionary<string, string>
+                            {
+                                {"IsMatch","true" }
+                            }
+                                };
+                                string response = await messaging.SendAsync(message);
+                            }
+                            else
+                            {
+                                throw new InfrastructureException($"No FCM Token exists for this user");
+                            }
+                            await db.SaveChangesAsync();
+                            myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
                         }
-                        await db.SaveChangesAsync();
-                        myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
                     }
                     else
                     {
@@ -141,14 +183,6 @@ namespace Infrastructure.Offers
                                         }
                                     };
                                     string response = await messaging.SendAsync(message);
-                                    /*try
-                                    {
-                                        
-                                    }
-                                    catch (FirebaseMessagingException ex)
-                                    {
-                                        _loggerManager.LogError($"Invalid FCM token: {ex.Message}");
-                                    }*/
                                 }
                                 else
                                 {
@@ -310,14 +344,14 @@ namespace Infrastructure.Offers
             try
             {
                 // Step 1: Retrieve myItems
-                var myItems = await db.Items
-                   .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == true)
-                   .Select(z => z.Id)
-                   .ToArrayAsync();
+                /* var myItems = await db.Items
+                    .Where(z => z.CreatedByUserId == userId && z.IsSwapOnly == true)
+                    .Select(z => z.Id)
+                    .ToArrayAsync();*/
 
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
-                    .Where(z => myItems.Contains(z.SourceItemId) && z.Cash != null)
+                    .Where(z => z.CreatedByUserId.Equals(userId) && z.Cash != null && z.SourceStatus != z.TargetStatus)
                     .Select(offer => new Offer(
                     offer.Id,
                     offer.SourceItemId,
@@ -365,6 +399,34 @@ namespace Infrastructure.Offers
                     (int)offer.TargetStatus,
                     offer.IsRead))
                     .ToListAsync();
+
+                /*var filteredOffers = offers.Where(offer =>
+                {
+                    // Check for reciprocal offers
+                    return offers.Any(otherOffer =>
+                       offer.SourceItemId == otherOffer.TargetItemId &&
+                       offer.TargetItemId == otherOffer.SourceItemId &&
+                       offer.Cash != otherOffer.Cash
+                    );
+                }).ToList();
+
+                // Keep only the first created offer in each reciprocal pair
+                foreach (var offer in filteredOffers)
+                {
+                    var reciprocalOffer = offers.FirstOrDefault(otherOffer =>
+                       offer.SourceItemId == otherOffer.TargetItemId &&
+                       offer.TargetItemId == otherOffer.SourceItemId &&
+                       offer.Cash != otherOffer.Cash
+                    );
+
+                    if (reciprocalOffer != null && offer.CreatedAt < reciprocalOffer.CreatedAt)
+                    {
+                        offers.Remove(reciprocalOffer);
+                    }
+                }
+
+                offers.AddRange(filteredOffers);
+                */
 
                 return offers;
             }
@@ -434,15 +496,17 @@ namespace Infrastructure.Offers
 
         public async Task<Offer> GetOfferById(Guid userId, Guid offerId)
         {
-            var myItems = await db.Items
-                .Where(z => z.CreatedByUserId == userId)
-                .Select(z => z.Id)
-                .ToArrayAsync();
-
+            /* var myItems = await db.Items
+                 .Where(z => z.CreatedByUserId == userId)
+                 .Select(z => z.Id)
+                 .ToArrayAsync();
+ */
             var offer = await db.Offers
+                .Where(o => o.Id.Equals(offerId))
+                .Where(o => o.CreatedByUserId.Equals(userId))
                 .SingleOrDefaultAsync(z => z.Id == offerId);
-
-            if (!myItems.Contains(offer.SourceItemId) && !myItems.Contains(offer.TargetItemId))
+            /*!myItems.Contains(offer.SourceItemId) || !myItems.Contains(offer.TargetItemId)*/
+            if (offer == null)
             {
                 throw new SecurityException("You cant access this offer");
             }
