@@ -46,34 +46,55 @@ namespace Infrastructure.Offers
                 var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
                 if (match != null)
                 {
-                    match.TargetStatus = Database.Schema.OfferStatus.Initiated;
-                    if (!string.IsNullOrEmpty(userFCMToken))
+                    if ((match.Cash == null && offer.Cash == null) || (match.Cash != null && offer.Cash != null))
                     {
-                        var app = FirebaseApp.DefaultInstance;
-                        var messaging = FirebaseMessaging.GetMessaging(app);
-
-                        var message = new FirebaseAdmin.Messaging.Message()
+                        match.TargetStatus = Database.Schema.OfferStatus.Initiated;
+                        if (!string.IsNullOrEmpty(userFCMToken))
                         {
-                            Token = userFCMToken,
-                            Notification = new Notification
+                            var app = FirebaseApp.DefaultInstance;
+                            var messaging = FirebaseMessaging.GetMessaging(app);
+
+                            var message = new FirebaseAdmin.Messaging.Message()
                             {
-                                Title = "Product Matched",
-                                Body = "One of your product is matched"
-                                // Other notification parameters can be added here
-                            },
-                            Data = new Dictionary<string, string>
+                                Token = userFCMToken,
+                                Notification = new Notification
+                                {
+                                    Title = "Product Matched",
+                                    Body = "One of your product is matched"
+                                    // Other notification parameters can be added here
+                                },
+                                Data = new Dictionary<string, string>
                             {
                                 {"IsMatch","true" }
                             }
-                        };
-                        string response = await messaging.SendAsync(message);
+                            };
+                            string response = await messaging.SendAsync(message);
+                        }
+                        else
+                        {
+                            throw new InfrastructureException($"No FCM Token exists for this user");
+                        }
+                        await db.SaveChangesAsync();
+                        myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
                     }
                     else
                     {
-                        throw new InfrastructureException($"No FCM Token exists for this user");
+                        var newDbOffer = new Database.Schema.Offer(offer.SourceItemId, offer.TargetItemId)
+                        {
+                            CreatedByUserId = offer.CreatedByUserId.Value,
+                            UpdatedByUserId = offer.UpdatedByUserId.Value,
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Cash = offer.Cash,
+                            SourceStatus = Database.Schema.OfferStatus.Initiated,
+                            IsRead = false
+                        };
+
+                        await db.Offers.AddAsync(newDbOffer);
+                        await db.SaveChangesAsync();
+                        myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                        return myoffer;
                     }
-                    await db.SaveChangesAsync();
-                    myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
                 }
                 else
                 {
