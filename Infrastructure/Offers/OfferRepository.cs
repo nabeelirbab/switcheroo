@@ -127,7 +127,7 @@ namespace Infrastructure.Offers
                             UpdatedByUserId = offer.UpdatedByUserId.Value,
                             CreatedAt = now,
                             UpdatedAt = now,
-                            Cash = offer.Cash,
+                            Cash = null,
                             SourceStatus = Database.Schema.OfferStatus.Initiated,
                             IsRead = false
                         };
@@ -212,6 +212,7 @@ namespace Infrastructure.Offers
                         {
                             CreatedByUserId = offer.CreatedByUserId.Value,
                             UpdatedByUserId = offer.UpdatedByUserId.Value,
+                            Cash = null,
                             CreatedAt = now,
                             UpdatedAt = now,
                             SourceStatus = Database.Schema.OfferStatus.Initiated,
