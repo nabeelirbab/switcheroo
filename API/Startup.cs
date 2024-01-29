@@ -71,7 +71,7 @@ namespace API
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowReactApp",
-                    builder => builder.WithOrigins("http://localhost:3000") // Replace with your React app URL
+                    builder => builder.WithOrigins("http://localhost:3030")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials()
