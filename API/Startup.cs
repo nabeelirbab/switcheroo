@@ -71,11 +71,11 @@ namespace API
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowReactApp",
-                    builder => builder.WithOrigins("http://localhost:3030")
+                    builder => builder.WithOrigins("http://localhost:3000")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials()
-                        .WithMethods("OPTIONS")); // Allow OPTIONS method
+                        .AllowAnyMethod()); // Allow OPTIONS method
             });
             services.AddSignalR(options =>
             {
