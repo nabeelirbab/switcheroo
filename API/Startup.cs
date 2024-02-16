@@ -71,7 +71,7 @@ namespace API
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowReactApp",
-                    builder => builder.WithOrigins("http://localhost:3000")
+                    builder => builder.WithOrigins("http://localhost:3000","http://admin.switcherooapp.com")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials()
@@ -204,7 +204,7 @@ namespace API
                 .UseRouting()
                 .UseWebSockets()
                 .UseRouting()
-                .UseCors()
+                .UseCors("AllowReactApp")
                 .UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();

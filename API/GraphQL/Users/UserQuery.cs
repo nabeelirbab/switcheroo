@@ -27,7 +27,6 @@ namespace API.GraphQL
             return Users.Models.User.FromDomain(user);
         }
 
-        [Authorize]
         public async Task<Paginated<Users.Models.User>> GetUsers(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
@@ -36,11 +35,11 @@ namespace API.GraphQL
             string? cursor
         )
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            if (user == null) throw new ApiException("Not logged in");
-            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
+            // var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            // var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+            //
+            // if (user == null) throw new ApiException("Not logged in");
+            // if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
 
             var paginatedUser = await userRepository.GetAllUsers(limit, cursor);
 
