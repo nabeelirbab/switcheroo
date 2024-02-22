@@ -38,5 +38,7 @@ namespace Domain.Users
 
         Task<bool> DeleteUser(List<Guid> ids);
 
+        Task<bool> CheckIfUserByEmail(string email);
+
     }
 }

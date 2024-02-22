@@ -65,7 +65,7 @@ namespace Infrastructure.UserManagement
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.User.ToDomain)
                 .ToListAsync();
-            
+
             //Item count
             foreach (var user in data)
             {
@@ -120,10 +120,10 @@ namespace Infrastructure.UserManagement
 
             return user;
         }
-        
+
         public async Task<List<User>> GetUserByUserId(List<Guid> userIds)
         {
-            
+
             var users = await db.Users
                 .AsNoTracking()
                 .Where(user => userIds.Contains(user.Id))
@@ -173,7 +173,7 @@ namespace Infrastructure.UserManagement
             {
                 var users = await db.Users
                     .AsNoTracking()
-                    .Where(user => user.Id==userId)
+                    .Where(user => user.Id == userId)
                     .Select(Database.Schema.User.ToDomain)
                     .ToListAsync();
 
@@ -395,7 +395,7 @@ namespace Infrastructure.UserManagement
                 }
                 else
                 {
-                    var userFCMToken =   db.Users
+                    var userFCMToken = db.Users
                     .Where(x => x.Id == id)
                     .Select(x => x.FCMToken).FirstOrDefault();
 
@@ -439,6 +439,12 @@ namespace Infrastructure.UserManagement
             {
                 throw new InfrastructureException($"No request sent to you {ex.Message}");
             }
+        }
+        public async Task<bool> CheckIfUserByEmail(string email)
+        {
+            return await db.Users
+                           .AsNoTracking()
+                           .AnyAsync(user => user.Email == email);
         }
     }
 }

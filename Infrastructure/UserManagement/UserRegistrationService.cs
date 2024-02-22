@@ -139,12 +139,12 @@ namespace Infrastructure.UserManagement
                 .SingleOrDefaultAsync();
 
 
-            var user = await db.Users.Where(u=>u.Id.Equals(retVal.CreatedByUserId)).FirstOrDefaultAsync();
+            var user = await db.Users.Where(u => u.Id.Equals(retVal.CreatedByUserId)).FirstOrDefaultAsync();
             if (user == null) { throw new InfrastructureException("No User Found"); }
             user.EmailConfirmed = true;
             db.Users.Update(user);
             if (retVal == null) return null;
-            
+
             // Delete entry in DB
             db.UserVerificationCodes.Remove(retVal);
             await db.SaveChangesAsync();
@@ -159,7 +159,7 @@ namespace Infrastructure.UserManagement
                 .SingleOrDefaultAsync();
 
             if (retVal == null) return false;
-            
+
             // Delete entry in DB
             db.UserVerificationCodes.Remove(retVal);
             await db.SaveChangesAsync();
@@ -190,6 +190,29 @@ namespace Infrastructure.UserManagement
             }
 
             return result.Succeeded;
+        }
+
+        public string GenerateRandomPassword(int length = 12)
+        {
+            string LowerCase = "abcdefghijklmnopqrstuvwxyz";
+            string UpperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            string Digits = "0123456789";
+            string SpecialChars = "!@#$%^&*";
+            string charSet = LowerCase + UpperCase + Digits + SpecialChars;
+            var random = new Random();
+            var password = new char[length];
+
+            password[0] = LowerCase[random.Next(LowerCase.Length)];
+            password[1] = UpperCase[random.Next(UpperCase.Length)];
+            password[2] = Digits[random.Next(Digits.Length)];
+            password[3] = SpecialChars[random.Next(SpecialChars.Length)];
+
+            for (int i = 4; i < length; i++)
+            {
+                password[i] = charSet[random.Next(charSet.Length)];
+            }
+
+            return new string(password.OrderBy(s => Guid.NewGuid()).ToArray());
         }
     }
 }
