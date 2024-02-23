@@ -185,6 +185,24 @@ namespace Infrastructure.UserManagement
             }
         }
 
+        public async Task<List<KeyValue>> GetUsersGenderCount()
+        {
+            try
+            {
+                var keyValueList = await db.Users
+                                      .Where(user => user.Gender != null)
+                                      .GroupBy(user => user.Gender)
+                                      .Select(group => new KeyValue(group.Key, group.Count()))
+                                      .ToListAsync();
+
+                return keyValueList;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
         public async Task<User> UpdateUserDateOfBirth(Guid id, DateTime? dateOfBirth)
         {
             var dbUser = await db.Users.SingleOrDefaultAsync(x => x.Id == id);

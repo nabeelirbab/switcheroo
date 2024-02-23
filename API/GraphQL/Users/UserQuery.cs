@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Domain;
 using Domain.Users;
 using HotChocolate;
 using HotChocolate.AspNetCore.Authorization;
@@ -50,6 +51,24 @@ namespace API.GraphQL
                 paginatedUser.HasNextPage);
 
             return users;
+        }
+
+        [Authorize]
+        public async Task<List<KeyValue>> GetUsersGenderCount(
+            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IUserRepository userRepository
+        )
+        {
+            var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+
+            if (user == null) throw new ApiException("Not logged in");
+            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
+
+            var usersCount = await userRepository.GetUsersGenderCount();
+
+            return usersCount;
         }
 
         [Authorize]

@@ -267,6 +267,31 @@ namespace Infrastructure.Items
             }
         }
 
+        public async Task<List<KeyValue>> GetCategoriesItemCount()
+        {
+            try
+            {
+                //var data = db.ItemCategories.Join(db.Categories, itemCategory => itemCategory.CategoryId,category => category.Id,
+                //        (itemCategory, category) => new { ItemCategory = itemCategory, Categories = category })
+                //        .GroupBy(x => x.Categories.Name)
+                //        .Select(g => new KeyValue(g.Key,g.Count())
+                //        {
+                           
+                //        }).ToList();
+
+                var keyValueList = await db.ItemCategories
+                                   .GroupBy(itemCategory => itemCategory.Category.Name)
+                                   .Select(group => new KeyValue(group.Key, group.Count()))
+                                   .ToListAsync();
+
+                return keyValueList;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
 
         public async Task<List<Domain.Items.Item>> GetSourceItem(Guid offerId, Guid? userId)
         {
