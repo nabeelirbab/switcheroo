@@ -279,10 +279,10 @@ namespace Infrastructure.Items
                            
                 //        }).ToList();
 
-                var keyValueList = db.ItemCategories
+                var keyValueList = await db.ItemCategories
                                    .GroupBy(itemCategory => itemCategory.Category.Name)
                                    .Select(group => new KeyValue(group.Key, group.Count()))
-                                   .ToList();
+                                   .ToListAsync();
 
                 return keyValueList;
             }

@@ -18,6 +18,8 @@ namespace Domain.Users
 
         Task<User> GetByEmail(string email);
 
+        Task<List<KeyValue>> GetUsersGenderCount();
+
         Task<User> UpdateUserProfileDetails(Guid id, string? blurb, string? avatarUrl);
 
         Task<User> UpdateUserName(Guid id, string firstName, string lastName);

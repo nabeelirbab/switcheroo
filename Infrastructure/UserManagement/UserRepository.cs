@@ -65,7 +65,7 @@ namespace Infrastructure.UserManagement
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.User.ToDomain)
                 .ToListAsync();
-            
+
             //Item count
             foreach (var user in data)
             {
@@ -120,10 +120,10 @@ namespace Infrastructure.UserManagement
 
             return user;
         }
-        
+
         public async Task<List<User>> GetUserByUserId(List<Guid> userIds)
         {
-            
+
             var users = await db.Users
                 .AsNoTracking()
                 .Where(user => userIds.Contains(user.Id))
@@ -173,11 +173,29 @@ namespace Infrastructure.UserManagement
             {
                 var users = await db.Users
                     .AsNoTracking()
-                    .Where(user => user.Id==userId)
+                    .Where(user => user.Id == userId)
                     .Select(Database.Schema.User.ToDomain)
                     .ToListAsync();
 
                 return users;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
+        public async Task<List<KeyValue>> GetUsersGenderCount()
+        {
+            try
+            {
+                var keyValueList = await db.Users
+                                      .Where(user => user.Gender != null)
+                                      .GroupBy(user => user.Gender)
+                                      .Select(group => new KeyValue(group.Key, group.Count()))
+                                      .ToListAsync();
+
+                return keyValueList;
             }
             catch (Exception ex)
             {
@@ -395,7 +413,7 @@ namespace Infrastructure.UserManagement
                 }
                 else
                 {
-                    var userFCMToken =   db.Users
+                    var userFCMToken = db.Users
                     .Where(x => x.Id == id)
                     .Select(x => x.FCMToken).FirstOrDefault();
 
