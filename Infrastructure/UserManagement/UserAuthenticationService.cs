@@ -97,17 +97,17 @@ namespace Infrastructure.UserManagement
         public async Task<Tuple<bool, string, string>> AuthenticateGoogleAsync(string idToken)
         {
 
-            var settings = new GoogleJsonWebSignature.ValidationSettings()
-            {
-                Audience = new List<string>() {
-                    "752477583659-dsi1seh5cbboe1qhs4pm10vp00d4i4l1.apps.googleusercontent.com",
-                    "752477583659-ehabr9atvt9991kma60bmv3m5k2h1dqq.apps.googleusercontent.com"
-                }
-            };
+            //var settings = new GoogleJsonWebSignature.ValidationSettings()
+            //{
+            //    Audience = new List<string>() {
+            //        "752477583659-dsi1seh5cbboe1qhs4pm10vp00d4i4l1.apps.googleusercontent.com",
+            //        "752477583659-ehabr9atvt9991kma60bmv3m5k2h1dqq.apps.googleusercontent.com"
+            //    }
+            //};
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
             bool userStatus = await userRepository.CheckIfUserByEmail(payload.Email);
             return new Tuple<bool, string, string>(userStatus, payload.Name, payload.Email);
-            //return new Tuple<bool, string, string>(true, "Hamza Muhammad Farooqi", "hamzamfarooqi@gmail.com");
+            //return new Tuple<bool, string, string>(false, "Hamza Muhammad Farooqi", idToken);
         }
     }
 }

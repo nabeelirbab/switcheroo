@@ -320,7 +320,7 @@ namespace API.GraphQL
                 }
 
                 Users.Models.User userInstance = Users.Models.User.FromDomain(user);
-                userInstance.InitiateSignUpProcess = existFlag;
+                userInstance.InitiateSignUpProcess = !existFlag;
                 return userInstance;
             }
             catch (Exception ex)
