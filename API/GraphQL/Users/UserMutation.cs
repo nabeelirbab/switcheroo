@@ -309,7 +309,40 @@ namespace API.GraphQL
                 if (!existFlag)
                 {
                     var userToCreate = Domain.Users.User.CreateNewUser(name, "", userEmail);
-                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##");
+                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##",true);
+                }
+                var userId = await userAuthenticationService.SignInByEmailAsync(userEmail);
+                var user = await userRepository.GetById(userId);
+
+                if (!user.Id.HasValue)
+                {
+                    throw new ApiException("No primary key. Database cooked?");
+                }
+
+                Users.Models.User userInstance = Users.Models.User.FromDomain(user);
+                userInstance.InitiateSignUpProcess = !existFlag;
+                return userInstance;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.Message);
+            }
+        }
+
+        public async Task<Users.Models.User> SignInFacebook(
+            [Service] IUserRegistrationService userRegistrationService,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IUserRepository userRepository,
+            string accessToken
+        )
+        {
+            try
+            {
+                var (existFlag, name, userEmail) = await userAuthenticationService.AuthenticateFacebookAsync(accessToken);
+                if (!existFlag)
+                {
+                    var userToCreate = Domain.Users.User.CreateNewUser(name, "", userEmail);
+                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##",true);
                 }
                 var userId = await userAuthenticationService.SignInByEmailAsync(userEmail);
                 var user = await userRepository.GetById(userId);

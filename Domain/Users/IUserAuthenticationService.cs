@@ -16,5 +16,6 @@ namespace Domain.Users
         Task<User> GetCurrentlySignedInUserAsync(ClaimsPrincipal principal);
 
         Task<Tuple<bool, string, string>> AuthenticateGoogleAsync(string idToken);
+        Task<Tuple<bool, string, string>> AuthenticateFacebookAsync(string accessToken);
     }
 }

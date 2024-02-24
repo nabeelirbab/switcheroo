@@ -84,7 +84,7 @@ namespace API
 
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
-
+            services.AddHttpClient();
             services.AddControllers();
 
             // Infastructure

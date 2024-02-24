@@ -5,7 +5,7 @@ namespace Domain.Users
 {
     public interface IUserRegistrationService
     {
-        Task<Guid> CreateUserAsync(User user, string password);
+        Task<Guid> CreateUserAsync(User user, string password,bool emailConfirmed=false);
 
         Task<bool> VerifyUserAsync(string email, string verificationCode);
 

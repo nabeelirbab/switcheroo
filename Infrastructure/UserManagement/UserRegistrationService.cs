@@ -19,7 +19,7 @@ namespace Infrastructure.UserManagement
             this.userManager = userManager;
         }
 
-        public async Task<Guid> CreateUserAsync(User user, string password)
+        public async Task<Guid> CreateUserAsync(User user, string password, bool emailConfirmed = false)
         {
             var now = DateTime.UtcNow;
 
@@ -41,7 +41,8 @@ namespace Infrastructure.UserManagement
                 user.IsChatNotificationsEnabled)
             {
                 CreatedAt = now,
-                UpdatedAt = now
+                UpdatedAt = now,
+                EmailConfirmed = emailConfirmed
             };
 
             var retVal = await userManager.CreateAsync(newUser, password);

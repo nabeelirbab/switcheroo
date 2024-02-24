@@ -7,6 +7,8 @@ using Domain.Users;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2.Flows;
 using Microsoft.AspNetCore.Identity;
+using System.Net.Http;
+using Newtonsoft.Json;
 
 namespace Infrastructure.UserManagement
 {
@@ -15,12 +17,14 @@ namespace Infrastructure.UserManagement
         private readonly SignInManager<Database.Schema.User> signInManager;
         private readonly UserManager<Database.Schema.User> userManager;
         private readonly IUserRepository userRepository;
+        private readonly HttpClient httpClient;
 
-        public UserAuthenticationService(SignInManager<Database.Schema.User> signInManager, UserManager<Database.Schema.User> userManager, IUserRepository userRepository)
+        public UserAuthenticationService(SignInManager<Database.Schema.User> signInManager, UserManager<Database.Schema.User> userManager, IUserRepository userRepository, HttpClient httpClient)
         {
             this.signInManager = signInManager;
             this.userManager = userManager;
             this.userRepository = userRepository;
+            this.httpClient = httpClient;
         }
 
         public async Task<User> GetCurrentlySignedInUserAsync(ClaimsPrincipal principal)
@@ -108,6 +112,21 @@ namespace Infrastructure.UserManagement
             bool userStatus = await userRepository.CheckIfUserByEmail(payload.Email);
             return new Tuple<bool, string, string>(userStatus, payload.Name, payload.Email);
             //return new Tuple<bool, string, string>(false, "Hamza Muhammad Farooqi", idToken);
+        }
+
+        public async Task<Tuple<bool, string, string>> AuthenticateFacebookAsync(string accessToken)
+        {
+            var requestUri = $"https://graph.facebook.com/me?fields=id,name,email&access_token={accessToken}";
+
+            var response = await this.httpClient.GetAsync(requestUri);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Failed to retrieve Facebook user profile. Status code: {response.StatusCode}");
+            }
+            var content = await response.Content.ReadAsStringAsync();
+            var userProfile = JsonConvert.DeserializeObject<Infrastructure.DTOs.FacebookUserProfile>(content);
+            bool userStatus = await userRepository.CheckIfUserByEmail(userProfile.Email);
+            return new Tuple<bool, string, string>(userStatus, userProfile.Name, userProfile.Email);
         }
     }
 }
