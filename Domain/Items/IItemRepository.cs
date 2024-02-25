@@ -34,5 +34,6 @@ namespace Domain.Items
         Task<Paginated<Item>> GetAllItems(Guid userId, int limit, string? cursor);
 
         Task<List<KeyValue>> GetCategoriesItemCount();
+        Task<IEnumerable<Domain.Items.Item>> GetItems(List<Guid> itemIds);
     }
 }

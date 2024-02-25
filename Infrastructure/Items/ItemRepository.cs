@@ -174,6 +174,24 @@ namespace Infrastructure.Items
             }
         }
 
+        public async Task<IEnumerable<Domain.Items.Item>> GetItems(List<Guid> itemIds)
+        {
+            try
+            {
+                var items = await db.Items
+                    .Where(x=>itemIds.Contains(x.Id))
+                    .Select(Database.Schema.Item.ToDomain)
+                    .ToListAsync();
+
+   
+                return items;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+
         public async Task<List<Domain.Items.Item>> GetItemByOfferId(Guid offerId, Guid? userId)
         {
             try

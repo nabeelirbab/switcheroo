@@ -10,5 +10,9 @@ namespace Domain.Complaints
         Task<Complaint> GetComplaintById(Guid complaintId);
 
         Task<List<Complaint>> GetComplaints();
+
+        Task<List<Complaint>> GetRestrictedItems();
+
+        Task<List<Complaint>> GetRestrictedUsers();
     }
 }
