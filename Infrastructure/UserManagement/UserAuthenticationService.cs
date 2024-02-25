@@ -1,9 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Domain.Users;
+using Google.Apis.Auth;
+using Google.Apis.Auth.OAuth2.Flows;
 using Microsoft.AspNetCore.Identity;
+using System.Net.Http;
+using Newtonsoft.Json;
 
 namespace Infrastructure.UserManagement
 {
@@ -12,12 +17,14 @@ namespace Infrastructure.UserManagement
         private readonly SignInManager<Database.Schema.User> signInManager;
         private readonly UserManager<Database.Schema.User> userManager;
         private readonly IUserRepository userRepository;
+        private readonly HttpClient httpClient;
 
-        public UserAuthenticationService(SignInManager<Database.Schema.User> signInManager, UserManager<Database.Schema.User> userManager, IUserRepository userRepository)
+        public UserAuthenticationService(SignInManager<Database.Schema.User> signInManager, UserManager<Database.Schema.User> userManager, IUserRepository userRepository, HttpClient httpClient)
         {
             this.signInManager = signInManager;
             this.userManager = userManager;
             this.userRepository = userRepository;
+            this.httpClient = httpClient;
         }
 
         public async Task<User> GetCurrentlySignedInUserAsync(ClaimsPrincipal principal)
@@ -42,9 +49,9 @@ namespace Infrastructure.UserManagement
             }
 
             var user = await signInManager.UserManager.FindByEmailAsync(email);
-            
+
             // if email is invalid
-            if(user == null) throw new InfrastructureException("Invalid credentials");
+            if (user == null) throw new InfrastructureException("Invalid credentials");
             else
             {
                 // if email is valid but not confirmed
@@ -60,6 +67,21 @@ namespace Infrastructure.UserManagement
             }
         }
 
+        public async Task<Guid> SignInByEmailAsync(string email)
+        {
+            var domainUser = await userRepository.GetByEmail(email);
+            var infraUser = Infrastructure.Database.Schema.User.FromDomain(domainUser);
+            await signInManager.SignInAsync(infraUser, true);
+            var user = await signInManager.UserManager.FindByEmailAsync(email);
+            if (user == null) throw new InfrastructureException("Invalid credentials");
+            //else if (!user.EmailConfirmed)
+            //{
+            //    throw new InfrastructureException("Account not Actived");
+            //}
+            return user.Id;
+        }
+
+
         public async Task<Guid> SignOutAsync(ClaimsPrincipal principal)
         {
             var isAuthenticated = principal?.Identity?.IsAuthenticated;
@@ -74,6 +96,37 @@ namespace Infrastructure.UserManagement
             await signInManager.SignOutAsync();
 
             return user.Id;
+        }
+
+        public async Task<Tuple<bool, string, string>> AuthenticateGoogleAsync(string idToken)
+        {
+
+            //var settings = new GoogleJsonWebSignature.ValidationSettings()
+            //{
+            //    Audience = new List<string>() {
+            //        "752477583659-dsi1seh5cbboe1qhs4pm10vp00d4i4l1.apps.googleusercontent.com",
+            //        "752477583659-ehabr9atvt9991kma60bmv3m5k2h1dqq.apps.googleusercontent.com"
+            //    }
+            //};
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+            bool userStatus = await userRepository.CheckIfUserByEmail(payload.Email);
+            return new Tuple<bool, string, string>(userStatus, payload.Name, payload.Email);
+            //return new Tuple<bool, string, string>(false, "Hamza Muhammad Farooqi", idToken);
+        }
+
+        public async Task<Tuple<bool, string, string>> AuthenticateFacebookAsync(string accessToken)
+        {
+            var requestUri = $"https://graph.facebook.com/me?fields=id,name,email&access_token={accessToken}";
+
+            var response = await this.httpClient.GetAsync(requestUri);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Failed to retrieve Facebook user profile. Status code: {response.StatusCode}");
+            }
+            var content = await response.Content.ReadAsStringAsync();
+            var userProfile = JsonConvert.DeserializeObject<Infrastructure.DTOs.FacebookUserProfile>(content);
+            bool userStatus = await userRepository.CheckIfUserByEmail(userProfile.Email);
+            return new Tuple<bool, string, string>(userStatus, userProfile.Name, userProfile.Email);
         }
     }
 }

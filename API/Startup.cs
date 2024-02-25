@@ -41,6 +41,7 @@ using Path = System.IO.Path;
 using Infrastructure.Complaints;
 using Domain.ContactUs;
 using Infrastructure.ContactUs;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace API
 {
@@ -71,7 +72,7 @@ namespace API
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowReactApp",
-                    builder => builder.WithOrigins("http://localhost:3000","http://admin.switcherooapp.com")
+                    builder => builder.WithOrigins("http://localhost:3000", "http://admin.switcherooapp.com")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials()
@@ -84,7 +85,7 @@ namespace API
 
             // enable InMemory messaging services for subscription support.
             // services.AddInMemorySubscriptionProvider();
-
+            services.AddHttpClient();
             services.AddControllers();
 
             // Infastructure
@@ -138,7 +139,7 @@ namespace API
 
             // For now we are always using the dev email sender, which will send to localhost
             // and expect an SMTP server to be present
-            services.AddTransient<IEmailSender, GmailEmailSender>();
+            services.AddTransient<IEmailSender, ZohoEmailSender>();
             // services.AddTransient<IEmailSender, DevEmailSender>();
             // services.AddTransient<IEmailSender, SendGridEmailSender>();
 
@@ -197,6 +198,11 @@ namespace API
                     Credential = GoogleCredential.FromFile(filePath)
                 });
             }
+            app.Use(async (context, next) =>
+            {
+                context.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize = 50 * 1024 * 1024; // 50 MB
+                await next.Invoke();
+            });
 
             app
                 .UseDeveloperExceptionPage()

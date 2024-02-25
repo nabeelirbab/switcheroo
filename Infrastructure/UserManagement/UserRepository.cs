@@ -458,5 +458,11 @@ namespace Infrastructure.UserManagement
                 throw new InfrastructureException($"No request sent to you {ex.Message}");
             }
         }
+        public async Task<bool> CheckIfUserByEmail(string email)
+        {
+            return await db.Users
+                           .AsNoTracking()
+                           .AnyAsync(user => user.Email == email);
+        }
     }
 }

@@ -80,6 +80,8 @@ namespace API.GraphQL.Users.Models
 
         public bool IsChatNotificationsEnabled { get; private set; }
 
+        public bool InitiateSignUpProcess { get; set; }
+
         [GraphQLNonNullType]
         public async Task<IEnumerable<Offer>> GetOffers(
             [Service] IHttpContextAccessor httpContextAccessor,

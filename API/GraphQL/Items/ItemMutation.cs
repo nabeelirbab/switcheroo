@@ -6,6 +6,7 @@ using API.GraphQL.Items.Models;
 using Domain.Items;
 using Domain.Users;
 using HotChocolate;
+using HotChocolate.Types;
 using Microsoft.AspNetCore.Http;
 
 namespace API.GraphQL
@@ -88,7 +89,7 @@ namespace API.GraphQL
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
             var updateMessage = await itemRepository.UpdateItemLocation(itemId, latitude, longitude);
-            
+
             if (updateMessage.Contains("Item locations updated successfully."))
             {
                 return "Items' locations updated successfully.";

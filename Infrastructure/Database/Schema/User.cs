@@ -9,8 +9,8 @@ namespace Infrastructure.Database.Schema
     public class User : IdentityUser<Guid>, IWhen
     {
 
-        public User(string userName, string firstName, string lastName, 
-            string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude, 
+        public User(string userName, string firstName, string lastName,
+            string? mobile, string? gender, DateTime? dateOfBirth, int? distance, decimal? latitude, decimal? longitude,
             string? fCMToken, string? blurb, string? avatarUrl, string email, bool isMatchNotificationsEnabled, bool isChatNotificationsEnabled)
         {
             UserName = userName;
@@ -40,7 +40,7 @@ namespace Infrastructure.Database.Schema
 
         public string? Gender { get; set; }
 
-        [Column(TypeName="Date")]
+        [Column(TypeName = "Date")]
         public DateTime? DateOfBirth { get; set; }
 
         public int? Distance { get; set; }
@@ -67,12 +67,41 @@ namespace Infrastructure.Database.Schema
 
         public DateTimeOffset? ArchivedAt { get; set; }
 
+        public static User FromDomain(Domain.Users.User domainItem)
+        {
+            return new User(
+                userName: domainItem.Username,
+                firstName: domainItem.FirstName,
+                lastName: domainItem.LastName,
+                mobile: domainItem.Mobile,
+                gender: domainItem.Gender,
+                dateOfBirth: domainItem.DateOfBirth,
+                distance: domainItem.Distance,
+                latitude: domainItem.Latitude,
+                longitude: domainItem.Longitude,
+                fCMToken: domainItem.FCMToken,
+                blurb: domainItem.Blurb,
+                avatarUrl: domainItem.AvatarUrl,
+                email: domainItem.Email,
+                isMatchNotificationsEnabled: domainItem.IsMatchNotificationsEnabled,
+                isChatNotificationsEnabled: domainItem.IsChatNotificationsEnabled
+            )
+            {
+                Id = domainItem.Id.HasValue ? domainItem.Id.Value : Guid.NewGuid(),
+                CreatedAt = domainItem.CreatedAt.HasValue ? domainItem.CreatedAt.Value : DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                SecurityStamp = Guid.NewGuid().ToString(),
+            };
+        }
+
+
+
         public static Expression<Func<User, Domain.Users.User>> ToDomain =>
             user => new Domain.Users.User(
                 user.Id,
                 user.UserName,
                 user.FirstName,
-                user.LastName,                
+                user.LastName,
                 user.Email,
                 user.Mobile,
                 user.Gender,
