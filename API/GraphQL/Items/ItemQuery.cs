@@ -130,16 +130,16 @@ namespace API.GraphQL
 
         [Authorize]
         public async Task<Paginated<Items.Models.Item>> GetCashItems(
-                [Service] IHttpContextAccessor httpContextAccessor,
-                [Service] IUserAuthenticationService userAuthenticationService,
-                [Service] IItemRepository itemRepository,
-                int limit,
-                string? cursor,
-                decimal? latitude,
-                decimal? longitude,
-                decimal? distance,
-                bool? inMiles = false
-            )
+               [Service] IHttpContextAccessor httpContextAccessor,
+               [Service] IUserAuthenticationService userAuthenticationService,
+               [Service] IItemRepository itemRepository,
+               int limit,
+               string? cursor,
+               decimal? latitude,
+               decimal? longitude,
+               decimal? distance,
+               bool? inMiles = false
+           )
         {
             var claimsPrinciple = httpContextAccessor.HttpContext.User;
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
@@ -148,7 +148,7 @@ namespace API.GraphQL
             if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
 
 
-            var paginatedItemsResult = await itemRepository.GetCashItems(user.Id.Value,limit,cursor,latitude,longitude,distance,inMiles);
+            var paginatedItemsResult = await itemRepository.GetCashItems(user.Id.Value, limit, cursor, latitude, longitude, distance, inMiles);
             _loggerManager.LogWarn($"API return cashItems Result to frontend: {paginatedItemsResult.Data.Count}");
             return new Paginated<Items.Models.Item>(
                 paginatedItemsResult.Data

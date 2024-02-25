@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Complaints
 {
-    public class ComplaintRepositoy: IComplaintRepository
+    public class ComplaintRepositoy : IComplaintRepository
     {
         private readonly SwitcherooContext db;
         private readonly ILoggerManager _loggerManager;
@@ -73,6 +73,22 @@ namespace Infrastructure.Complaints
             return await db.Complaints
                 .Select(Database.Schema.Complaint.ToDomain)
                 .ToListAsync();
+        }
+
+        public async Task<List<Complaint>> GetRestrictedItems()
+        {
+            var restrictedItems = await db.Complaints.Where(x => x.TargetItemId != null)
+                  .Select(Database.Schema.Complaint.ToDomain).ToListAsync();
+
+            return restrictedItems;
+        }
+
+        public async Task<List<Complaint>> GetRestrictedUsers()
+        {
+            var restrictedItems = await db.Complaints.Where(x => x.TargetUserId != null)
+                  .Select(Database.Schema.Complaint.ToDomain).ToListAsync();
+
+            return restrictedItems;
         }
     }
 }
