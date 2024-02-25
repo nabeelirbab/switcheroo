@@ -53,7 +53,7 @@ namespace API.GraphQL
             return users;
         }
 
-        [Authorize]
+        //[Authorize]
         public async Task<List<KeyValue>> GetUsersGenderCount(
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,

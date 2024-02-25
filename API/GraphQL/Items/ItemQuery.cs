@@ -110,7 +110,7 @@ namespace API.GraphQL
 
         }
 
-        [Authorize]
+        //[Authorize]
         public async Task<List<KeyValue>> CategoriesItemCount(
                 [Service] IHttpContextAccessor httpContextAccessor,
                 [Service] IUserAuthenticationService userAuthenticationService,
