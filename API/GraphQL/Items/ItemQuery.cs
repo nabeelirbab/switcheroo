@@ -110,18 +110,17 @@ namespace API.GraphQL
 
         }
 
-        //[Authorize]
         public async Task<List<KeyValue>> CategoriesItemCount(
                 [Service] IHttpContextAccessor httpContextAccessor,
                 [Service] IUserAuthenticationService userAuthenticationService,
                 [Service] IItemRepository itemRepository
             )
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
+            //var claimsPrinciple = httpContextAccessor.HttpContext.User;
+            //var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
 
-            if (user == null) throw new ApiException("Not logged in");
-            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
+            //if (user == null) throw new ApiException("Not logged in");
+            //if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
 
             var categoriesItemCount = await itemRepository.GetCategoriesItemCount();
 
