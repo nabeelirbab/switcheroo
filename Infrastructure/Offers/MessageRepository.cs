@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.SignalR;
 using Infrastructure.Database.Schema;
 using System.Threading;
 using Domain.Services;
+using Domain.Users;
 
 namespace Infrastructure.Offers
 {
@@ -34,7 +35,7 @@ namespace Infrastructure.Offers
 
             var msg = messages
                 .OrderByDescending(_messageOrderingExpression)
-                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId,message.Cash, message.CreatedByUserId, message.MessageText, message.MessageReadAt, message.CreatedAt, message.IsRead))
+                .Select(message => new Domain.Offers.Message(message.Id, message.CreatedByUserId, message.OfferId, message.Cash, message.CreatedByUserId, message.MessageText, message.MessageReadAt, message.CreatedAt, message.IsRead))
                 .ToList();
             return msg;
         }
@@ -44,14 +45,22 @@ namespace Infrastructure.Offers
             try
             {
                 var now = DateTime.Now;
+
                 var myItems = await db.Items
                    .Where(z => z.CreatedByUserId == userId)
                    .Select(z => z.Id)
                    .ToArrayAsync();
-                var offers = await db.Offers
-                        .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
-                        .Where(z => z.SourceStatus == z.TargetStatus)
-                        .ToListAsync();
+
+                var offers = await db.Offers.
+                    Where(o => o.CreatedByUserId == userId || myItems.Contains(o.TargetItemId))
+                    .Where(o => o.SourceStatus == o.TargetStatus)
+                    .ToListAsync();
+
+
+                //var offers = await db.Offers
+                //        .Where(z => myItems.Contains(z.TargetItemId) || myItems.Contains(z.SourceItemId))
+                //        .Where(z => z.SourceStatus == z.TargetStatus)
+                //        .ToListAsync();
 
                 // Offer IDs with messages
                 var lastMessages = await db.Messages
@@ -66,46 +75,26 @@ namespace Infrastructure.Offers
                     .Select(offer => offer.Id)
                     .ToList();
 
-                // Offer without any messages
-                var offersWithNoMessages = offers
-                    .Where(offer => offerIdsWithNoMessages.Contains(offer.Id))
-                    .ToList();
-
-                var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
-
-                var items = await db.Items
-                    .Where(item => itemIds.Contains(item.Id))
-                    .ToListAsync();
-
-                var UsersIds = items
-                    .Where(i => i.CreatedByUserId != userId)
-                    .Select(i => i.CreatedByUserId)
-                    .ToList();
-
-                // Create dummy messages for offerIds without associated messages
                 string message = "";
                 var dummyMessages = new List<Domain.Offers.Message>();
                 foreach (var offerId in offerIdsWithNoMessages)
                 {
-                    var cash = db.Offers.Where(x=>x.Id==offerId).Select(x=>x.Cash).FirstOrDefault();
-                    foreach (var user in UsersIds)
-                    {
-                        var newDummyMessage = new Domain.Offers.Message(
-                            Guid.NewGuid(),
-                            user,
-                            offerId,
-                            cash,
-                            userId,
-                            message,
-                            null,
-                            null,
-                            false
-                        );
-                        dummyMessages.Add(newDummyMessage);
-                    }
+                    var offerByOfferId = offers.Where(o => o.Id == offerId).FirstOrDefault();
+
+                    var newDummyMessage = new Domain.Offers.Message(
+                    Guid.NewGuid(),
+                        offerByOfferId.CreatedByUserId,
+                        offerId,
+                        offerByOfferId.Cash,
+                        userId,
+                        message,
+                        null,
+                        null,
+                        false
+                    );
+                    dummyMessages.Add(newDummyMessage);
+
                 }
-
-
                 // Merge lastMessages and dummyMessages
                 var mergedMessages = lastMessages
                     .Select(message => new Domain.Offers.Message(
@@ -145,7 +134,7 @@ namespace Infrastructure.Offers
                 }
                 return mergedMessages;
             }
-            catch( Exception ex )
+            catch (Exception ex)
             {
                 throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
             }
@@ -196,7 +185,7 @@ namespace Infrastructure.Offers
                 message.IsRead = true;
             }
 
-            await db.SaveChangesAsync(); 
+            await db.SaveChangesAsync();
 
             return true;
         }
@@ -206,7 +195,7 @@ namespace Infrastructure.Offers
             var dbMessage = await db.Messages
                 .SingleOrDefaultAsync(z => z.Id == messageId);
 
-            return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId,dbMessage.Cash, dbMessage.CreatedByUserId, dbMessage.MessageText,
+            return new Domain.Offers.Message(dbMessage.Id, dbMessage.CreatedByUserId, dbMessage.OfferId, dbMessage.Cash, dbMessage.CreatedByUserId, dbMessage.MessageText,
                 dbMessage.MessageReadAt, dbMessage.CreatedAt, dbMessage.IsRead);
         }
 
@@ -218,20 +207,20 @@ namespace Infrastructure.Offers
             {
                 CreatedByUserId = message.CreatedByUserId,
                 CreatedAt = now,
-                Cash=message.Cash,
+                Cash = message.Cash,
                 UpdatedAt = now,
                 UpdatedByUserId = message.CreatedByUserId,
-                IsRead=false
+                IsRead = false
             };
 
             await db.Messages.AddAsync(newDbItem);
 
             var senderId = message.CreatedByUserId;
-            var offerId = db.Offers.Where(o=>o.Id.Equals(message.OfferId)).FirstOrDefault(); 
-            var sourceItem = db.Items.Where(i=>i.Id.Equals(offerId.SourceItemId)).FirstOrDefault();
-            var targetItem = db.Items.Where(i=>i.Id.Equals(offerId.TargetItemId)).FirstOrDefault();
-            var sourceItemCreatedUser = db.Users.Where(u=>u.Id.Equals(sourceItem.CreatedByUserId)).FirstOrDefault();
-            var targetItemCreatedUser = db.Users.Where(u=>u.Id.Equals(targetItem.CreatedByUserId)).FirstOrDefault();
+            var offerId = db.Offers.Where(o => o.Id.Equals(message.OfferId)).FirstOrDefault();
+            var sourceItem = db.Items.Where(i => i.Id.Equals(offerId.SourceItemId)).FirstOrDefault();
+            var targetItem = db.Items.Where(i => i.Id.Equals(offerId.TargetItemId)).FirstOrDefault();
+            var sourceItemCreatedUser = db.Users.Where(u => u.Id.Equals(sourceItem.CreatedByUserId)).FirstOrDefault();
+            var targetItemCreatedUser = db.Users.Where(u => u.Id.Equals(targetItem.CreatedByUserId)).FirstOrDefault();
 
             var userFCM = "";
             if (senderId != sourceItemCreatedUser.Id)
