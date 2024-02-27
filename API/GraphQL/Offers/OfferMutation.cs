@@ -49,9 +49,9 @@ namespace API.GraphQL
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IOfferRepository offerRepository,
-            Guid sourceItemId,
+            Guid? sourceItemId,
             Guid targetItemId,
-            int sourceStatus,
+            int? sourceStatus,
             int? cash,
             int? targeteStatus
         )
@@ -61,8 +61,7 @@ namespace API.GraphQL
             if (userCp == null) throw new ApiException("Not authenticated");
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId, targetItemId, cash, user.Id.Value, sourceStatus, targeteStatus, isRead));
+            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId ?? targetItemId, targetItemId, cash, user.Id.Value, sourceStatus ?? 1, targeteStatus, isRead));
             
             return Offer.FromDomain(domainOffer);
         }
