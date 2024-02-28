@@ -12,6 +12,7 @@ using Infrastructure.Database.Schema;
 using System.Threading;
 using Domain.Services;
 using Domain.Users;
+using Domain.Items;
 
 namespace Infrastructure.Offers
 {
@@ -75,24 +76,53 @@ namespace Infrastructure.Offers
                     .Select(offer => offer.Id)
                     .ToList();
 
+                var offersWithNoMessages = offers.Where(o => offerIdsWithNoMessages.Contains(o.Id)).ToList();
+                var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
+                var items = await db.Items
+                    .Where(item => itemIds.Contains(item.Id))
+                    .ToListAsync();
+                //var UsersIds = items
+                //    .Where(i => i.CreatedByUserId != userId)
+                //    .Select(i => i.CreatedByUserId)
+                //    .ToList();
+
                 string message = "";
                 var dummyMessages = new List<Domain.Offers.Message>();
                 foreach (var offerId in offerIdsWithNoMessages)
                 {
+                    Domain.Offers.Message newDummyMessage;
                     var offerByOfferId = offers.Where(o => o.Id == offerId).FirstOrDefault();
-
-                    var newDummyMessage = new Domain.Offers.Message(
-                    Guid.NewGuid(),
-                        offerByOfferId.CreatedByUserId,
-                        offerId,
-                        offerByOfferId.Cash,
-                        userId,
-                        message,
-                        null,
-                        null,
-                        false
-                    );
-                    dummyMessages.Add(newDummyMessage);
+                    if (offerByOfferId.Cash != null && offerByOfferId.Cash > 0)
+                    {
+                        var targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                        newDummyMessage = new Domain.Offers.Message(
+                        Guid.NewGuid(),
+                            offerByOfferId.CreatedByUserId,
+                            offerId,
+                            offerByOfferId.Cash,
+                            targetUserId,
+                            message,
+                            null,
+                            null,
+                            false
+                        );
+                        dummyMessages.Add(newDummyMessage);
+                    }
+                    else
+                    {
+                        newDummyMessage = new Domain.Offers.Message(
+                        Guid.NewGuid(),
+                            offerByOfferId.CreatedByUserId,
+                            offerId,
+                            offerByOfferId.Cash,
+                            userId,
+                            message,
+                            null,
+                            null,
+                            false
+                        );
+                        dummyMessages.Add(newDummyMessage);
+                    }
 
                 }
                 // Merge lastMessages and dummyMessages
@@ -234,6 +264,8 @@ namespace Infrastructure.Offers
 
             if (!string.IsNullOrEmpty(userFCM))
             {
+                try
+                {
                 var app = FirebaseApp.DefaultInstance;
                 var messaging = FirebaseMessaging.GetMessaging(app);
 
@@ -253,6 +285,11 @@ namespace Infrastructure.Offers
                     }
                 };
                 string response = await messaging.SendAsync(notification);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
             else
             {

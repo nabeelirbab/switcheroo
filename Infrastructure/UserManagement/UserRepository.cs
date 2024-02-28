@@ -140,16 +140,29 @@ namespace Infrastructure.UserManagement
                 var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
                 {
                     SourceItemId = o.SourceItemId,
-                    TargetItemId = o.TargetItemId
+                    TargetItemId = o.TargetItemId,
+                    Cash = o.Cash,
                 }).FirstOrDefault();
 
                 var sourceItemId = itemIds.SourceItemId;
                 var targetItemId = itemIds.TargetItemId;
-
-                var items = await db.Items
-                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
+                var Cash = itemIds.Cash != null && itemIds.Cash! > 0 ? true : false;
+                List<Domain.Items.Item> items;
+                if (Cash)
+                {
+                    items = await db.Items
+                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId))
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
+                }
+                else
+                {
+
+                    items = await db.Items
+                        .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
+                        .Select(Database.Schema.Item.ToDomain)
+                        .ToListAsync();
+                }
 
                 var creatorIds = items.Select(item => item.CreatedByUserId).Distinct().ToList();
 
