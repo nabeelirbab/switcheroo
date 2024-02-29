@@ -17,6 +17,8 @@ using Domain.Services;
 using Infrastructure.Services;
 using Domain.Offers;
 
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
 namespace Infrastructure.Items
 {
     public class ItemRepository : IItemRepository
@@ -111,7 +113,19 @@ namespace Infrastructure.Items
                         string base64 = item.MainImageUrl?.Split(',').LastOrDefault();
                         base64 = base64.Trim();
                         byte[] mainImageBytes = Convert.FromBase64String(base64);
-                        newDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
+                        using (var image = SixLabors.ImageSharp.Image.Load(mainImageBytes))
+                        {
+                            using (var ms = new MemoryStream())
+                            {
+                                // Adjust the WebPEncoder settings as needed
+                                var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 50 }; // Quality is between 1-100
+                                image.Save(ms, encoder);
+                                byte[] webPImageBytes = ms.ToArray();
+                                string uploadedImageUrl = await UploadImageToS3Async(webPImageBytes, "image/webp");
+                                newDbItem.MainImageUrl = uploadedImageUrl;
+                            }
+                        }
+                        //newDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
                     }
 
                     // Upload ImageUrls to S3
@@ -123,8 +137,20 @@ namespace Infrastructure.Items
                         string base64 = base64String?.Split(',').LastOrDefault();
                         base64 = base64.Trim();
                         byte[] imageBytes = Convert.FromBase64String(base64);
-                        string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
-                        s3Urls.Add(uploadedImageUrl);
+                        using (var image = SixLabors.ImageSharp.Image.Load(imageBytes))
+                        {
+                            using (var ms = new MemoryStream())
+                            {
+                                // Adjust the WebPEncoder settings as needed
+                                var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 50 }; // Quality is between 1-100
+                                image.Save(ms, encoder);
+                                byte[] webPImageBytes = ms.ToArray();
+                                string uploadedImageUrl = await UploadImageToS3Async(webPImageBytes, "image/webp");
+                                s3Urls.Add(uploadedImageUrl);
+                            }
+                        }
+                        //string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
+                        //s3Urls.Add(uploadedImageUrl);
                     }
 
                     await db.Items.AddAsync(newDbItem);
@@ -179,11 +205,11 @@ namespace Infrastructure.Items
             try
             {
                 var items = await db.Items
-                    .Where(x=>itemIds.Contains(x.Id))
+                    .Where(x => itemIds.Contains(x.Id))
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
-   
+
                 return items;
             }
             catch (Exception ex)
@@ -294,7 +320,7 @@ namespace Infrastructure.Items
                 //        .GroupBy(x => x.Categories.Name)
                 //        .Select(g => new KeyValue(g.Key,g.Count())
                 //        {
-                           
+
                 //        }).ToList();
 
                 var keyValueList = await db.ItemCategories
@@ -731,55 +757,102 @@ namespace Infrastructure.Items
             }
         }
 
+        //public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor)
+        //{
+        //    var myDismissedItems = await db.DismissedItem
+        //        .Where(z => z.CreatedByUserId == userId)
+        //        .Select(z => z.TargetItemId)
+        //        .ToListAsync();
+
+
+        //    var filteredItems = await db.Items
+        //        .Where(item =>
+        //        item.CreatedByUserId != userId &&
+        //        !myDismissedItems.Contains(item.Id) && // Skip dismissed items
+        //        !item.IsHidden) // Skip hidden items
+        //        .ToListAsync();
+
+        //    var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
+        //    IEnumerable<Guid> requiredIds;
+
+        //    if (cursor != null)
+        //    {
+        //        requiredIds = itemIdsSorted
+        //        .SkipWhile(x => cursor != "" && x.ToString() != cursor)
+        //        .Skip(1)
+        //        .Take(limit);
+        //    }
+        //    else
+        //    {
+        //        requiredIds = itemIdsSorted.Take(limit);
+        //    }
+
+        //    var totalCount = itemIdsSorted.Count();
+
+        //    var data = await db.Items
+        //        .AsNoTracking()
+        //        .Where(x => requiredIds.Contains(x.Id))
+        //        .OrderByDescending(x => x.CreatedAt)
+        //        .Select(Database.Schema.Item.ToDomain)
+        //        .ToListAsync();
+
+        //    foreach (var item in data)
+        //    {
+        //        // Create a new list excluding the main image URL for each item
+        //        item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+        //    }
+
+        //    var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
+
+        //    return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
+        //}
+
         public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor)
         {
-            var myDismissedItems = await db.DismissedItem
-                .Where(z => z.CreatedByUserId == userId)
-                .Select(z => z.TargetItemId)
-                .ToListAsync();
+            // Convert cursor to a nullable Guid for comparison
+            Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
 
+            // Directly query the items, excluding dismissed items with a subquery, and apply pagination in the query
+            var query = db.Items
+                .Where(item => item.CreatedByUserId != userId && // Skip items created by the user
+                               !db.DismissedItem.Any(di => di.CreatedByUserId == userId && di.TargetItemId == item.Id) && // Skip dismissed items
+                               !item.IsHidden) // Skip hidden items
+                .AsNoTracking();
 
-            var filteredItems = await db.Items
-                .Where(item =>
-                item.CreatedByUserId != userId &&
-                !myDismissedItems.Contains(item.Id) && // Skip dismissed items
-                !item.IsHidden) // Skip hidden items
-                .ToListAsync();
-
-            var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
-            IEnumerable<Guid> requiredIds;
-
-            if (cursor != null)
+            // If a cursor is provided, filter items to only those after the cursor
+            if (cursorGuid.HasValue)
             {
-                requiredIds = itemIdsSorted
-                .SkipWhile(x => cursor != "" && x.ToString() != cursor)
-                .Skip(1)
-                .Take(limit);
-            }
-            else
-            {
-                requiredIds = itemIdsSorted.Take(limit);
+                query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
             }
 
-            var totalCount = itemIdsSorted.Count();
+            var totalCountQuery = await query.CountAsync(); // Asynchronously start counting total items
 
-            var data = await db.Items
-                .AsNoTracking()
-                .Where(x => requiredIds.Contains(x.Id))
-                .OrderByDescending(x => x.CreatedAt)
+            // Apply ordering and pagination
+            var paginatedItems = await query
+                .OrderBy(item => item.Id) // Assuming you want to paginate based on the item ID
+                .Take(limit + 1) // Take an extra item to check if there's a next page
                 .Select(Database.Schema.Item.ToDomain)
                 .ToListAsync();
 
-            foreach (var item in data)
+            // Determine the new cursor and if there's a next page
+            string? newCursor = paginatedItems.Count > limit ? paginatedItems.Last().Id.ToString() : null;
+            if (newCursor != null)
             {
-                // Create a new list excluding the main image URL for each item
+                // Remove the extra item if there's a next page
+                paginatedItems = paginatedItems.Take(limit).ToList();
+            }
+
+            var totalCount = totalCountQuery; // Await the total count if not already done
+
+            // Process items to exclude the main image URL
+            foreach (var item in paginatedItems)
+            {
                 item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
             }
 
-            var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
-
-            return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
+            return new Paginated<Domain.Items.Item>(paginatedItems, newCursor ?? "", totalCount, paginatedItems.Count == limit);
         }
+
 
         public async Task<string> UpdateItemLocation(Guid itemId, decimal? latitude, decimal? longitude)
         {

@@ -33,7 +33,7 @@ namespace Infrastructure.Database
         public DbSet<Offer> Offers { get; set; } = null!;
         public DbSet<DismissedItem> DismissedItem { get; set; } = null!;
         public DbSet<Message> Messages { get; set; } = null!;
-        public DbSet<Location>  Location { get; set; }
+        public DbSet<Location> Location { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -58,7 +58,7 @@ namespace Infrastructure.Database
             modelBuilder.Entity<UserVerificationCode>()
                 .HasIndex(x => new { x.EmailConfirmationToken })
                 .IsUnique();
-            
+
             // Category Indexes
             modelBuilder.Entity<Category>()
                 .HasIndex(x => new { x.Name })
@@ -71,12 +71,12 @@ namespace Infrastructure.Database
 
             // Offer Indexes
             modelBuilder.Entity<Offer>()
-                .HasIndex(x => new { x.SourceItemId, x.TargetItemId})
+                .HasIndex(x => new { x.SourceItemId, x.TargetItemId })
                 .IsUnique();
 
             // DismissedItem Indexes
             modelBuilder.Entity<DismissedItem>()
-                .HasIndex(x => new { x.SourceItemId, x.TargetItemId})
+                .HasIndex(x => new { x.SourceItemId, x.TargetItemId })
                 .IsUnique();
 
             // Many to many relationships
@@ -98,6 +98,12 @@ namespace Infrastructure.Database
             modelBuilder.Entity<IdentityUserLogin<Guid>>(entity => { entity.ToTable("UserLogins"); });
             modelBuilder.Entity<IdentityUserToken<Guid>>(entity => { entity.ToTable("UserTokens"); });
             modelBuilder.Entity<IdentityRoleClaim<Guid>>(entity => { entity.ToTable("RoleClaims"); });
+
+            // Indexing
+            modelBuilder.Entity<Item>().HasIndex(p => p.CreatedByUserId);
+            modelBuilder.Entity<Item>().HasIndex(p => p.IsHidden);
+            modelBuilder.Entity<DismissedItem>().HasIndex(p => p.CreatedByUserId);
+            modelBuilder.Entity<DismissedItem>().HasIndex(p => new { p.CreatedByUserId, p.TargetItemId });
 
             var categories = modelBuilder.SeedCategories();
         }
