@@ -162,7 +162,7 @@ namespace Infrastructure.Offers
                         readeMessage.MessageReadAt = now;
                     }
                 }
-                return mergedMessages;
+                return mergedMessages.OrderByDescending(m=>m.CreatedAt).ToList();
             }
             catch (Exception ex)
             {

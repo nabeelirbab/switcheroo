@@ -166,27 +166,33 @@ namespace Infrastructure.Offers
                                 };
 
                                 await db.Offers.AddAsync(newDbOffer);
-
-                                if (!string.IsNullOrEmpty(userFCMToken))
+                                try
                                 {
-                                    var app = FirebaseApp.DefaultInstance;
-                                    var messaging = FirebaseMessaging.GetMessaging(app);
-
-                                    var message = new FirebaseAdmin.Messaging.Message()
+                                    if (!string.IsNullOrEmpty(userFCMToken))
                                     {
-                                        Token = userFCMToken,
-                                        Notification = new Notification
+                                        var app = FirebaseApp.DefaultInstance;
+                                        var messaging = FirebaseMessaging.GetMessaging(app);
+
+                                        var message = new FirebaseAdmin.Messaging.Message()
                                         {
-                                            Title = "New Cash Offer",
-                                            Body = "You have a new cash offer"
-                                            // Other notification parameters can be added here
-                                        }
-                                    };
-                                    string response = await messaging.SendAsync(message);
+                                            Token = userFCMToken,
+                                            Notification = new Notification
+                                            {
+                                                Title = "New Cash Offer",
+                                                Body = "You have a new cash offer"
+                                                // Other notification parameters can be added here
+                                            }
+                                        };
+                                        string response = await messaging.SendAsync(message);
+                                    }
+                                    else
+                                    {
+                                        throw new InfrastructureException($"No FCM Token exist against this user");
+                                    }
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    throw new InfrastructureException($"No FCM Token exist against this user");
+                                    Console.WriteLine(ex.Message);
                                 }
                                 await db.SaveChangesAsync();
                                 myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);

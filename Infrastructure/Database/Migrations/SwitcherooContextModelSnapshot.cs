@@ -43,22 +43,22 @@ namespace Infrastructure.Database.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("42529649-d0af-4fb5-b09a-783e5738be9d"),
+                            Id = new Guid("5e6d9862-a372-4d8d-be74-bd2da92d68bb"),
                             Name = "Electronics"
                         },
                         new
                         {
-                            Id = new Guid("97941baa-3385-4b7a-a3c3-3919bf2e0431"),
+                            Id = new Guid("c93f9f89-77f8-4ffb-b262-d44d426a4c55"),
                             Name = "White Goods"
                         },
                         new
                         {
-                            Id = new Guid("92da8ccf-4a56-4fe6-80da-3ef6b276faee"),
+                            Id = new Guid("410278a9-c4b6-4011-8119-3bfcc01a0794"),
                             Name = "Clothing"
                         },
                         new
                         {
-                            Id = new Guid("89470154-5f01-48e1-b84e-e3e19332f4b7"),
+                            Id = new Guid("32157d3a-e333-48ea-ab53-902a55b88046"),
                             Name = "Furniture"
                         });
                 });

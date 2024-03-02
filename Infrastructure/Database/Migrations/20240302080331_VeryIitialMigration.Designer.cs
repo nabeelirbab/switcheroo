@@ -7,22 +7,65 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
+#nullable disable
+
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(SwitcherooContext))]
-    [Migration("20200815061156_OfferStatus")]
-    partial class OfferStatus
+    [Migration("20240302080331_VeryIitialMigration")]
+    partial class VeryIitialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Npgsql:Enum:offer_status", "initiated,discussing,confirmed,cancelled")
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.1.2")
+                .HasAnnotation("ProductVersion", "6.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "offer_status", new[] { "initiated", "discussing", "confirmed", "cancelled" });
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
             modelBuilder.Entity("Infrastructure.Database.Schema.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("5e6d9862-a372-4d8d-be74-bd2da92d68bb"),
+                            Name = "Electronics"
+                        },
+                        new
+                        {
+                            Id = new Guid("c93f9f89-77f8-4ffb-b262-d44d426a4c55"),
+                            Name = "White Goods"
+                        },
+                        new
+                        {
+                            Id = new Guid("410278a9-c4b6-4011-8119-3bfcc01a0794"),
+                            Name = "Clothing"
+                        },
+                        new
+                        {
+                            Id = new Guid("32157d3a-e333-48ea-ab53-902a55b88046"),
+                            Name = "Furniture"
+                        });
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.Complaint", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -37,7 +80,20 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsSolved")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("TargetItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TargetUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -51,50 +107,55 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("Complaints");
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.ContactUs", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("Categories");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("47783eaf-8236-48bd-9df6-df2c540d4464"),
-                            CreatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CreatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575"),
-                            Name = "Electronics",
-                            UpdatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UpdatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575")
-                        },
-                        new
-                        {
-                            Id = new Guid("04e1cc13-aef8-4297-a8ed-2b6c55c7e277"),
-                            CreatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CreatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575"),
-                            Name = "White Goods",
-                            UpdatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UpdatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575")
-                        },
-                        new
-                        {
-                            Id = new Guid("11e6234c-8a6c-494d-9f7d-75e453162101"),
-                            CreatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CreatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575"),
-                            Name = "Clothing",
-                            UpdatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UpdatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575")
-                        },
-                        new
-                        {
-                            Id = new Guid("a7c76613-85d8-4707-bf58-c420cb29043d"),
-                            CreatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CreatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575"),
-                            Name = "Furniture",
-                            UpdatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            UpdatedByUserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575")
-                        });
+                    b.ToTable("ContactUs");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.DismissedItem", b =>
@@ -133,6 +194,8 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
+                    b.HasIndex("CreatedByUserId", "TargetItemId");
+
                     b.HasIndex("SourceItemId", "TargetItemId")
                         .IsUnique();
 
@@ -170,6 +233,18 @@ namespace Infrastructure.Database.Migrations
                     b.Property<bool>("IsSwapOnly")
                         .HasColumnType("boolean");
 
+                    b.Property<decimal?>("Latitude")
+                        .IsRequired()
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("Longitude")
+                        .IsRequired()
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("MainImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -183,6 +258,8 @@ namespace Infrastructure.Database.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("IsHidden");
 
                     b.HasIndex("UpdatedByUserId");
 
@@ -231,7 +308,7 @@ namespace Infrastructure.Database.Migrations
                     b.ToTable("ItemImages");
                 });
 
-            modelBuilder.Entity("Infrastructure.Database.Schema.Message", b =>
+            modelBuilder.Entity("Infrastructure.Database.Schema.Location", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -246,8 +323,63 @@ namespace Infrastructure.Database.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Latitude")
+                        .IsRequired()
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("Longitude")
+                        .IsRequired()
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("Location");
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("Cash")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("IsRead")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("MessageReadAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MessageText")
                         .IsRequired()
@@ -260,6 +392,9 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -290,6 +425,9 @@ namespace Infrastructure.Database.Migrations
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool?>("IsRead")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("SourceItemId")
                         .HasColumnType("uuid");
@@ -355,11 +493,14 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Email")
-                        .HasColumnType("character varying(256)")
-                        .HasMaxLength(256);
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("FCMToken")
+                        .HasColumnType("text");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -378,22 +519,28 @@ namespace Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("numeric");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("Mobile")
                         .HasColumnType("text");
 
                     b.Property<string>("NormalizedEmail")
-                        .HasColumnType("character varying(256)")
-                        .HasMaxLength(256);
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("NormalizedUserName")
-                        .HasColumnType("character varying(256)")
-                        .HasMaxLength(256);
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
@@ -414,69 +561,19 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserName")
-                        .HasColumnType("character varying(256)")
-                        .HasMaxLength(256);
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
-                        .HasName("EmailIndex");
+                        .HasDatabaseName("EmailIndex");
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
-                        .HasName("UserNameIndex");
+                        .HasDatabaseName("UserNameIndex");
 
-                    b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575"),
-                            AccessFailedCount = 0,
-                            AvatarUrl = "https://picsum.photos/300/300",
-                            Blurb = "I love things. Have too many of them though. Keen to swap yo!",
-                            ConcurrencyStamp = "617293a5-357c-44ee-83c9-8f320ad84066",
-                            CreatedAt = new DateTimeOffset(new DateTime(2020, 8, 15, 6, 11, 56, 74, DateTimeKind.Unspecified).AddTicks(2304), new TimeSpan(0, 0, 0, 0, 0)),
-                            Email = "admin@switcherooapp.com.au",
-                            EmailConfirmed = true,
-                            FirstName = "Admin",
-                            IsChatNotificationsEnabled = true,
-                            IsMatchNotificationsEnabled = true,
-                            LastName = "Admin",
-                            LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@SWITCHEROOAPP.COM.AU",
-                            NormalizedUserName = "ADMIN@SWITCHEROOAPP.COM.AU",
-                            PasswordHash = "AQAAAAEAACcQAAAAEL+KC2Ikv9s4Q7W92dgtTAZPbm1tDiJeR1/5+aOLeXFBHdKuDeoLgRzdSz+MqoaRyg==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "",
-                            TwoFactorEnabled = false,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2020, 8, 15, 6, 11, 56, 74, DateTimeKind.Unspecified).AddTicks(2304), new TimeSpan(0, 0, 0, 0, 0)),
-                            UserName = "admin@switcherooapp.com.au"
-                        },
-                        new
-                        {
-                            Id = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e576"),
-                            AccessFailedCount = 0,
-                            AvatarUrl = "https://picsum.photos/300/300",
-                            Blurb = "Swap swap swapperoooooo yew yew yew!",
-                            ConcurrencyStamp = "788054a0-623a-4cf7-9556-dffc425ba978",
-                            CreatedAt = new DateTimeOffset(new DateTime(2020, 8, 15, 6, 11, 56, 74, DateTimeKind.Unspecified).AddTicks(2304), new TimeSpan(0, 0, 0, 0, 0)),
-                            Email = "test@switcherooapp.com.au",
-                            EmailConfirmed = true,
-                            FirstName = "Test",
-                            IsChatNotificationsEnabled = true,
-                            IsMatchNotificationsEnabled = true,
-                            LastName = "User",
-                            LockoutEnabled = false,
-                            NormalizedEmail = "TEST@SWITCHEROOAPP.COM.AU",
-                            NormalizedUserName = "TEST@SWITCHEROOAPP.COM.AU",
-                            PasswordHash = "AQAAAAEAACcQAAAAEIKcuCoW7hQjGLQvX18rYAxwgcNf6Dg9+K1hDWjW+6qDGBuuLekOQWi9qoPYJauvsw==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "",
-                            TwoFactorEnabled = false,
-                            UpdatedAt = new DateTimeOffset(new DateTime(2020, 8, 15, 6, 11, 56, 74, DateTimeKind.Unspecified).AddTicks(2304), new TimeSpan(0, 0, 0, 0, 0)),
-                            UserName = "test@switcherooapp.com.au"
-                        });
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.UserVerificationCode", b =>
@@ -538,44 +635,29 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .HasColumnType("character varying(256)")
-                        .HasMaxLength(256);
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("NormalizedName")
-                        .HasColumnType("character varying(256)")
-                        .HasMaxLength(256);
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique()
-                        .HasName("RoleNameIndex");
+                        .HasDatabaseName("RoleNameIndex");
 
-                    b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("c63a092d-e08e-4962-8d82-e0c10212831b"),
-                            ConcurrencyStamp = "74b63bb6-a865-472f-8015-191fb57a3839",
-                            Name = "Administrator",
-                            NormalizedName = "administrator"
-                        },
-                        new
-                        {
-                            Id = new Guid("c63a092d-e08e-4962-8d82-e0c10212833b"),
-                            ConcurrencyStamp = "21eb6acf-ce8f-42f8-93c7-6ff390b3d9dc",
-                            Name = "Test",
-                            NormalizedName = "test"
-                        });
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
                         .HasColumnType("text");
@@ -590,15 +672,16 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("RoleClaims");
+                    b.ToTable("RoleClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
                         .HasColumnType("text");
@@ -613,7 +696,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserClaims");
+                    b.ToTable("UserClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
@@ -634,7 +717,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserLogins");
+                    b.ToTable("UserLogins", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
@@ -649,19 +732,7 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles");
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e575"),
-                            RoleId = new Guid("c63a092d-e08e-4962-8d82-e0c10212831b")
-                        },
-                        new
-                        {
-                            UserId = new Guid("a18be9c0-aa65-4af8-bd17-00bd9344e576"),
-                            RoleId = new Guid("c63a092d-e08e-4962-8d82-e0c10212831b")
-                        });
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
@@ -680,10 +751,10 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
-                    b.ToTable("UserTokens");
+                    b.ToTable("UserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Infrastructure.Database.Schema.Category", b =>
+            modelBuilder.Entity("Infrastructure.Database.Schema.Complaint", b =>
                 {
                     b.HasOne("Infrastructure.Database.Schema.User", "CreatedByUser")
                         .WithMany()
@@ -696,6 +767,29 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.ContactUs", b =>
+                {
+                    b.HasOne("Infrastructure.Database.Schema.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Database.Schema.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.DismissedItem", b =>
@@ -723,6 +817,14 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("SourceItem");
+
+                    b.Navigation("TargetItem");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.Item", b =>
@@ -738,6 +840,10 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.ItemCategory", b =>
@@ -753,6 +859,10 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.ItemImage", b =>
@@ -762,6 +872,33 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.Location", b =>
+                {
+                    b.HasOne("Infrastructure.Database.Schema.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Infrastructure.Database.Schema.Item", "Item")
+                        .WithMany("Locations")
+                        .HasForeignKey("ItemId");
+
+                    b.HasOne("Infrastructure.Database.Schema.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.Message", b =>
@@ -783,6 +920,12 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Offer");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.Offer", b =>
@@ -810,6 +953,14 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("SourceItem");
+
+                    b.Navigation("TargetItem");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.UserVerificationCode", b =>
@@ -825,6 +976,10 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -876,6 +1031,25 @@ namespace Infrastructure.Database.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.Category", b =>
+                {
+                    b.Navigation("ItemCategories");
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.Item", b =>
+                {
+                    b.Navigation("ItemCategories");
+
+                    b.Navigation("ItemImages");
+
+                    b.Navigation("Locations");
+                });
+
+            modelBuilder.Entity("Infrastructure.Database.Schema.Offer", b =>
+                {
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }

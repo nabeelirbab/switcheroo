@@ -53,28 +53,37 @@ namespace Infrastructure.Items
 
         public async Task<bool> DismissItemAsync(Domain.Items.DismissedItem item)
         {
-            var now = DateTime.UtcNow;
-
-            var existing = await db.DismissedItem
-                .SingleOrDefaultAsync(x => x.SourceItemId == item.SourceItemId && x.TargetItemId == item.TargetItemId);
-
-            if (existing != null) return false;
-
-            if (!item.CreatedByUserId.HasValue)
-                throw new InfrastructureException("No createdByUserId provided");
-
-            var newDismissedItem = new Database.Schema.DismissedItem(item.SourceItemId, item.TargetItemId)
+            try
             {
-                CreatedByUserId = item.CreatedByUserId.Value,
-                UpdatedByUserId = item.CreatedByUserId.Value,
-                CreatedAt = now,
-                UpdatedAt = now
-            };
 
-            await db.DismissedItem.AddAsync(newDismissedItem);
-            await db.SaveChangesAsync();
+                var now = DateTime.UtcNow;
 
-            return true;
+                var existing = await db.DismissedItem
+                    .SingleOrDefaultAsync(x => x.SourceItemId == item.SourceItemId && x.TargetItemId == item.TargetItemId);
+
+                if (existing != null) return false;
+
+                if (!item.CreatedByUserId.HasValue)
+                    throw new InfrastructureException("No createdByUserId provided");
+
+                var newDismissedItem = new Database.Schema.DismissedItem(item.SourceItemId, item.TargetItemId)
+                {
+                    CreatedByUserId = item.CreatedByUserId.Value,
+                    UpdatedByUserId = item.CreatedByUserId.Value,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                await db.DismissedItem.AddAsync(newDismissedItem);
+                await db.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message, ex.InnerException);
+                throw;
+            }
         }
 
         public async Task<Domain.Items.Item> CreateItemAsync(Domain.Items.Item item)
@@ -86,98 +95,82 @@ namespace Infrastructure.Items
                 if (!item.CreatedByUserId.HasValue)
                     throw new InfrastructureException("No createdByUserId provided");
                 if (item.AskingPrice.Equals(null))
-                {
                     throw new InfrastructureException($"Item price not be null");
+
+
+                var newDbItem = new Database.Schema.Item(
+                item.Title,
+                item.Description,
+                item.AskingPrice,
+                item.IsHidden,
+                item.IsSwapOnly,
+                item.Latitude,
+                item.Longitude
+            )
+                {
+                    CreatedByUserId = item.CreatedByUserId.Value,
+                    UpdatedByUserId = item.CreatedByUserId.Value,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                var uploadTasks = new List<Task<string>>();
+                // Main image upload task
+                if (!string.IsNullOrEmpty(item.MainImageUrl))
+                {
+                    uploadTasks.Add(ConvertAndUploadImageAsync(item.MainImageUrl));
+                }
+                // Additional images upload tasks
+                uploadTasks.AddRange(item.ImageUrls.Select(ConvertAndUploadImageAsync));
+                var uploadedImageUrls = await Task.WhenAll(uploadTasks);
+
+                List<string> s3Urls = new List<string>();
+                if (!string.IsNullOrEmpty(item.MainImageUrl))
+                {
+                    newDbItem.MainImageUrl = uploadedImageUrls.FirstOrDefault();
+                    s3Urls = uploadedImageUrls.Skip(1).ToList();
                 }
                 else
                 {
-                    var newDbItem = new Database.Schema.Item(
-                    item.Title,
-                    item.Description,
-                    item.AskingPrice,
-                    item.IsHidden,
-                    item.IsSwapOnly,
-                    item.Latitude,
-                    item.Longitude
-                )
-                    {
-                        CreatedByUserId = item.CreatedByUserId.Value,
-                        UpdatedByUserId = item.CreatedByUserId.Value,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    };
-
-                    // Upload MainImageUrl to S3 separately
-                    if (!string.IsNullOrEmpty(item.MainImageUrl))
-                    {
-                        string base64 = item.MainImageUrl?.Split(',').LastOrDefault();
-                        base64 = base64.Trim();
-                        byte[] mainImageBytes = Convert.FromBase64String(base64);
-                        using (var image = SixLabors.ImageSharp.Image.Load(mainImageBytes))
-                        {
-                            using (var ms = new MemoryStream())
-                            {
-                                // Adjust the WebPEncoder settings as needed
-                                var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 50 }; // Quality is between 1-100
-                                image.Save(ms, encoder);
-                                byte[] webPImageBytes = ms.ToArray();
-                                string uploadedImageUrl = await UploadImageToS3Async(webPImageBytes, "image/webp");
-                                newDbItem.MainImageUrl = uploadedImageUrl;
-                            }
-                        }
-                        //newDbItem.MainImageUrl = await UploadImageToS3Async(mainImageBytes, "image/jpeg");
-                    }
-
-                    // Upload ImageUrls to S3
-                    List<string> imagesBase64 = item.ImageUrls;
-                    List<string> s3Urls = new List<string>();
-
-                    foreach (string base64String in imagesBase64)
-                    {
-                        string base64 = base64String?.Split(',').LastOrDefault();
-                        base64 = base64.Trim();
-                        byte[] imageBytes = Convert.FromBase64String(base64);
-                        using (var image = SixLabors.ImageSharp.Image.Load(imageBytes))
-                        {
-                            using (var ms = new MemoryStream())
-                            {
-                                // Adjust the WebPEncoder settings as needed
-                                var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 50 }; // Quality is between 1-100
-                                image.Save(ms, encoder);
-                                byte[] webPImageBytes = ms.ToArray();
-                                string uploadedImageUrl = await UploadImageToS3Async(webPImageBytes, "image/webp");
-                                s3Urls.Add(uploadedImageUrl);
-                            }
-                        }
-                        //string uploadedImageUrl = await UploadImageToS3Async(imageBytes, "image/jpeg");
-                        //s3Urls.Add(uploadedImageUrl);
-                    }
-
-                    await db.Items.AddAsync(newDbItem);
-
-                    // Add item categories
-                    var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
-                    newDbItem.ItemCategories.AddRange(dbCategories
-                        .Select(dbCat => new ItemCategory(newDbItem.Id, dbCat.Id))
-                        .ToList());
-
-                    // Add item images
-                    newDbItem.ItemImages.AddRange(s3Urls
-                        .Select(url => new ItemImage(url, newDbItem.Id))
-                        .ToList());
-
-                    await db.SaveChangesAsync();
-
-                    return await GetItemByItemId(newDbItem.Id);
+                    s3Urls = uploadedImageUrls.ToList();
                 }
+                await db.Items.AddAsync(newDbItem);
+
+                // Add item categories
+                var dbCategories = await categoryRepository.GetCategoriesByNames(item.Categories);
+                newDbItem.ItemCategories.AddRange(dbCategories
+                    .Select(dbCat => new ItemCategory(newDbItem.Id, dbCat.Id))
+                    .ToList());
+
+                // Add item images
+                newDbItem.ItemImages.AddRange(s3Urls
+                    .Select(url => new ItemImage(url, newDbItem.Id))
+                    .ToList());
+
+                await db.SaveChangesAsync();
+
+                return await GetItemByItemId(newDbItem.Id);
             }
+
             catch (Exception ex)
             {
                 Console.WriteLine($"Infrastructure Exception {ex.Message}");
                 throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
             }
         }
+        private async Task<string> ConvertAndUploadImageAsync(string base64Image)
+        {
+            string base64 = base64Image.Split(',').LastOrDefault()?.Trim();
+            byte[] imageBytes = Convert.FromBase64String(base64);
 
+            using var image = SixLabors.ImageSharp.Image.Load(imageBytes);
+            using var ms = new MemoryStream();
+            var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 50 };
+            image.Save(ms, encoder);
+            byte[] webPImageBytes = ms.ToArray();
+
+            return await UploadImageToS3Async(webPImageBytes, "image/webp");
+        }
         public async Task<IEnumerable<Domain.Items.Item>> GetItemsByUserId(Guid userId)
         {
             try

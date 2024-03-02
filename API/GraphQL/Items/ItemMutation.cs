@@ -176,7 +176,7 @@ namespace API.GraphQL
 
             var dismissItem = sourceItemId.HasValue
                 ? DismissedItem.CreateDismissItemForItem(sourceItemId.Value, targetItemId, user.Id.Value)
-                : DismissedItem.CreateDismissItem(targetItemId, user.Id.Value);
+                : DismissedItem.CreateDismissItemForItem(targetItemId, targetItemId, user.Id.Value);
 
             return await itemRepository.DismissItemAsync(dismissItem);
         }
