@@ -25,7 +25,8 @@ namespace API.GraphQL
             if (userCp == null) throw new ApiException("Not authenticated");
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+            if (item.Categories == null || !item.Categories.Any())
+                throw new Exception("Item Category is Required");
             var newDomainItem = await itemRepository.CreateItemAsync(Domain.Items.Item.CreateNewItem(
                 item.Title,
                 item.Description,

@@ -61,6 +61,7 @@ namespace API.GraphQL
             if (userCp == null) throw new ApiException("Not authenticated");
             var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
             if (!user.Id.HasValue) throw new ApiException("Database failure");
+            if (cash != null && cash > 0) sourceItemId = targetItemId;
             var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId ?? targetItemId, targetItemId, cash, user.Id.Value, sourceStatus ?? 1, targeteStatus, isRead));
             
             return Offer.FromDomain(domainOffer);

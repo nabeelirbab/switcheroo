@@ -146,7 +146,7 @@ namespace Infrastructure.UserManagement
 
                 var sourceItemId = itemIds.SourceItemId;
                 var targetItemId = itemIds.TargetItemId;
-                var Cash = itemIds.Cash != null && itemIds.Cash! > 0 ? true : false;
+                var Cash = itemIds.Cash != null && itemIds.Cash > 0 ? true : false;
                 List<Domain.Items.Item> items;
                 if (Cash)
                 {
@@ -432,6 +432,8 @@ namespace Infrastructure.UserManagement
 
                     if (!string.IsNullOrEmpty(userFCMToken))
                     {
+                        var offer = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.CreatedByUserId == id).FirstOrDefault();
+                        if (offer == null) throw new InfrastructureException($"No Offer is created by this user.....");
                         var app = FirebaseApp.DefaultInstance;
                         var messaging = FirebaseMessaging.GetMessaging(app);
 
@@ -446,7 +448,11 @@ namespace Infrastructure.UserManagement
                             },
                             Data = new Dictionary<string, string>
                             {
-                                {"IsMatch","true" }
+                                {"IsMatch", "true"},
+                                {"SourceItemId", offer.SourceItemId.ToString()},
+                                {"SourceItemImage", offer.SourceItem.MainImageUrl},
+                                {"TargetItemId", offer.TargetItemId.ToString()},
+                                {"TargetItemImage", offer.TargetItem.MainImageUrl}
                             }
                         };
                         string response = await messaging.SendAsync(message);

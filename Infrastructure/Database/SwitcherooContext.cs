@@ -75,9 +75,9 @@ namespace Infrastructure.Database
                 .IsUnique();
 
             // DismissedItem Indexes
-            modelBuilder.Entity<DismissedItem>()
-                .HasIndex(x => new { x.SourceItemId, x.TargetItemId })
-                .IsUnique();
+            //modelBuilder.Entity<DismissedItem>()
+            //    .HasIndex(x => new { x.SourceItemId, x.TargetItemId })
+            //    .IsUnique();
 
             // Many to many relationships
             modelBuilder.Entity<ItemCategory>()

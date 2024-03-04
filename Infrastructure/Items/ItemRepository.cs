@@ -57,9 +57,17 @@ namespace Infrastructure.Items
             {
 
                 var now = DateTime.UtcNow;
-
-                var existing = await db.DismissedItem
-                    .SingleOrDefaultAsync(x => x.SourceItemId == item.SourceItemId && x.TargetItemId == item.TargetItemId);
+                Database.Schema.DismissedItem existing;
+                if (item.SourceItemId == item.TargetItemId)
+                {
+                    existing = await db.DismissedItem
+                    .SingleOrDefaultAsync(x => x.SourceItemId == item.SourceItemId && x.TargetItemId == item.TargetItemId && x.CreatedByUserId == item.CreatedByUserId);
+                }
+                else
+                {
+                    existing = await db.DismissedItem
+                        .SingleOrDefaultAsync(x => x.SourceItemId == item.SourceItemId && x.TargetItemId == item.TargetItemId);
+                }
 
                 if (existing != null) return false;
 
@@ -368,6 +376,8 @@ namespace Infrastructure.Items
         public async Task<Domain.Items.Item> GetItemByItemId(Guid itemId)
         {
             var item = await db.Items
+                .Include(i => i.ItemCategories)
+                .ThenInclude(c => c.Category)
                 .Where(z => z.Id == itemId)
                 .Select(Database.Schema.Item.ToDomain)
                 .SingleOrDefaultAsync();
@@ -465,36 +475,62 @@ namespace Infrastructure.Items
             }
         }
 
+        //public static bool IsDistanceWithinRange(double sourceLatitude, double sourceLongitude, double destinationLatitude, double destinationLongitude, double desiredDistance, bool isUnitMiles = false)
+        //{
+        //    const double earthRadiusKm = 6371; // Earth's radius in kilometers
+        //    const double milesPerKm = 0.621371; // Conversion factor from kilometers to miles
+
+        //    // Convert coordinates to radians
+        //    double lat1 = DegreeToRadian(sourceLatitude);
+        //    double lon1 = DegreeToRadian(sourceLongitude);
+        //    double lat2 = DegreeToRadian(destinationLatitude);
+        //    double lon2 = DegreeToRadian(destinationLongitude);
+
+        //    Console.Write($"lat lngs in rads {lat1} {lon1}  {lat2}  {lon2} ");
+
+        //    // Calculate differences in latitude and longitude
+        //    double dLat = lat2 - lat1;
+        //    double dLon = lon2 - lon1;
+
+        //    Console.Write($"lat lngs distances {dLat} {dLon} ");
+
+
+        //    // Calculate the Haversine formula components
+        //    double a = Math.Pow(Math.Sin(dLat / 2), 2) + Math.Cos(lat1) * Math.Cos(lat2) * Math.Pow(Math.Sin(dLon / 2), 2);
+        //    double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        //    double distanceKm = earthRadiusKm * c;
+        //    double distanceMiles = distanceKm * milesPerKm;
+
+        //    Console.Write($"What is a: {a}, c: {c} dKm: {distanceKm} dM: {distanceMiles}");
+
+
+        //    // Check if the distance is within the desired range
+        //    return isUnitMiles ? distanceMiles <= desiredDistance : distanceKm <= desiredDistance;
+        //}
         public static bool IsDistanceWithinRange(double sourceLatitude, double sourceLongitude, double destinationLatitude, double destinationLongitude, double desiredDistance, bool isUnitMiles = false)
         {
-            const double earthRadiusKm = 6371; // Earth's radius in kilometers
-            const double milesPerKm = 0.621371; // Conversion factor from kilometers to miles
+            const double EarthRadiusKm = 6371.0; // Earth's radius in kilometers
+            const double MilesPerKm = 0.621371; // Conversion factor from kilometers to miles
 
-            // Convert coordinates to radians
+            // Convert coordinates from degrees to radians
             double lat1 = DegreeToRadian(sourceLatitude);
             double lon1 = DegreeToRadian(sourceLongitude);
             double lat2 = DegreeToRadian(destinationLatitude);
             double lon2 = DegreeToRadian(destinationLongitude);
 
-            Console.Write($"lat lngs in rads {lat1} {lon1}  {lat2}  {lon2} ");
-
             // Calculate differences in latitude and longitude
             double dLat = lat2 - lat1;
             double dLon = lon2 - lon1;
 
-            Console.Write($"lat lngs distances {dLat} {dLon} ");
-
-
             // Calculate the Haversine formula components
             double a = Math.Pow(Math.Sin(dLat / 2), 2) + Math.Cos(lat1) * Math.Cos(lat2) * Math.Pow(Math.Sin(dLon / 2), 2);
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-            double distanceKm = earthRadiusKm * c;
-            double distanceMiles = distanceKm * milesPerKm;
-
-            Console.Write($"What is a: {a}, c: {c} dKm: {distanceKm} dM: {distanceMiles}");
-
+            double distanceKm = EarthRadiusKm * c;
+            double distanceMiles = distanceKm * MilesPerKm;
 
             // Check if the distance is within the desired range
+            Console.WriteLine($"SourceLatitude: {sourceLatitude}, SourceLongitude: {sourceLongitude}, DestinationLatitude: {destinationLatitude}, DestinationLongitude: {destinationLongitude}, DesiredDistance: {desiredDistance}, IsUnitMiles: {isUnitMiles}");
+            Console.WriteLine($"DistanceKm: {distanceKm}, DistanceMiles: {distanceMiles}");
             return isUnitMiles ? distanceMiles <= desiredDistance : distanceKm <= desiredDistance;
         }
 

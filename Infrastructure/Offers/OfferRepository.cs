@@ -35,15 +35,20 @@ namespace Infrastructure.Offers
                 var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
                            .Select(x => x.CreatedByUserId).FirstOrDefault();
 
-                var userFCMToken = db.Users
-                    .Where(x => x.Id == targetUserId)
-                    .Select(x => x.FCMToken).FirstOrDefault();
+                var userIds = new[] { offer.CreatedByUserId, targetUserId };
 
+                var userTokens = await db.Users
+                    .Where(x => userIds.Contains(x.Id))
+                    .Select(x => new { x.Id, x.FCMToken })
+                    .ToListAsync();
+
+                var sourceUserFCMToken = userTokens.FirstOrDefault(x => x.Id == offer.CreatedByUserId)?.FCMToken;
+                var targetUserFCMToken = userTokens.FirstOrDefault(x => x.Id == targetUserId)?.FCMToken;
 
                 if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
                     throw new InfrastructureException("No createdByUserId provided");
 
-                var match = db.Offers.Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
+                var match = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
                 if (match != null)
                 {
                     if ((match.Cash == null && offer.Cash == null) || (match.Cash != null && offer.Cash != null))
@@ -62,14 +67,14 @@ namespace Infrastructure.Offers
                             };
 
                             await db.Offers.AddAsync(newDbOffer);
-                            if (!string.IsNullOrEmpty(userFCMToken))
+                            if (!string.IsNullOrEmpty(targetUserFCMToken))
                             {
                                 var app = FirebaseApp.DefaultInstance;
                                 var messaging = FirebaseMessaging.GetMessaging(app);
 
                                 var message = new FirebaseAdmin.Messaging.Message()
                                 {
-                                    Token = userFCMToken,
+                                    Token = targetUserFCMToken,
                                     Notification = new Notification
                                     {
                                         Title = "New Cash Offer",
@@ -90,31 +95,8 @@ namespace Infrastructure.Offers
                         else
                         {
                             match.TargetStatus = Database.Schema.OfferStatus.Initiated;
-                            if (!string.IsNullOrEmpty(userFCMToken))
-                            {
-                                var app = FirebaseApp.DefaultInstance;
-                                var messaging = FirebaseMessaging.GetMessaging(app);
-
-                                var message = new FirebaseAdmin.Messaging.Message()
-                                {
-                                    Token = userFCMToken,
-                                    Notification = new Notification
-                                    {
-                                        Title = "Product Matched",
-                                        Body = "One of your product is matched"
-                                        // Other notification parameters can be added here
-                                    },
-                                    Data = new Dictionary<string, string>
-                            {
-                                {"IsMatch","true" }
-                            }
-                                };
-                                string response = await messaging.SendAsync(message);
-                            }
-                            else
-                            {
-                                throw new InfrastructureException($"No FCM Token exists for this user");
-                            }
+                            //await SendMatchingPushNotification(sourceUserFCMToken);
+                            await SendMatchingPushNotification(targetUserFCMToken, match.SourceItemId.ToString(), match.SourceItem.MainImageUrl, match.TargetItemId.ToString(), match.TargetItem.MainImageUrl);
                             await db.SaveChangesAsync();
                             myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
                         }
@@ -168,14 +150,14 @@ namespace Infrastructure.Offers
                                 await db.Offers.AddAsync(newDbOffer);
                                 try
                                 {
-                                    if (!string.IsNullOrEmpty(userFCMToken))
+                                    if (!string.IsNullOrEmpty(targetUserFCMToken))
                                     {
                                         var app = FirebaseApp.DefaultInstance;
                                         var messaging = FirebaseMessaging.GetMessaging(app);
 
                                         var message = new FirebaseAdmin.Messaging.Message()
                                         {
-                                            Token = userFCMToken,
+                                            Token = targetUserFCMToken,
                                             Notification = new Notification
                                             {
                                                 Title = "New Cash Offer",
@@ -241,6 +223,42 @@ namespace Infrastructure.Offers
             }
         }
 
+        private async Task SendMatchingPushNotification(string? userFCMToken, string sourceItemId, string sourceItemImage, string targetItemId, string targetItemImage)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(userFCMToken))
+                {
+                    var app = FirebaseApp.DefaultInstance;
+                    var messaging = FirebaseMessaging.GetMessaging(app);
+
+                    var message = new FirebaseAdmin.Messaging.Message()
+                    {
+                        Token = userFCMToken,
+                        Notification = new Notification
+                        {
+                            Title = "Product Matched",
+                            Body = "One of your product is matched"
+                            // Other notification parameters can be added here
+                        },
+                        Data = new Dictionary<string, string>
+                    {
+                        {"IsMatch", "true"},
+                        {"SourceItemId", sourceItemId},
+                        {"SourceItemImage", sourceItemImage},
+                        {"TargetItemId", targetItemId},
+                        {"TargetItemImage", targetItemImage}
+                    }
+                    };
+                    string response = await messaging.SendAsync(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message, ex.InnerException);
+            }
+
+        }
         public async Task<bool> DeleteOffer(Guid Id, Guid userId)
         {
             try
