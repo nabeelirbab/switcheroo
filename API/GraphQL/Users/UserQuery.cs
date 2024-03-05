@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Domain;
 using Domain.Users;
+using Domain.UserAnalytics;
 using HotChocolate;
 using HotChocolate.AspNetCore.Authorization;
-using Infrastructure.Items;
 using Microsoft.AspNetCore.Http;
 
 namespace API.GraphQL
@@ -29,8 +29,6 @@ namespace API.GraphQL
         }
 
         public async Task<Paginated<Users.Models.User>> GetUsers(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IUserRepository userRepository,
             int limit,
             string? cursor
@@ -55,8 +53,6 @@ namespace API.GraphQL
 
         //[Authorize]
         public async Task<List<KeyValue>> GetUsersGenderCount(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IUserRepository userRepository
         )
         {
@@ -88,5 +84,7 @@ namespace API.GraphQL
 
             return notified;
         }
+
+       
     }
 }

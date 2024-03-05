@@ -132,6 +132,35 @@ namespace Infrastructure.UserManagement
 
             return users;
         }
+        public async Task<string> GetTargetUserForMessage(Guid? userId, Guid offerId, bool getFCMToken = false)
+        {
+            var query = db.Offers
+                .Where(o => o.Id == offerId)
+                .Select(o => new
+                {
+                    SourceUser = o.CreatedByUserId,
+                    SourceUserFcm = getFCMToken ? o.CreatedByUser.FCMToken : null,
+                    TargetUser = o.TargetItem.CreatedByUserId,
+                    TargetUserFcm = getFCMToken ? o.TargetItem.CreatedByUser.FCMToken : null
+                });
+
+            var offerUsers = await query.FirstOrDefaultAsync();
+
+            if (offerUsers == null)
+            {
+                return null; // Or handle as appropriate
+            }
+
+            if (userId == offerUsers.SourceUser)
+            {
+                return getFCMToken ? offerUsers.TargetUserFcm : offerUsers.TargetUser.ToString();
+            }
+            else
+            {
+                return getFCMToken ? offerUsers.SourceUserFcm : offerUsers.SourceUser.ToString();
+            }
+        }
+
 
         public async Task<List<User>> GetTargetUser(Guid? userId, Guid offerId)
         {
@@ -141,8 +170,10 @@ namespace Infrastructure.UserManagement
                 {
                     SourceItemId = o.SourceItemId,
                     TargetItemId = o.TargetItemId,
+                    OfferCreatedBy = o.CreatedByUserId,
                     Cash = o.Cash,
                 }).FirstOrDefault();
+
 
                 var sourceItemId = itemIds.SourceItemId;
                 var targetItemId = itemIds.TargetItemId;
@@ -432,7 +463,7 @@ namespace Infrastructure.UserManagement
 
                     if (!string.IsNullOrEmpty(userFCMToken))
                     {
-                        var offer = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.CreatedByUserId == id).FirstOrDefault();
+                        var offer = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.CreatedByUserId == id && x.SourceItemId != x.TargetItemId).FirstOrDefault();
                         if (offer == null) throw new InfrastructureException($"No Offer is created by this user.....");
                         var app = FirebaseApp.DefaultInstance;
                         var messaging = FirebaseMessaging.GetMessaging(app);

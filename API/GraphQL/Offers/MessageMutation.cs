@@ -40,12 +40,14 @@ namespace API.GraphQL
 
                 var returnmessage = Message.FromDomain(newDomainMessage);
 
-                var targetUser = await userRepository.GetTargetUser(user.Id, message.OfferId);
-                await _chatHubContext.Clients.User(targetUser[0].Id.ToString()).SendAsync("ReceiveMessage", returnmessage);
+                var targetUserId = await userRepository.GetTargetUserForMessage(user.Id, message.OfferId,false);
+                if (targetUserId != null)
+                    await _chatHubContext.Clients.User(targetUserId).SendAsync("ReceiveMessage", returnmessage);
 
                 return returnmessage;
             }
-            catch(Exception ex) {
+            catch (Exception ex)
+            {
                 throw new ApiException($"API Exception {ex.Message}");
             }
         }

@@ -159,5 +159,34 @@ namespace API.GraphQL
                 paginatedItemsResult.HasNextPage);
 
         }
+
+        public async Task<int> GetItemsCount(
+                [Service] IHttpContextAccessor httpContextAccessor,
+                [Service] IUserAuthenticationService userAuthenticationService,
+                [Service] IItemRepository itemRepository
+            )
+        {
+            var itemsCount = await itemRepository.GetItemCount();
+            return itemsCount;
+        }
+        public async Task<Paginated<Items.Models.Item>> GetAllItemsInDatabase(
+                [Service] IHttpContextAccessor httpContextAccessor,
+                [Service] IUserAuthenticationService userAuthenticationService,
+                [Service] IItemRepository itemRepository,
+                int limit,
+                string? cursor
+            )
+        {
+            var paginatedItems = await itemRepository.GetAllItems(limit, cursor);
+
+            return new Paginated<Items.Models.Item>(
+                paginatedItems.Data
+                    .Select(Items.Models.Item.FromDomain)
+                    .ToList(),
+                paginatedItems.Cursor,
+                paginatedItems.TotalCount,
+                paginatedItems.HasNextPage);
+
+        }
     }
 }

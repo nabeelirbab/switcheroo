@@ -33,8 +33,10 @@ namespace Domain.Items
         Task<Paginated<Item>> GetItems(Guid userId, Guid itemId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles);
         Task<Paginated<Item>> GetCashItems(Guid userId, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false);
         Task<Paginated<Item>> GetAllItems(Guid userId, int limit, string? cursor);
+        Task<Paginated<Item>> GetAllItems(int limit, string? cursor);
 
         Task<List<KeyValue>> GetCategoriesItemCount();
+        Task<int> GetItemCount();
         Task<IEnumerable<Domain.Items.Item>> GetItems(List<Guid> itemIds);
     }
 }

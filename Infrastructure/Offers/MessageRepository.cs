@@ -13,6 +13,7 @@ using System.Threading;
 using Domain.Services;
 using Domain.Users;
 using Domain.Items;
+using Infrastructure.UserManagement;
 
 namespace Infrastructure.Offers
 {
@@ -21,11 +22,13 @@ namespace Infrastructure.Offers
         private readonly SwitcherooContext db;
         private readonly Func<Database.Schema.Message, DateTime> _messageOrderingExpression = z => z.CreatedAt.Date;
         private readonly ILoggerManager _loggerManager;
+        private readonly IUserRepository _userRepository;
 
-        public MessageRepository(SwitcherooContext db, ILoggerManager loggerManager)
+        public MessageRepository(SwitcherooContext db, ILoggerManager loggerManager, IUserRepository userRepository)
         {
             this.db = db;
             _loggerManager = loggerManager;
+            _userRepository = userRepository;
         }
 
         public async Task<List<Domain.Offers.Message>> GetMessagesByOfferId(Guid offerId)
@@ -162,7 +165,7 @@ namespace Infrastructure.Offers
                         readeMessage.MessageReadAt = now;
                     }
                 }
-                return mergedMessages.OrderByDescending(m=>m.CreatedAt).ToList();
+                return mergedMessages.OrderByDescending(m => m.CreatedAt).ToList();
             }
             catch (Exception ex)
             {
@@ -266,27 +269,27 @@ namespace Infrastructure.Offers
             {
                 try
                 {
-                var app = FirebaseApp.DefaultInstance;
-                var messaging = FirebaseMessaging.GetMessaging(app);
-
-                var notification = new FirebaseAdmin.Messaging.Message()
-                {
-                    Token = userFCM,
-                    Notification = new Notification
+                    var app = FirebaseApp.DefaultInstance;
+                    var messaging = FirebaseMessaging.GetMessaging(app);
+                    string targetUserFcm = await _userRepository.GetTargetUserForMessage(message.CreatedByUserId, message.OfferId, true);
+                    var notification = new FirebaseAdmin.Messaging.Message()
                     {
-                        Title = "Message",
-                        Body = message.MessageText
-                        // Other notification parameters can be added here
-                    },
-                    Data = new Dictionary<string, string>
+                        Token = targetUserFcm,
+                        Notification = new Notification
+                        {
+                            Title = "Message",
+                            Body = message.MessageText
+                            // Other notification parameters can be added here
+                        },
+                        Data = new Dictionary<string, string>
                     {
                         { "datetime", DateTime.Now.ToString() }
                         // You can add other data fields as needed
                     }
-                };
-                string response = await messaging.SendAsync(notification);
+                    };
+                    string response = await messaging.SendAsync(notification);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                 }

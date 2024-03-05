@@ -42,6 +42,9 @@ using Infrastructure.Complaints;
 using Domain.ContactUs;
 using Infrastructure.ContactUs;
 using Microsoft.AspNetCore.Http.Features;
+using Domain.UserAnalytics;
+using Infrastructure.Admin;
+using Domain.ItemAnalytics;
 
 namespace API
 {
@@ -102,6 +105,8 @@ namespace API
         {
             services.AddTransient<ICategoryRepository, CategoryRepository>();
             services.AddTransient<IUserRepository, UserRepository>();
+            services.AddTransient<IUserAnalyticsRepository, UserAnalyticsRepository>();
+            services.AddTransient<IItemAnalyticsRepository, ItemAnalyticsRepository>();
             services.AddTransient<IOfferRepository, OfferRepository>();
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IMessageRepository, MessageRepository>();

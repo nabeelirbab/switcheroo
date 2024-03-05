@@ -316,20 +316,24 @@ namespace Infrastructure.Items
         {
             try
             {
-                //var data = db.ItemCategories.Join(db.Categories, itemCategory => itemCategory.CategoryId,category => category.Id,
-                //        (itemCategory, category) => new { ItemCategory = itemCategory, Categories = category })
-                //        .GroupBy(x => x.Categories.Name)
-                //        .Select(g => new KeyValue(g.Key,g.Count())
-                //        {
-
-                //        }).ToList();
-
                 var keyValueList = await db.ItemCategories
                                    .GroupBy(itemCategory => itemCategory.Category.Name)
                                    .Select(group => new KeyValue(group.Key, group.Count()))
                                    .ToListAsync();
 
                 return keyValueList;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Exception {ex.Message}");
+            }
+        }
+        public async Task<int> GetItemCount()
+        {
+            try
+            {
+                int itemsCount = await db.Items.CountAsync();
+                return itemsCount;
             }
             catch (Exception ex)
             {
@@ -529,8 +533,8 @@ namespace Infrastructure.Items
             double distanceMiles = distanceKm * MilesPerKm;
 
             // Check if the distance is within the desired range
-            Console.WriteLine($"SourceLatitude: {sourceLatitude}, SourceLongitude: {sourceLongitude}, DestinationLatitude: {destinationLatitude}, DestinationLongitude: {destinationLongitude}, DesiredDistance: {desiredDistance}, IsUnitMiles: {isUnitMiles}");
-            Console.WriteLine($"DistanceKm: {distanceKm}, DistanceMiles: {distanceMiles}");
+            //Console.WriteLine($"SourceLatitude: {sourceLatitude}, SourceLongitude: {sourceLongitude}, DestinationLatitude: {destinationLatitude}, DestinationLongitude: {destinationLongitude}, DesiredDistance: {desiredDistance}, IsUnitMiles: {isUnitMiles}");
+            //Console.WriteLine($"DistanceKm: {distanceKm}, DistanceMiles: {distanceMiles}");
             return isUnitMiles ? distanceMiles <= desiredDistance : distanceKm <= desiredDistance;
         }
 
@@ -689,9 +693,10 @@ namespace Infrastructure.Items
                 Console.Clear();
                 // if any dismised item
                 var myDismissedItems = await db.DismissedItem
-                    .Where(z => z.CreatedByUserId.Equals(userId))
+                    .Where(z => z.CreatedByUserId.Equals(userId) && z.SourceItemId == z.TargetItemId)
                     .Select(z => z.TargetItemId)
                     .ToListAsync();
+                Console.WriteLine("Length of Dismissed Items is ", myDismissedItems?.Count());
 
                 Expression<Func<Database.Schema.Item, bool>> searchPredicate =
                      x =>
@@ -702,8 +707,8 @@ namespace Infrastructure.Items
                      && !x.IsHidden;
 
                 //get created offers created by this user
-                var createdOfferByUser = await db.Offers.Where(o => o.CreatedByUserId.Equals(userId)).ToListAsync();
-
+                var createdOfferByUser = await db.Offers.Where(o => o.CreatedByUserId.Equals(userId) && o.SourceItemId == o.TargetItemId).ToListAsync();
+                Console.WriteLine("Length of Created offers is :", createdOfferByUser.Count());
                 // Order by newest created
                 var filteredItems = await db.Items
                 .AsNoTracking()
@@ -723,7 +728,7 @@ namespace Infrastructure.Items
                 {
                     throw new InfrastructureException($"No Item found against this price range");
                 }
-
+                Console.WriteLine("Filtered Items length is", filteredItems.Count());
                 // Check distance if latitude, longitude, and distance values are provided
                 if (latitude.HasValue && longitude.HasValue && distance.HasValue)
                 {
@@ -874,6 +879,36 @@ namespace Infrastructure.Items
             var totalCount = totalCountQuery; // Await the total count if not already done
 
             // Process items to exclude the main image URL
+            foreach (var item in paginatedItems)
+            {
+                item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+            }
+
+            return new Paginated<Domain.Items.Item>(paginatedItems, newCursor ?? "", totalCount, paginatedItems.Count == limit);
+        }
+        public async Task<Paginated<Domain.Items.Item>> GetAllItems(int limit, string? cursor)
+        {
+            Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+            var query = db.Items.AsNoTracking();
+            if (cursorGuid.HasValue)
+            {
+                query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+            }
+            var totalCountQuery = await query.CountAsync();
+            var paginatedItems = await query
+                .OrderBy(item => item.Id)
+                .Take(limit + 1)
+                .Select(Database.Schema.Item.ToDomain)
+                .ToListAsync();
+
+            string? newCursor = paginatedItems.Count > limit ? paginatedItems.Last().Id.ToString() : null;
+            if (newCursor != null)
+            {
+                paginatedItems = paginatedItems.Take(limit).ToList();
+            }
+
+            var totalCount = totalCountQuery;
+
             foreach (var item in paginatedItems)
             {
                 item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
