@@ -669,10 +669,37 @@ namespace Infrastructure.Items
                 {
                     throw new InfrastructureException($"No data found against");
                 }
+
+                var itemOffers = await db.Offers
+                 .Where(o => (o.SourceItem.CreatedByUserId == userId || o.TargetItem.CreatedByUserId == userId || o.CreatedByUserId == userId)
+                         && (requiredIds.Contains(o.SourceItemId) || requiredIds.Contains(o.TargetItemId)))
+                 .Select(o => new
+                 {
+                     o.Id,
+                     o.SourceItemId,
+                     SourceItemTitle = o.SourceItem.Title,
+                     o.TargetItemId,
+                     TargetItemTitle = o.TargetItem.Title,
+                     o.Cash
+                 }).ToListAsync();
+
+
                 foreach (var item in data)
                 {
                     // Create a new list excluding the main image URL for each item
                     item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+                    var matchingOfferAgainstItem = itemOffers.Find(o => (o.SourceItemId == item.Id || o.TargetItemId == item.Id) && o.Cash > 0 == false);
+                    var cashOfferAgainstItem = itemOffers.Find(o => (o.SourceItemId == item.Id || o.TargetItemId == item.Id) && o.Cash > 0 == true);
+                    if (matchingOfferAgainstItem != null)
+                    {
+                        item.HasMatchingOffer = true;
+                    }
+                    if (cashOfferAgainstItem != null)
+                    {
+                        item.HasCashOffer = true;
+                        item.CashOfferValue = cashOfferAgainstItem.Cash;
+                    }
+
                 }
                 var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
 
@@ -790,95 +817,36 @@ namespace Infrastructure.Items
                 throw new InfrastructureException(ex.Message);
             }
         }
-
-        //public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor)
-        //{
-        //    var myDismissedItems = await db.DismissedItem
-        //        .Where(z => z.CreatedByUserId == userId)
-        //        .Select(z => z.TargetItemId)
-        //        .ToListAsync();
-
-
-        //    var filteredItems = await db.Items
-        //        .Where(item =>
-        //        item.CreatedByUserId != userId &&
-        //        !myDismissedItems.Contains(item.Id) && // Skip dismissed items
-        //        !item.IsHidden) // Skip hidden items
-        //        .ToListAsync();
-
-        //    var itemIdsSorted = filteredItems.Select(x => x.Id).ToList();
-        //    IEnumerable<Guid> requiredIds;
-
-        //    if (cursor != null)
-        //    {
-        //        requiredIds = itemIdsSorted
-        //        .SkipWhile(x => cursor != "" && x.ToString() != cursor)
-        //        .Skip(1)
-        //        .Take(limit);
-        //    }
-        //    else
-        //    {
-        //        requiredIds = itemIdsSorted.Take(limit);
-        //    }
-
-        //    var totalCount = itemIdsSorted.Count();
-
-        //    var data = await db.Items
-        //        .AsNoTracking()
-        //        .Where(x => requiredIds.Contains(x.Id))
-        //        .OrderByDescending(x => x.CreatedAt)
-        //        .Select(Database.Schema.Item.ToDomain)
-        //        .ToListAsync();
-
-        //    foreach (var item in data)
-        //    {
-        //        // Create a new list excluding the main image URL for each item
-        //        item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
-        //    }
-
-        //    var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
-
-        //    return new Paginated<Domain.Items.Item>(data, newCursor ?? "", totalCount, data.Count == limit);
-        //}
-
         public async Task<Paginated<Domain.Items.Item>> GetAllItems(Guid userId, int limit, string? cursor)
         {
-            // Convert cursor to a nullable Guid for comparison
             Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
-
-            // Directly query the items, excluding dismissed items with a subquery, and apply pagination in the query
             var query = db.Items
-                .Where(item => item.CreatedByUserId != userId && // Skip items created by the user
+                .Where(item => item.CreatedByUserId != userId &&
                                !db.DismissedItem.Any(di => di.CreatedByUserId == userId && di.TargetItemId == item.Id) && // Skip dismissed items
-                               !item.IsHidden) // Skip hidden items
+                               !item.IsHidden)
                 .AsNoTracking();
 
-            // If a cursor is provided, filter items to only those after the cursor
             if (cursorGuid.HasValue)
             {
                 query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
             }
 
-            var totalCountQuery = await query.CountAsync(); // Asynchronously start counting total items
+            var totalCountQuery = await query.CountAsync();
 
-            // Apply ordering and pagination
             var paginatedItems = await query
-                .OrderBy(item => item.Id) // Assuming you want to paginate based on the item ID
-                .Take(limit + 1) // Take an extra item to check if there's a next page
+                .OrderBy(item => item.Id)
+                .Take(limit + 1)
                 .Select(Database.Schema.Item.ToDomain)
                 .ToListAsync();
 
-            // Determine the new cursor and if there's a next page
             string? newCursor = paginatedItems.Count > limit ? paginatedItems.Last().Id.ToString() : null;
             if (newCursor != null)
             {
-                // Remove the extra item if there's a next page
                 paginatedItems = paginatedItems.Take(limit).ToList();
             }
 
-            var totalCount = totalCountQuery; // Await the total count if not already done
+            var totalCount = totalCountQuery;
 
-            // Process items to exclude the main image URL
             foreach (var item in paginatedItems)
             {
                 item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();

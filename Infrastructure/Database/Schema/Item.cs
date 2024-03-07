@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -51,6 +52,15 @@ namespace Infrastructure.Database.Schema
 
         public string MainImageUrl { get; set; }
 
+        [NotMapped]
+        public bool? HasMatchingOffer { get; set; }
+
+        [NotMapped]
+        public bool? HasCashOffer { get; set; }
+
+        [NotMapped]
+        public int? CashOfferValue { get; set; }
+
         public void FromDomain(Domain.Items.Item domainItem)
         {
             Title = domainItem.Title;
@@ -79,7 +89,12 @@ namespace Infrastructure.Database.Schema
                 item.Latitude != null ? item.Latitude : null,
                 item.Longitude != null ? item.Longitude : null,
                 item.MainImageUrl
-            );
+            )
+            {
+                HasCashOffer=item.HasCashOffer,
+                HasMatchingOffer=item.HasMatchingOffer,
+                CashOfferValue = item.CashOfferValue
+            };
 
     }
 }

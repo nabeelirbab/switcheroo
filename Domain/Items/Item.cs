@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Items
 {
@@ -60,6 +61,15 @@ namespace Domain.Items
         public Guid? CreatedByUserId { get; private set; }
 
         public Guid? UpdatedByUserId { get; private set; }
+
+        [NotMapped]
+        public bool? HasMatchingOffer { get; set; }
+
+        [NotMapped]
+        public bool? HasCashOffer { get; set; }
+
+        [NotMapped]
+        public int?  CashOfferValue { get; set; }
 
         public static Item CreateNewItem(
             string title,

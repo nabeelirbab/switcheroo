@@ -37,20 +37,18 @@ namespace Infrastructure.Offers
 
                 var userIds = new[] { offer.CreatedByUserId, targetUserId };
 
-                var userTokens = await db.Users
-                    .Where(x => userIds.Contains(x.Id))
-                    .Select(x => new { x.Id, x.FCMToken })
-                    .ToListAsync();
-
-                var sourceUserFCMToken = userTokens.FirstOrDefault(x => x.Id == offer.CreatedByUserId)?.FCMToken;
-                var targetUserFCMToken = userTokens.FirstOrDefault(x => x.Id == targetUserId)?.FCMToken;
+                var sourceUserFCMToken = await db.Users.Where(u => u.Id == offer.CreatedByUserId).Select(u => u.FCMToken).FirstOrDefaultAsync();
+                var targetUserFCMToken = await db.Users.Where(u => u.Id == targetUserId).Select(u => u.FCMToken).FirstOrDefaultAsync();
 
                 if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
                     throw new InfrastructureException("No createdByUserId provided");
 
-                var match = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)).FirstOrDefault();
+                var match = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem)
+                    .Where(x => (x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)) && (x.SourceItem.CreatedByUserId == offer.CreatedByUserId || x.TargetItem.CreatedByUserId == offer.CreatedByUserId || x.CreatedByUserId == offer.CreatedByUserId))
+                    .FirstOrDefault();
                 if (match != null)
                 {
+                    if (match.CreatedByUserId == offer.CreatedByUserId) throw new InfrastructureException($"Offer has been already created!!");
                     if ((match.Cash == null && offer.Cash == null) || (match.Cash != null && offer.Cash != null))
                     {
                         if (offer.Cash != match.Cash)
@@ -318,11 +316,8 @@ namespace Infrastructure.Offers
 
                 offer.TargetStatus = Database.Schema.OfferStatus.Initiated;
 
-                var sourceUserId = db.Items.Where(x => x.Id.Equals(offer.SourceItemId))
-                        .Select(x => x.CreatedByUserId).FirstOrDefault();
-
                 var userFCMToken = db.Users
-                    .Where(x => x.Id == sourceUserId)
+                    .Where(x => x.Id == offer.CreatedByUserId)
                     .Select(x => x.FCMToken).FirstOrDefault();
 
                 var app = FirebaseApp.DefaultInstance;
@@ -412,6 +407,7 @@ namespace Infrastructure.Offers
                 // Step 2: Retrieve offers using myItems
                 var offers = await db.Offers
                     .Where(z => myItems.Contains(z.TargetItemId) && z.Cash != null)
+                    .OrderByDescending(offer => offer.CreatedAt)
                     .Select(offer => new Offer(
                     offer.Id,
                     offer.SourceItemId,

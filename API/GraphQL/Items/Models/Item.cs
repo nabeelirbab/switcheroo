@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
 using Domain.Users;
 using HotChocolate;
@@ -28,7 +29,7 @@ namespace API.GraphQL.Items.Models
             UpdatedByUserId = updatedByUserId;
             Latitude = latitude;
             Longitude = longitude;
-            MainImageUrl= mainImageUrl;
+            MainImageUrl = mainImageUrl;
         }
         public Guid Id { get; private set; }
 
@@ -57,6 +58,12 @@ namespace API.GraphQL.Items.Models
         public string? MainImageUrl { get; set; } //=> ImageUrls?.Count == 0 ? null : ImageUrls[0];
 
         public Guid CreatedByUserId { get; private set; }
+
+
+
+        public bool? HasMatchingOffer { get; set; }
+        public bool? HasCashOffer { get; set; }
+        public int? CashOfferValue { get; set; }
 
         public async Task<Users.Models.User> GetCreatedByUser([Service] IUserRepository userRepository)
         {
@@ -102,7 +109,12 @@ namespace API.GraphQL.Items.Models
                 domItem.UpdatedByUserId.Value,
                 domItem.Latitude,
                 domItem.Longitude
-                );
+                )
+            {
+                HasMatchingOffer = domItem.HasMatchingOffer,
+                HasCashOffer = domItem.HasCashOffer,
+                CashOfferValue = domItem.CashOfferValue
+            };
         }
     }
 }

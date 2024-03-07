@@ -45,6 +45,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Domain.UserAnalytics;
 using Infrastructure.Admin;
 using Domain.ItemAnalytics;
+using Domain.OfferAnalytics;
 
 namespace API
 {
@@ -107,6 +108,7 @@ namespace API
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IUserAnalyticsRepository, UserAnalyticsRepository>();
             services.AddTransient<IItemAnalyticsRepository, ItemAnalyticsRepository>();
+            services.AddTransient<IOfferAnalyticsRepository, OfferAnalyticsRepository>();
             services.AddTransient<IOfferRepository, OfferRepository>();
             services.AddTransient<IItemRepository, ItemRepository>();
             services.AddTransient<IMessageRepository, MessageRepository>();

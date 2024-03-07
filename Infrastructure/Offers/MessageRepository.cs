@@ -106,7 +106,7 @@ namespace Infrastructure.Offers
                             targetUserId,
                             message,
                             null,
-                            null,
+                            offerByOfferId.CreatedAt,
                             false
                         );
                         dummyMessages.Add(newDummyMessage);
@@ -121,7 +121,7 @@ namespace Infrastructure.Offers
                             userId,
                             message,
                             null,
-                            null,
+                            offerByOfferId.CreatedAt,
                             false
                         );
                         dummyMessages.Add(newDummyMessage);
@@ -165,7 +165,7 @@ namespace Infrastructure.Offers
                         readeMessage.MessageReadAt = now;
                     }
                 }
-                return mergedMessages.OrderByDescending(m => m.CreatedAt).ToList();
+                return mergedMessages.OrderByDescending(m => m.CreatedAt).ThenBy(m => m.IsRead).ToList();
             }
             catch (Exception ex)
             {
