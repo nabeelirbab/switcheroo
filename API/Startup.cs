@@ -46,6 +46,8 @@ using Domain.UserAnalytics;
 using Infrastructure.Admin;
 using Domain.ItemAnalytics;
 using Domain.OfferAnalytics;
+using Domain.Notifications;
+using Infrastructure.Notifications;
 
 namespace API
 {
@@ -114,6 +116,7 @@ namespace API
             services.AddTransient<IMessageRepository, MessageRepository>();
             services.AddTransient<IComplaintRepository, ComplaintRepositoy>();
             services.AddTransient<IContactUsRepository, ContactUsRepositoy>();
+            services.AddTransient<ICustomNotificationRepository, CustomNotificationRepositoy>();
         }
 
         private void AddUserManagement(IServiceCollection services)
