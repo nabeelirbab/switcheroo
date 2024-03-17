@@ -129,7 +129,10 @@ namespace Infrastructure.Items
                     uploadTasks.Add(ConvertAndUploadImageAsync(item.MainImageUrl));
                 }
                 // Additional images upload tasks
-                uploadTasks.AddRange(item.ImageUrls.Select(ConvertAndUploadImageAsync));
+                if (item.ImageUrls?.Count > 0 && !String.IsNullOrWhiteSpace(item.ImageUrls[0]) && !String.IsNullOrEmpty(item.ImageUrls[0]))
+                {
+                    uploadTasks.AddRange(item.ImageUrls.Select(ConvertAndUploadImageAsync));
+                }
                 var uploadedImageUrls = await Task.WhenAll(uploadTasks);
 
                 List<string> s3Urls = new List<string>();
@@ -173,7 +176,7 @@ namespace Infrastructure.Items
 
             using var image = SixLabors.ImageSharp.Image.Load(imageBytes);
             using var ms = new MemoryStream();
-            var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 50 };
+            var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder { Quality = 100 };
             image.Save(ms, encoder);
             byte[] webPImageBytes = ms.ToArray();
 

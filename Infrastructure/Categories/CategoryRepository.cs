@@ -34,7 +34,7 @@ namespace Infrastructure.Categories
             var caregories = await db.Categories.ToListAsync();
             if ( caregories.Count > 0 ) { return true; }
             else { return false; }
-            
+
         }
 
         public async Task<IEnumerable<Category>> GetAllCategories()

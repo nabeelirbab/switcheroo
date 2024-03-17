@@ -20,6 +20,8 @@ namespace API.GraphQL
             ItemInput item
         )
         {
+            Console.WriteLine("Going to Create Item");
+            Console.WriteLine(item.ToString());
             var userCp = httpContextAccessor?.HttpContext?.User;
 
             if (userCp == null) throw new ApiException("Not authenticated");
@@ -152,11 +154,11 @@ namespace API.GraphQL
             Guid itemId
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
+            //var userCp = httpContextAccessor?.HttpContext?.User;
 
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
+            //if (userCp == null) throw new ApiException("Not authenticated");
+            //var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+            //if (!user.Id.HasValue) throw new ApiException("Database failure");
 
             return await itemRepository.DeleteItemAsync(itemId);
         }

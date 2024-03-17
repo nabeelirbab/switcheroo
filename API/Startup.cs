@@ -224,6 +224,7 @@ namespace API
                     endpoints.MapHub<ChatHub>("/chatHub")
                        .RequireCors("AllowReactApp");
                 })
+                .UseMiddleware<RequestLoggingMiddleware>()
                 .UseGraphQL()
                 .UsePlayground()
                 .UseVoyager()

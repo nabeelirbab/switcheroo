@@ -12,6 +12,6 @@ namespace API.GraphQL
         public async Task<IEnumerable<Categories.Model.Categories>> GetCategories(
             [Service]ICategoryRepository categoryRepository)
             => (await categoryRepository.GetAllCategories())
-                .Select(z => new Categories.Model.Categories { Id = z.Id, Name = z.Name });
+                .Select(z => new Categories.Model.Categories { Id = z.Id, Name = z.Name }).OrderBy(comparer => comparer.Name);
     }
 }
