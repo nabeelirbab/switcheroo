@@ -35,7 +35,7 @@ namespace API.GraphQL.Models
         public Guid CreatedByUserId { get; private set; }
 
         public string MessageText { get; private set; }
-        
+
         public DateTime? MessageReadAt { get; private set; }
 
         public DateTimeOffset? CreatedAt { get; set; }
@@ -45,9 +45,13 @@ namespace API.GraphQL.Models
             [Service] IUserRepository userRepository
         )
         {
-            return (await userRepository.GetTargetUser(UserId, OfferId))
-                .Select(Users.Models.User.FromDomain)
-                .ToList();
+            List<Users.Models.User> users_list = new List<Users.Models.User>();
+            var target_user = Users.Models.User.FromDomain(await userRepository.GetById(UserId));
+            users_list.Add(target_user);
+            return users_list;
+            //return (await userRepository.GetTargetUser(UserId, OfferId))
+            //    .Select(Users.Models.User.FromDomain)
+            //    .ToList();
         }
 
         public async Task<List<Items.Models.Item>> GetTargetItem(
@@ -83,10 +87,11 @@ namespace API.GraphQL.Models
         }
 
 
-        public static Message FromDomain(Domain.Offers.Message domMessage) {
+        public static Message FromDomain(Domain.Offers.Message domMessage)
+        {
             if (!domMessage.Id.HasValue) throw new ApiException("Mapping error. Invalid message");
 
-            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId,domMessage.Cash, domMessage.UserId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt);
+            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId, domMessage.Cash, domMessage.UserId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt);
         }
 
         public static List<Message> FromDomain(List<Domain.Offers.Message> domMessages)

@@ -14,6 +14,7 @@ using Domain.Services;
 using Domain.Users;
 using Domain.Items;
 using Infrastructure.UserManagement;
+using Amazon.S3.Model;
 
 namespace Infrastructure.Offers
 {
@@ -95,9 +96,18 @@ namespace Infrastructure.Offers
                 {
                     Domain.Offers.Message newDummyMessage;
                     var offerByOfferId = offers.Where(o => o.Id == offerId).FirstOrDefault();
+                    //var targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    Guid targetUserId;
+                    if (offerByOfferId.CreatedByUserId == userId)
+                    {
+                        targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    }
+                    else
+                    {
+                        targetUserId = offerByOfferId.CreatedByUserId;
+                    }
                     if (offerByOfferId.Cash != null && offerByOfferId.Cash > 0)
                     {
-                        var targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
                         newDummyMessage = new Domain.Offers.Message(
                         Guid.NewGuid(),
                             offerByOfferId.CreatedByUserId,
@@ -118,7 +128,7 @@ namespace Infrastructure.Offers
                             offerByOfferId.CreatedByUserId,
                             offerId,
                             offerByOfferId.Cash,
-                            userId,
+                            targetUserId,
                             message,
                             null,
                             offerByOfferId.CreatedAt,
@@ -128,6 +138,23 @@ namespace Infrastructure.Offers
                     }
 
                 }
+                var offerIdsInLastMessages = lastMessages.Select(l => l.OfferId).ToList();
+                var itemIdsInLastMessages = offers.Where(o => offerIdsInLastMessages.Contains(o.Id)).SelectMany(o => new[] { o.SourceItemId, o.TargetItemId }).ToList();
+                var itemsInLastMessages = await db.Items
+                    .Where(item => itemIdsInLastMessages.Contains(item.Id))
+                    .ToListAsync();
+                foreach (var _message in lastMessages)
+                {
+                    var offerInMessage = offers.Where(o => o.Id == _message.OfferId).FirstOrDefault();
+                    if (offerInMessage.CreatedByUserId == userId)
+                    {
+                        _message.UserId = itemsInLastMessages.Where(i => i.Id == offerInMessage.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    }
+                    else
+                    {
+                        _message.UserId = offerInMessage.CreatedByUserId;
+                    }
+                }
                 // Merge lastMessages and dummyMessages
                 var mergedMessages = lastMessages
                     .Select(message => new Domain.Offers.Message(
@@ -135,7 +162,7 @@ namespace Infrastructure.Offers
                         message.CreatedByUserId,
                         message.OfferId,
                         message.Cash,
-                        message.UserId = userId,
+                        message.UserId,
                         message.MessageText,
                         message.MessageReadAt,
                         message.CreatedAt,
@@ -147,7 +174,7 @@ namespace Infrastructure.Offers
                             message.CreatedByUserId,
                             message.OfferId,
                             message.Cash,
-                            message.UserId = userId,
+                            message.UserId,
                             message.MessageText,
                             message.MessageReadAt,
                             message.CreatedAt,
@@ -172,6 +199,7 @@ namespace Infrastructure.Offers
                 throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
             }
         }
+
 
         public async Task<int> GetChatCount(Guid userId)
         {
