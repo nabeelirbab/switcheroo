@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(SwitcherooContext))]
-    partial class SwitcherooContextModelSnapshot : ModelSnapshot
+    [Migration("20240317121141_CustomNotifiations")]
+    partial class CustomNotifiations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,22 +45,22 @@ namespace Infrastructure.Database.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("384649bd-08ae-46d0-906d-e25850986594"),
+                            Id = new Guid("8d8a0ac0-4984-4fa7-8776-7f22bc858a7e"),
                             Name = "Electronics"
                         },
                         new
                         {
-                            Id = new Guid("83c7a8db-ac16-4a8b-ae3f-08b49c6bd624"),
+                            Id = new Guid("8f5aa47f-c794-47bd-9986-b0943c88e199"),
                             Name = "White Goods"
                         },
                         new
                         {
-                            Id = new Guid("94a2a3e3-203a-48f7-8a54-d723232151ad"),
+                            Id = new Guid("85c8daec-efae-4f5e-8728-2a569ebd9708"),
                             Name = "Clothing"
                         },
                         new
                         {
-                            Id = new Guid("96e21924-e819-4d21-8016-bdd99646e1b3"),
+                            Id = new Guid("633c43f5-4d2c-49ed-9dc4-bd0cb6dd0e1c"),
                             Name = "Furniture"
                         });
                 });
@@ -194,30 +196,6 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("UpdatedByUserId");
 
                     b.ToTable("CustomNotification");
-                });
-
-            modelBuilder.Entity("Infrastructure.Database.Schema.CustomNotificationFilters", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CustomNotificationId")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("GenderFilter")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ItemFilter")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomNotificationId");
-
-                    b.ToTable("CustomNotificationFilters");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.DismissedItem", b =>
@@ -869,17 +847,6 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("Infrastructure.Database.Schema.CustomNotificationFilters", b =>
-                {
-                    b.HasOne("Infrastructure.Database.Schema.CustomNotification", "CustomNotification")
-                        .WithMany()
-                        .HasForeignKey("CustomNotificationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CustomNotification");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.DismissedItem", b =>

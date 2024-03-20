@@ -27,6 +27,8 @@ namespace Infrastructure.Database
         public DbSet<Complaint> Complaints { get; set; } = null!;
 
         public DbSet<Schema.ContactUs> ContactUs { get; set; } = null!;
+        public DbSet<Schema.CustomNotification> CustomNotification { get; set; } = null!;
+        public DbSet<Schema.CustomNotificationFilters> CustomNotificationFilters { get; set; } = null!;
         public DbSet<Item> Items { get; set; } = null!;
         public DbSet<ItemCategory> ItemCategories { get; set; } = null!;
         public DbSet<ItemImage> ItemImages { get; set; } = null!;
@@ -72,12 +74,12 @@ namespace Infrastructure.Database
             // Offer Indexes
             modelBuilder.Entity<Offer>()
                 .HasIndex(x => new { x.SourceItemId, x.TargetItemId });
-                //.IsUnique();
+            //.IsUnique();
 
             // DismissedItem Indexes
             modelBuilder.Entity<DismissedItem>()
                 .HasIndex(x => new { x.SourceItemId, x.TargetItemId });
-                //.IsUnique();
+            //.IsUnique();
 
             // Many to many relationships
             modelBuilder.Entity<ItemCategory>()
