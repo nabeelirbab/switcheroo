@@ -10,13 +10,11 @@ namespace API.GraphQL
 {
     public partial class Query
     {
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<List<Notifications.Model.CustomNotification>> GetNotifications(
             [Service] ICustomNotificationRepository customNotificationRepository)
         {
             var notifications = await customNotificationRepository.GeNotifications();
-
-
             return Notifications.Model.CustomNotification.FromDomains(notifications);
         }
     }

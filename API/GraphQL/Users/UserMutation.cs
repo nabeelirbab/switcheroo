@@ -2,13 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Runtime.Internal;
+using API.GraphQL.CommonServices;
 using API.GraphQL.Users.Models;
 using API.HtmlTemplates;
 using Domain.Users;
+using GraphQL;
 using HotChocolate;
 using Infrastructure.UserManagement;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace API.GraphQL
 {
@@ -309,7 +313,7 @@ namespace API.GraphQL
                 if (!existFlag)
                 {
                     var userToCreate = Domain.Users.User.CreateNewUser(name, "", userEmail);
-                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##",true);
+                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##", true);
                 }
                 var userId = await userAuthenticationService.SignInByEmailAsync(userEmail);
                 var user = await userRepository.GetById(userId);
@@ -342,7 +346,7 @@ namespace API.GraphQL
                 if (!existFlag)
                 {
                     var userToCreate = Domain.Users.User.CreateNewUser(name, "", userEmail);
-                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##",true);
+                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##", true);
                 }
                 var userId = await userAuthenticationService.SignInByEmailAsync(userEmail);
                 var user = await userRepository.GetById(userId);
@@ -387,6 +391,29 @@ namespace API.GraphQL
             await userRepository.DeleteUser(userIds);
             return true;
 
+        }
+
+        public async Task<bool> CreateRole([Service] IServiceProvider serviceProvider, string roleName)
+        {
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+            var roleExist = await roleManager.RoleExistsAsync(roleName);
+            if (!roleExist)
+            {
+                await roleManager.CreateAsync(new IdentityRole<Guid>(roleName));
+            }
+            return true;
+        }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin" })]
+        //[HotChocolate.AspNetCore.Authorization.Authorize(Policy = "SuperAdminOnly")]
+        public async Task<bool> UpdateUserRole(
+            [Service] UserContextService userContextService,
+            [Service] IUserRegistrationService userRegistrationService,
+            string userId,
+            string roleName)
+        {
+            Guid requestUserId = userContextService.GetCurrentUserId();
+            return await userRegistrationService.UpdateUserRoleAsync(userId, roleName);
         }
     }
 }

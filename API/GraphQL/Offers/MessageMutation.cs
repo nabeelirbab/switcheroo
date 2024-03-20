@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using API.GraphQL.CommonServices;
 using API.GraphQL.Offers.Models;
 using Domain.Offers;
 using Domain.Users;
@@ -12,9 +13,9 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Message> CreateMessage(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IMessageRepository messageRepository,
             [Service] IUserRepository userRepository,
             MessageInput message
@@ -22,28 +23,21 @@ namespace API.GraphQL
         {
             try
             {
-                var userCp = httpContextAccessor?.HttpContext?.User;
-
-                if (userCp == null) throw new ApiException("Not authenticated");
-                var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-                if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+                var requestUserId = userContextService.GetCurrentUserId();
                 var newDomainMessage = await messageRepository.CreateMessageAsync(
                     Domain.Offers.Message.CreateMessage(
                         message.OfferId,
                         message.Cash,
-                        user.Id.Value,
-                        user.Id.Value,
+                        requestUserId,
+                        requestUserId,
                         message.MessageText
                      )
                  );
 
                 var returnmessage = Message.FromDomain(newDomainMessage);
-
-                var targetUserId = await userRepository.GetTargetUserForMessage(user.Id, message.OfferId,false);
+                var targetUserId = await userRepository.GetTargetUserForMessage(requestUserId, message.OfferId, false);
                 if (targetUserId != null)
                     await _chatHubContext.Clients.User(targetUserId).SendAsync("ReceiveMessage", returnmessage);
-
                 return returnmessage;
             }
             catch (Exception ex)
@@ -52,20 +46,14 @@ namespace API.GraphQL
             }
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> MarkmessageCountZero(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IMessageRepository messageRepository
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            await messageRepository.MarkmessageCountZero(user.Id.Value);
-
+            var requestUserId = userContextService.GetCurrentUserId();
+            await messageRepository.MarkmessageCountZero(requestUserId);
             return true;
         }
     }

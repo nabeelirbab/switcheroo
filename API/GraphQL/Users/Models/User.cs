@@ -6,7 +6,9 @@ using Domain.Items;
 using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
+using Infrastructure.Database.Schema;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Offer = API.GraphQL.Models.Offer;
 
 namespace API.GraphQL.Users.Models
@@ -106,6 +108,20 @@ namespace API.GraphQL.Users.Models
             return retVal
                 .Select(GraphQL.Items.Models.Item.FromDomain)
                 .ToList();
+        }
+
+        [GraphQLNonNullType]
+        public async Task<List<string>> GetUserRoles(
+        [Service] UserManager<Infrastructure.Database.Schema.User> userManager)
+        {
+            var user = await userManager.FindByIdAsync(Id.ToString());
+            if (user == null)
+            {
+                throw new ArgumentException("User not found");
+            }
+
+            var roles = await userManager.GetRolesAsync(user);
+            return roles.ToList();
         }
 
         // Mappers

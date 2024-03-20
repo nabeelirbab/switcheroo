@@ -11,12 +11,14 @@ namespace Infrastructure.UserManagement
     public class UserRegistrationService : IUserRegistrationService
     {
         private readonly UserManager<Database.Schema.User> userManager;
+        private readonly RoleManager<IdentityRole<Guid>> roleManager;
         private readonly SwitcherooContext db;
 
-        public UserRegistrationService(SwitcherooContext db, UserManager<Database.Schema.User> userManager)
+        public UserRegistrationService(SwitcherooContext db, UserManager<Database.Schema.User> userManager, RoleManager<IdentityRole<Guid>> _roleManager)
         {
             this.db = db;
             this.userManager = userManager;
+            roleManager = _roleManager;
         }
 
         public async Task<Guid> CreateUserAsync(User user, string password, bool emailConfirmed = false)
@@ -46,7 +48,7 @@ namespace Infrastructure.UserManagement
             };
 
             var retVal = await userManager.CreateAsync(newUser, password);
-
+            await UpdateUserRoleAsync(newUser.Id.ToString(), "User");
             if (retVal.Succeeded)
             {
                 await userManager.GenerateEmailConfirmationTokenAsync(newUser);
@@ -214,6 +216,35 @@ namespace Infrastructure.UserManagement
             }
 
             return new string(password.OrderBy(s => Guid.NewGuid()).ToArray());
+        }
+
+        public async Task<bool> UpdateUserRoleAsync(string userId, string newRole)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                throw new ArgumentException("User not found");
+            }
+            var roleExists = await roleManager.RoleExistsAsync(newRole);
+            if (!roleExists)
+            {
+                throw new ArgumentException("Role does not exist");
+            }
+            var currentRoles = await userManager.GetRolesAsync(user);
+
+            var removeResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeResult.Succeeded)
+            {
+                return false;
+            }
+
+            var addResult = await userManager.AddToRoleAsync(user, newRole);
+            if (!addResult.Succeeded)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

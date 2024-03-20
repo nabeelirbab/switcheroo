@@ -12,9 +12,8 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<Notifications.Model.CustomNotification> CreateCusotmNotification(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] ICustomNotificationRepository customNotificationRepository,
             Domain.Notifications.CustomNotification notification,
             Notifications.Model.CustomNotificationFilters filters

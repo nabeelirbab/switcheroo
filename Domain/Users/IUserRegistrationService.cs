@@ -20,5 +20,6 @@ namespace Domain.Users
         Task<bool> ResetPasswordAsync(string email, string newPassword, string token);
 
         string GenerateRandomPassword(int length=12);
+        Task<bool> UpdateUserRoleAsync(string userId, string newRole);
     }
 }

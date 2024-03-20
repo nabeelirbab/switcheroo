@@ -11,14 +11,11 @@ namespace API.GraphQL
     public partial class Query
     {
 
-        [Authorize]
-
-        public async Task<List<ContactUs.Model.ContactUs >> GetContactUs(
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<List<ContactUs.Model.ContactUs>> GetContactUs(
             [Service] IContactUsRepository contactUsRepository)
         {
             var contactUs = await contactUsRepository.GetContactUs();
-
-
             return ContactUs.Model.ContactUs.FromDomains(contactUs);
         }
     }

@@ -14,6 +14,7 @@ namespace API.GraphQL
 {
     public partial class Query
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<ItemAnalytics.Models.ItemEnagement> GetItemEngagement([Service] IItemAnalyticsRepository itemAnalyticsRepository)
         {
             return new ItemAnalytics.Models.ItemEnagement();

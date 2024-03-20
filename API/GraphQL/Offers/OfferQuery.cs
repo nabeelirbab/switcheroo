@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using API.GraphQL.CommonServices;
 using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
@@ -14,20 +15,13 @@ namespace API.GraphQL
 {
     public partial class Query
     {
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Offer> GetOffer(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository,
             string offerId)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-            
-            return Offer.FromDomain(await offerRepository.GetOfferById(user.Id.Value, Guid.Parse(offerId)));
+            return Offer.FromDomain(await offerRepository.GetOfferById(userContextService.GetCurrentUserId(), Guid.Parse(offerId)));
         }
 
         [Authorize]

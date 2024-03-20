@@ -1,4 +1,5 @@
-﻿using API.GraphQL.Location.Model;
+﻿using API.GraphQL.CommonServices;
+using API.GraphQL.Location.Model;
 using Domain.Locations;
 using Domain.Users;
 using HotChocolate;
@@ -10,47 +11,33 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Location.Model.Location> AddLocation(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] ILocationRepository locationRepository,
             LocationInput locationInput
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+            var requestUserId = userContextService.GetCurrentUserId();
             var newlocation = await locationRepository.AddLocationAsync(Domain.Locations.Location.AddNewLocation(
-                user.Id.Value,
+                requestUserId,
                 locationInput.Latitude,
                 locationInput.Longitude,
                 locationInput.ItemId,
                 locationInput.IsActive
-                
-                ));  
 
+                ));
             return Location.Model.Location.FromDomain(newlocation);
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Location.Model.Location> DeleteLocation(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] ILocationRepository locationRepository,
             Guid id
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
             try
             {
-                // Attempt to delete the location
                 await locationRepository.DeleteLocationAsync(id);
                 return null;
             }

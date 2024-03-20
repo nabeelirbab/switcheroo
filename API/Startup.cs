@@ -46,8 +46,11 @@ using Domain.UserAnalytics;
 using Infrastructure.Admin;
 using Domain.ItemAnalytics;
 using Domain.OfferAnalytics;
+using FirebaseAdmin.Messaging;
 using Domain.Notifications;
 using Infrastructure.Notifications;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using API.GraphQL.CommonServices;
 
 namespace API
 {
@@ -70,9 +73,6 @@ namespace API
             services.AddSingleton<ILoggerManager, LoggerManager>();
             // If you need dependency injection with your query object add your query type as a services.
             // services.AddSingleton<Query>();
-
-            // Add SignalR
-            services.AddSignalR();
 
             // Add CORS
             services.AddCors(options =>
@@ -97,10 +97,12 @@ namespace API
             // Infastructure
             AddDatabase(services);
             AddEmail(services);
+
             AddGraphQL(services);
             AddUserManagement(services);
 
             AddRepositories(services);
+            services.AddScoped<UserContextService>();
 
         }
 
@@ -117,6 +119,9 @@ namespace API
             services.AddTransient<IComplaintRepository, ComplaintRepositoy>();
             services.AddTransient<IContactUsRepository, ContactUsRepositoy>();
             services.AddTransient<ICustomNotificationRepository, CustomNotificationRepositoy>();
+            services.AddTransient<IUserAuthenticationService, UserAuthenticationService>();
+            services.AddTransient<IUserRegistrationService, UserRegistrationService>();
+
         }
 
         private void AddUserManagement(IServiceCollection services)
@@ -131,7 +136,8 @@ namespace API
                 config.SignIn.RequireConfirmedEmail = true;
             })
               .AddEntityFrameworkStores<SwitcherooContext>()
-              .AddDefaultTokenProviders();
+              .AddDefaultTokenProviders()
+              .AddRoleManager<RoleManager<IdentityRole<Guid>>>();
 
             services.ConfigureApplicationCookie(options =>
             {
@@ -139,8 +145,7 @@ namespace API
                 options.SlidingExpiration = true;
             });
 
-            services.AddTransient<IUserAuthenticationService, UserAuthenticationService>();
-            services.AddTransient<IUserRegistrationService, UserRegistrationService>();
+
         }
 
         private void AddEmail(IServiceCollection services)
@@ -185,6 +190,17 @@ namespace API
                 .AddQueryType<Query>()
                 .AddMutationType<Mutation>()
                 .ModifyOptions(o => o.RemoveUnreachableTypes = true));
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
+             .AddCookie();
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin"));
+                options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+                options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
+            });
         }
 
         private static void CreateImageVariant(string location, string quality, int outputWidth, int outputHeight)
@@ -216,10 +232,10 @@ namespace API
 
             app
                 .UseDeveloperExceptionPage()
+                .UseRouting()
                 .UseAuthentication()
-                .UseRouting()
+                .UseAuthorization()
                 .UseWebSockets()
-                .UseRouting()
                 .UseCors("AllowReactApp")
                 .UseEndpoints(endpoints =>
                 {

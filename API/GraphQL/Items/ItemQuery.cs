@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.GraphQL.Categories.Model;
+using API.GraphQL.CommonServices;
 using Domain;
 using Domain.Items;
 using Domain.Services;
@@ -23,21 +24,20 @@ namespace API.GraphQL
         {
             _loggerManager = loggerManager;
         }
-        [Authorize]
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Items.Models.Item> GetItem(
             [Service] IItemRepository itemRepository,
             Guid itemId
         )
         {
             var item = await itemRepository.GetItemByItemId(itemId);
-
             return Items.Models.Item.FromDomain(item);
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Paginated<Items.Models.Item>> GetItems(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IItemRepository itemRepository,
             Guid itemId,
             decimal? amount,
@@ -50,15 +50,10 @@ namespace API.GraphQL
             bool? inMiles = false
         )
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            if (user == null) throw new ApiException("Not logged in");
-            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
+            var requestUserId = userContextService.GetCurrentUserId();
             if (amount.HasValue)
             {
-                var paginatedItemsResult = await itemRepository.GetItems(user.Id.Value, itemId, amount, categories, limit, cursor, latitude, longitude, distance, inMiles);
+                var paginatedItemsResult = await itemRepository.GetItems(requestUserId, itemId, amount, categories, limit, cursor, latitude, longitude, distance, inMiles);
                 _loggerManager.LogWarn($"API return Items Result to frontend: {paginatedItemsResult.Data.Count}");
                 return new Paginated<Items.Models.Item>(
                     paginatedItemsResult.Data
@@ -70,7 +65,7 @@ namespace API.GraphQL
             }
             else
             {
-                var paginatedItems = await itemRepository.GetAllItems(user.Id.Value, limit, cursor);
+                var paginatedItems = await itemRepository.GetAllItems(requestUserId, limit, cursor);
                 _loggerManager.LogError($"paginatedItems: {paginatedItems.Data.Count}");
                 return new Paginated<Items.Models.Item>(
                     paginatedItems.Data
@@ -82,24 +77,16 @@ namespace API.GraphQL
             }
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Paginated<Items.Models.Item>> GetAllItems(
-                [Service] IHttpContextAccessor httpContextAccessor,
-                [Service] IUserAuthenticationService userAuthenticationService,
+                [Service] UserContextService userContextService,
                 [Service] IItemRepository itemRepository,
                 Guid userId,
                 int limit,
                 string? cursor
             )
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            if (user == null) throw new ApiException("Not logged in");
-            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
             var paginatedItems = await itemRepository.GetAllItems(userId, limit, cursor);
-
             return new Paginated<Items.Models.Item>(
                 paginatedItems.Data
                     .Select(Items.Models.Item.FromDomain)
@@ -110,28 +97,18 @@ namespace API.GraphQL
 
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<List<KeyValue>> CategoriesItemCount(
-                [Service] IHttpContextAccessor httpContextAccessor,
-                [Service] IUserAuthenticationService userAuthenticationService,
                 [Service] IItemRepository itemRepository
             )
         {
-            //var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            //var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            //if (user == null) throw new ApiException("Not logged in");
-            //if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
             var categoriesItemCount = await itemRepository.GetCategoriesItemCount();
-
             return categoriesItemCount;
 
         }
-
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Paginated<Items.Models.Item>> GetCashItems(
-               [Service] IHttpContextAccessor httpContextAccessor,
-               [Service] IUserAuthenticationService userAuthenticationService,
+               [Service] UserContextService userContextService,
                [Service] IItemRepository itemRepository,
                int limit,
                string? cursor,
@@ -141,14 +118,8 @@ namespace API.GraphQL
                bool? inMiles = false
            )
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            if (user == null) throw new ApiException("Not logged in");
-            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
-
-            var paginatedItemsResult = await itemRepository.GetCashItems(user.Id.Value, limit, cursor, latitude, longitude, distance, inMiles);
+            var requestUserId = userContextService.GetCurrentUserId();
+            var paginatedItemsResult = await itemRepository.GetCashItems(requestUserId, limit, cursor, latitude, longitude, distance, inMiles);
             _loggerManager.LogWarn($"API return cashItems Result to frontend: {paginatedItemsResult.Data.Count}");
             return new Paginated<Items.Models.Item>(
                 paginatedItemsResult.Data
@@ -159,19 +130,16 @@ namespace API.GraphQL
                 paginatedItemsResult.HasNextPage);
 
         }
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
 
         public async Task<int> GetItemsCount(
-                [Service] IHttpContextAccessor httpContextAccessor,
-                [Service] IUserAuthenticationService userAuthenticationService,
                 [Service] IItemRepository itemRepository
             )
         {
-            var itemsCount = await itemRepository.GetItemCount();
-            return itemsCount;
+            return await itemRepository.GetItemCount();
         }
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<Paginated<Items.Models.Item>> GetAllItemsInDatabase(
-                [Service] IHttpContextAccessor httpContextAccessor,
-                [Service] IUserAuthenticationService userAuthenticationService,
                 [Service] IItemRepository itemRepository,
                 int limit,
                 string? cursor
