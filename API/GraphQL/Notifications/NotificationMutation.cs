@@ -16,7 +16,8 @@ namespace API.GraphQL
             [Service] IHttpContextAccessor httpContextAccessor,
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] ICustomNotificationRepository customNotificationRepository,
-            Domain.Notifications.CustomNotification notification
+            Domain.Notifications.CustomNotification notification,
+            Notifications.Model.CustomNotificationFilters filters
         )
         {
             try
@@ -25,7 +26,7 @@ namespace API.GraphQL
                     notification.Title,
                     notification.Description,
                     Guid.NewGuid()
-                ));
+                ), Domain.Notifications.CustomNotificationFilters.CreateNewNotification(null, filters.GenderFilter, filters.ItemFilter));
                 return Notifications.Model.CustomNotification.FromDomain(newDomainNotification);
             }
             catch (Exception ex)

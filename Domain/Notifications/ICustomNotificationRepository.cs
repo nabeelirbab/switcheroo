@@ -8,7 +8,7 @@ namespace Domain.Notifications
 {
     public interface ICustomNotificationRepository
     {
-        Task<CustomNotification> CreateNotificationAsync(CustomNotification notification);
+        Task<CustomNotification> CreateNotificationAsync(CustomNotification notification,CustomNotificationFilters filters);
         Task<CustomNotification> GetNotificationById(Guid notificationId);
         Task<List<CustomNotification>> GeNotifications();
     }

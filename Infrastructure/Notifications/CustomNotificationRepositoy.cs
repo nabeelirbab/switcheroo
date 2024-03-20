@@ -23,7 +23,7 @@ namespace Infrastructure.Notifications
             this.userRepository = userRepository;
         }
 
-        public async Task<Domain.Notifications.CustomNotification> CreateNotificationAsync(Domain.Notifications.CustomNotification notification)
+        public async Task<Domain.Notifications.CustomNotification> CreateNotificationAsync(Domain.Notifications.CustomNotification notification, Domain.Notifications.CustomNotificationFilters filters)
         {
             try
             {
@@ -41,25 +41,46 @@ namespace Infrastructure.Notifications
                 };
                 await db.CustomNotification.AddAsync(newDbNotificaiton);
                 await db.SaveChangesAsync();
+                var newDbNotificationFilters = new Database.Schema.CustomNotificationFilters(newDbNotificaiton.Id, filters.GenderFilter ?? "None", filters.ItemFilter ?? "None");
+                await db.CustomNotificationFilters.AddAsync(newDbNotificationFilters);
+                await db.SaveChangesAsync();
 
-                var usersList = await db.Users.Where(u => !string.IsNullOrWhiteSpace(u.FCMToken)).Select(u => u.FCMToken).ToListAsync();
-                if (usersList.Any())
+
+                IQueryable<Database.Schema.User> usersQuery = db.Users.Where(u => !string.IsNullOrWhiteSpace(u.FCMToken));
+                if (filters.GenderFilter != null)
                 {
-                    var app = FirebaseApp.DefaultInstance;
-                    var messaging = FirebaseMessaging.GetMessaging(app);
-
-                    var message = new FirebaseAdmin.Messaging.MulticastMessage()
-                    {
-                        Tokens = usersList,
-                        Notification = new Notification
-                        {
-                            Title = notification.Title,
-                            Body = notification.Description
-                            // Other notification parameters can be added here
-                        }
-                    };
-                    var response = await messaging.SendMulticastAsync(message);
+                    usersQuery = usersQuery.Where(u => u.Gender == filters.GenderFilter);
                 }
+                if (filters.ItemFilter != null)
+                {
+                    switch (filters.ItemFilter)
+                    {
+                        case "No Items":
+                            usersQuery = usersQuery.Where(u => !db.Items.Any(i => i.CreatedByUserId == u.Id));
+                            break;
+                        case "At Least One Item":
+                            usersQuery = usersQuery.Where(u => db.Items.Any(i => i.CreatedByUserId == u.Id));
+                            break;
+                    }
+                }
+                List<string> userFcmTokens = await usersQuery.Select(u => u.FCMToken).ToListAsync();
+                //if (userFcmTokens.Any())
+                //{
+                //    var app = FirebaseApp.DefaultInstance;
+                //    var messaging = FirebaseMessaging.GetMessaging(app);
+
+                //    var message = new FirebaseAdmin.Messaging.MulticastMessage()
+                //    {
+                //        Tokens = userFcmTokens,
+                //        Notification = new Notification
+                //        {
+                //            Title = notification.Title,
+                //            Body = notification.Description
+                //            // Other notification parameters can be added here
+                //        }
+                //    };
+                //    var response = await messaging.SendMulticastAsync(message);
+                //}
                 return await GetNotificationById(newDbNotificaiton.Id);
             }
             catch (Exception ex)
