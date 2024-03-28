@@ -55,6 +55,7 @@ namespace API.GraphQL
             return result;
         }
 
+
         public async Task<bool> ResetPasswordInitiate(
             [Service] IUserRegistrationService userRegistrationService,
             [Service] IUserRepository userRepository,
@@ -79,6 +80,7 @@ namespace API.GraphQL
 
             return true;
         }
+
 
         public async Task<bool> ResendPassword(
             [Service] IUserRegistrationService userRegistrationService,
@@ -125,153 +127,109 @@ namespace API.GraphQL
             return await userRegistrationService.ResetPasswordAsync(email, newPassword, resetPasswordToken);
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserProfile(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             string? blurb,
             string? avatarUrl
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
 
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
+            var requestUserId = userContextService.GetCurrentUserId();
 
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserProfileDetails(user.Id.Value, blurb, avatarUrl));
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserProfileDetails(requestUserId, blurb, avatarUrl));
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserName(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             string firstName,
             string lastName
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserName(user.Id.Value, firstName, lastName));
+            var requestUserId = userContextService.GetCurrentUserId();
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserName(requestUserId, firstName, lastName));
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserEmail(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             string email
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserEmail(user.Id.Value, email));
+            var requestUserId = userContextService.GetCurrentUserId();
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserEmail(requestUserId, email));
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserMobile(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             string? mobile
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserMobile(user.Id.Value, mobile));
+            var requestUserId = userContextService.GetCurrentUserId();
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserMobile(requestUserId, mobile));
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserGender(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             string? gender
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserGender(user.Id.Value, gender));
+            var requestUserId = userContextService.GetCurrentUserId();
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserGender(requestUserId, gender));
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserDateOfBirth(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             string? dateOfBirth
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+            var requestUserId = userContextService.GetCurrentUserId();
             DateTime.TryParse(dateOfBirth, out var dateOfBirthAsDate);
-            var updatedUser = await userRepository.UpdateUserDateOfBirth(user.Id.Value, dateOfBirth == null ? null : (DateTime?)dateOfBirthAsDate);
+            var updatedUser = await userRepository.UpdateUserDateOfBirth(requestUserId, dateOfBirth == null ? null : (DateTime?)dateOfBirthAsDate);
             return Users.Models.User.FromDomain(updatedUser);
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserDistance(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             int? distance
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserDistance(user.Id.Value, distance));
+            var requestUserId = userContextService.GetCurrentUserId();
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserDistance(requestUserId, distance));
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserLocation(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             decimal? latitude,
             decimal? longitude
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserLocation(user.Id.Value, latitude, longitude));
+            var requestUserId = userContextService.GetCurrentUserId();
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserLocation(requestUserId, latitude, longitude));
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> UpdateUserFCMToken(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             string? fcmtoken
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return Users.Models.User.FromDomain(await userRepository.UpdateUserFCMToken(user.Id.Value, fcmtoken));
+            var requestUserId = userContextService.GetCurrentUserId();
+            return Users.Models.User.FromDomain(await userRepository.UpdateUserFCMToken(requestUserId, fcmtoken));
         }
 
 
@@ -365,7 +323,7 @@ namespace API.GraphQL
                 throw new ApiException(ex.Message);
             }
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> SignOut(
             [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IHttpContextAccessor httpContextAccessor
@@ -378,7 +336,7 @@ namespace API.GraphQL
 
             return true;
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<bool> DeleteUser(
             [Service] IUserRepository userRepository,
             List<Guid> userIds
@@ -392,7 +350,7 @@ namespace API.GraphQL
             return true;
 
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<bool> CreateRole([Service] IServiceProvider serviceProvider, string roleName)
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
@@ -404,7 +362,7 @@ namespace API.GraphQL
             return true;
         }
 
-        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin" })]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         //[HotChocolate.AspNetCore.Authorization.Authorize(Policy = "SuperAdminOnly")]
         public async Task<bool> UpdateUserRole(
             [Service] UserContextService userContextService,

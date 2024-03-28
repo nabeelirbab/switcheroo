@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Domain.Services;
-
+using System.Text.Json;
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
@@ -78,6 +78,11 @@ namespace Infrastructure.Offers
                                         Title = "New Cash Offer",
                                         Body = "You have a new cash offer"
                                         // Other notification parameters can be added here
+                                    },
+                                    Data = new Dictionary<string, string>
+                                    {
+                                        {"NavigateTo", "NewCashOffer"},
+                                        {"TargetItemId", offer.TargetItemId.ToString()}
                                     }
                                 };
                                 string response = await messaging.SendAsync(message);
@@ -159,8 +164,14 @@ namespace Infrastructure.Offers
                                             Notification = new Notification
                                             {
                                                 Title = "New Cash Offer",
-                                                Body = "You have a new cash offer"
+                                                Body = "You have a new cash offer",
+
                                                 // Other notification parameters can be added here
+                                            },
+                                            Data = new Dictionary<string, string>
+                                            {
+                                                {"NavigateTo", "NewCashOffer"},
+                                                {"TargetItemId", offer.TargetItemId.ToString()}
                                             }
                                         };
                                         string response = await messaging.SendAsync(message);
@@ -241,6 +252,7 @@ namespace Infrastructure.Offers
                         },
                         Data = new Dictionary<string, string>
                     {
+                        {"NavigateTo", "NewMatchingOffer"},
                         {"IsMatch", "true"},
                         {"SourceItemId", sourceItemId},
                         {"SourceItemImage", sourceItemImage},
@@ -320,6 +332,18 @@ namespace Infrastructure.Offers
                     .Where(x => x.Id == offer.CreatedByUserId)
                     .Select(x => x.FCMToken).FirstOrDefault();
 
+                var newDummyMessage = new Domain.Offers.Message(
+                         Guid.NewGuid(),
+                             offer.CreatedByUserId,
+                             offerId,
+                             offer.Cash,
+                             offer.CreatedByUserId,
+                             "",
+                             null,
+                             offer.CreatedAt,
+                             false
+                         );
+                string newDummyMessageJson = JsonSerializer.Serialize(newDummyMessage);
                 var app = FirebaseApp.DefaultInstance;
                 var messaging = FirebaseMessaging.GetMessaging(app);
 
@@ -331,6 +355,12 @@ namespace Infrastructure.Offers
                         Title = "Offer Accpeted",
                         Body = "One of your offer is accepted"
                         // Other notification parameters can be added here
+                    },
+                    Data = new Dictionary<string, string>
+                    {
+                        {"NavigateTo", "OfferAccepted"},
+                        {"TargetItemId", offer.TargetItemId.ToString()},
+                        {"ChatListingStrigifiedObject", newDummyMessageJson}
                     }
                 };
                 string response = await messaging.SendAsync(message);

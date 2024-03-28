@@ -96,7 +96,6 @@ namespace Infrastructure.Offers
                 {
                     Domain.Offers.Message newDummyMessage;
                     var offerByOfferId = offers.Where(o => o.Id == offerId).FirstOrDefault();
-                    //var targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
                     Guid targetUserId;
                     if (offerByOfferId.CreatedByUserId == userId)
                     {

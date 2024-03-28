@@ -9,6 +9,7 @@ using FirebaseAdmin;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Infrastructure.UserManagement
 {
@@ -447,61 +448,106 @@ namespace Infrastructure.UserManagement
             }
         }
 
-        public async Task<bool> NotifyMe(Guid? id)
+        public async Task<bool> NotifyMe(Guid? id, bool NewMatchingNotification, bool NewCashOfferNotification, bool CashOfferAcceptedNotification)
         {
             try
             {
-                if (id == null)
-                {
-                    return false;
-                }
-                else
-                {
-                    var userFCMToken = db.Users
-                    .Where(x => x.Id == id)
-                    .Select(x => x.FCMToken).FirstOrDefault();
+                if (id == null) return false;
 
-                    if (!string.IsNullOrEmpty(userFCMToken))
+                var userFCMToken = db.Users
+                .Where(x => x.Id == id)
+                .Select(x => x.FCMToken).FirstOrDefault();
+                if (string.IsNullOrEmpty(userFCMToken)) throw new InfrastructureException($"No FCM Token exists for this user");
+
+                var app = FirebaseApp.DefaultInstance;
+                var messaging = FirebaseMessaging.GetMessaging(app);
+                string response = "";
+                if (NewMatchingNotification)
+                {
+                    var offer = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => (x.CreatedByUserId == id || x.TargetItem.CreatedByUserId == id) && x.SourceItemId != x.TargetItemId).FirstOrDefault();
+                    if (offer == null) throw new InfrastructureException($"No Matching Offer is created by this user.....");
+                    var message = new Message()
                     {
-                        var offer = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.CreatedByUserId == id && x.SourceItemId != x.TargetItemId).FirstOrDefault();
-                        if (offer == null) throw new InfrastructureException($"No Offer is created by this user.....");
-                        var app = FirebaseApp.DefaultInstance;
-                        var messaging = FirebaseMessaging.GetMessaging(app);
-
-                        var message = new Message()
+                        Token = userFCMToken,
+                        Notification = new Notification
                         {
-                            Token = userFCMToken,
-                            Notification = new Notification
+                            Title = "Product Matched",
+                            Body = "One of your product is matched"
+                            // Other notification parameters can be added here
+                        },
+                        Data = new Dictionary<string, string>
                             {
-                                Title = "Product Matched",
-                                Body = "One of your product is matched"
-                                // Other notification parameters can be added here
-                            },
-                            Data = new Dictionary<string, string>
-                            {
+                                {"NavigateTo", "NewMatchingOffer"},
                                 {"IsMatch", "true"},
                                 {"SourceItemId", offer.SourceItemId.ToString()},
                                 {"SourceItemImage", offer.SourceItem.MainImageUrl},
                                 {"TargetItemId", offer.TargetItemId.ToString()},
                                 {"TargetItemImage", offer.TargetItem.MainImageUrl}
                             }
-                        };
-                        string response = await messaging.SendAsync(message);
-                        if (response != null)
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        throw new InfrastructureException($"No FCM Token exists for this user");
-                    }
-                }
+                    };
 
+                    response = await messaging.SendAsync(message);
+                }
+                else if (NewCashOfferNotification)
+                {
+                    var offer = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.TargetItem.CreatedByUserId == id && x.Cash > 0).FirstOrDefault();
+                    if (offer == null) throw new InfrastructureException($"No Cash Offer received by this user.....");
+                    var message = new FirebaseAdmin.Messaging.Message()
+                    {
+                        Token = userFCMToken,
+                        Notification = new Notification
+                        {
+                            Title = "New Cash Offer",
+                            Body = "You have a new cash offer",
+
+                            // Other notification parameters can be added here
+                        },
+                        Data = new Dictionary<string, string>
+                        {
+                            {"NavigateTo", "NewCashOffer"},
+                            {"TargetItemId", offer.TargetItemId.ToString()}
+                        }
+                    };
+
+                    response = await messaging.SendAsync(message);
+                }
+                else if (CashOfferAcceptedNotification)
+                {
+                    var offer = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem).Where(x => x.CreatedByUserId == id && x.Cash > 0 && x.SourceStatus == x.TargetStatus).FirstOrDefault();
+                    if (offer == null) throw new InfrastructureException($"No Cash Offer received by this user.....");
+                    var newDummyMessage = new Domain.Offers.Message(
+                         Guid.NewGuid(),
+                             offer.CreatedByUserId,
+                             offer.Id,
+                             offer.Cash,
+                             offer.CreatedByUserId,
+                             "",
+                             null,
+                             offer.CreatedAt,
+                             false
+                         );
+                    string newDummyMessageJson = JsonSerializer.Serialize(newDummyMessage);
+                    var message = new FirebaseAdmin.Messaging.Message()
+                    {
+                        Token = userFCMToken,
+                        Notification = new Notification
+                        {
+                            Title = "Offer Accpeted",
+                            Body = "One of your offer is accepted"
+                            // Other notification parameters can be added here
+                        },
+                        Data = new Dictionary<string, string>
+                        {
+                            {"NavigateTo", "OfferAccepted"},
+                            {"TargetItemId", offer.TargetItemId.ToString()},
+                            {"ChatListingStrigifiedObject", newDummyMessageJson}
+                        }
+                    };
+
+                    response = await messaging.SendAsync(message);
+                }
+                if (response != null) return true;
+                return false;
             }
             catch (Exception ex)
             {
