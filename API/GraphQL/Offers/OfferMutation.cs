@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using API.GraphQL.CommonServices;
 using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
@@ -10,44 +11,29 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Offer> MarkMessagesAsRead(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository,
             string offerId
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            var domainOffer = await offerRepository.MarkMessagesAsRead(user.Id.Value, Guid.Parse(offerId));
+            var domainOffer = await offerRepository.MarkMessagesAsRead(userContextService.GetCurrentUserId(), Guid.Parse(offerId));
             return Offer.FromDomain(domainOffer);
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> MarkNotificationAsRead(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            await offerRepository.MarkNotificationRead(user.Id.Value);
-
+            await offerRepository.MarkNotificationRead(userContextService.GetCurrentUserId());
             return true;
         }
 
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Offer> CreateOffer(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository,
             Guid? sourceItemId,
             Guid targetItemId,
@@ -56,68 +42,40 @@ namespace API.GraphQL
             int? targeteStatus
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
             bool isRead = false;
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
             if (cash != null && cash > 0) sourceItemId = targetItemId;
-            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId ?? targetItemId, targetItemId, cash, user.Id.Value, sourceStatus ?? 1, targeteStatus, isRead));
-            
+            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId ?? targetItemId, targetItemId, cash, userContextService.GetCurrentUserId(), sourceStatus ?? 1, targeteStatus, isRead));
             return Offer.FromDomain(domainOffer);
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> DeleteOffer(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository,
             Guid id
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            await offerRepository.DeleteOffer(id,(Guid)user.Id);
-
+            await offerRepository.DeleteOffer(id, userContextService.GetCurrentUserId());
             return true;
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> AcceptOffer(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IOfferRepository offerRepository,
             Guid offerId
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
             await offerRepository.AcceptOffer(offerId);
-
             return true;
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> UnmatchOffer(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IOfferRepository offerRepository,
             Guid offerId
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
             await offerRepository.UnmatchOffer(offerId);
-
             return true;
         }
     }

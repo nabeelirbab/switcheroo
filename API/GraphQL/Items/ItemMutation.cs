@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using API.GraphQL.CommonServices;
 using API.GraphQL.Items.Models;
 using Domain.Items;
 using Domain.Users;
@@ -13,21 +14,14 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Items.Models.Item> CreateItem(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IItemRepository itemRepository,
             ItemInput item
         )
         {
-            Console.WriteLine("Going to Create Item");
-            Console.WriteLine(item.ToString());
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-            Console.WriteLine(item.Categories);
+            var requestUserId = userContextService.GetCurrentUserId();
             if (item.Categories == null || !item.Categories.Any())
                 throw new Exception("Item Category is Required");
             var newDomainItem = await itemRepository.CreateItemAsync(Domain.Items.Item.CreateNewItem(
@@ -38,27 +32,23 @@ namespace API.GraphQL
                 item.Categories,
                 item.ImageUrls,
                 item.MainImageUrl,
-                user.Id.Value,
+                requestUserId,
                 item.Latitude,
                 item.Longitude
             ));
-
             return Items.Models.Item.FromDomain(newDomainItem);
         }
 
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Items.Models.Item> UpdateItem(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IItemRepository itemRepository,
             Guid id,
             ItemInput item
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
+            var requestUserId = userContextService.GetCurrentUserId();
 
             var updatedDomainItem = await itemRepository.UpdateItemAsync(Domain.Items.Item.CreateUpdateItem(
                 id,
@@ -68,32 +58,23 @@ namespace API.GraphQL
                 item.IsSwapOnly,
                 item.Categories,
                 item.ImageUrls,
-                user.Id.Value,
+                requestUserId,
                 item.Latitude,
                 item.Longitude,
                 item.MainImageUrl
             ));
-
             return Items.Models.Item.FromDomain(updatedDomainItem);
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<string> UpdateItemLocation(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IItemRepository itemRepository,
             Guid itemId,
             decimal? latitude,
             decimal? longitude
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
             var updateMessage = await itemRepository.UpdateItemLocation(itemId, latitude, longitude);
-
             if (updateMessage.Contains("Item locations updated successfully."))
             {
                 return "Items' locations updated successfully.";
@@ -103,23 +84,14 @@ namespace API.GraphQL
                 return "Item locations not updated";
             }
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<string> UpdateAllItemsLocation(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IItemRepository itemRepository,
             Guid userId,
             decimal? latitude,
             decimal? longitude
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
             var updateMessage = await itemRepository.UpdateAllItemsLocation(userId, latitude, longitude);
             if (updateMessage.Contains("Item locations updated successfully."))
             {
@@ -130,58 +102,37 @@ namespace API.GraphQL
                 return "Item locations not updated";
             }
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> ArchiveItem(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IItemRepository itemRepository,
             Guid itemId
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
-            return await itemRepository.ArchiveItemAsync(itemId, user.Id.Value);
+            var requestUserId = userContextService.GetCurrentUserId();
+            return await itemRepository.ArchiveItemAsync(itemId, requestUserId);
         }
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> DeleteItem(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IItemRepository itemRepository,
             Guid itemId
         )
         {
-            //var userCp = httpContextAccessor?.HttpContext?.User;
-
-            //if (userCp == null) throw new ApiException("Not authenticated");
-            //var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            //if (!user.Id.HasValue) throw new ApiException("Database failure");
-
             return await itemRepository.DeleteItemAsync(itemId);
         }
 
-
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> DismissItem(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IItemRepository itemRepository,
             Guid? sourceItemId,
             Guid targetItemId
         )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+            var requestUserId = userContextService.GetCurrentUserId();
             var dismissItem = sourceItemId.HasValue
-                ? DismissedItem.CreateDismissItemForItem(sourceItemId.Value, targetItemId, user.Id.Value)
-                : DismissedItem.CreateDismissItemForItem(targetItemId, targetItemId, user.Id.Value);
-
+                ? DismissedItem.CreateDismissItemForItem(sourceItemId.Value, targetItemId, requestUserId)
+                : DismissedItem.CreateDismissItemForItem(targetItemId, targetItemId, requestUserId);
             return await itemRepository.DismissItemAsync(dismissItem);
         }
     }

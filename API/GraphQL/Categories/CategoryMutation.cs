@@ -9,21 +9,13 @@ namespace API.GraphQL
 {
     public partial class Mutation
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> CreateCategories(
-           [Service] IHttpContextAccessor httpContextAccessor,
-           [Service] IUserAuthenticationService userAuthenticationService,
            [Service] ICategoryRepository categoryRepository,
            List<string> name
        )
         {
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
             await categoryRepository.CreateCategories(name);
-
             return true;
         }
     }

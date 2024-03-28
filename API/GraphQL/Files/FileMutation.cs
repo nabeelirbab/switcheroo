@@ -20,6 +20,7 @@ public class UploadFileRequestDto
 }
 public partial class Mutation
 {
+    [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
     public async Task<ResponseDto> UploadFile(UploadFileRequestDto request)
     {
         try
@@ -31,8 +32,8 @@ public partial class Mutation
             var config = new AmazonS3Config { RegionEndpoint = Amazon.RegionEndpoint.EUNorth1 };
             var s3Client = new AmazonS3Client(credentials, config);
             var transferUtility = new TransferUtility(s3Client);
-            string bucketName = "switcheroofiles";  
-            string keyName = "https://switcheroofiles.s3.eu-north-1.amazonaws.com/" + name; 
+            string bucketName = "switcheroofiles";
+            string keyName = "https://switcheroofiles.s3.eu-north-1.amazonaws.com/" + name;
             await transferUtility.UploadAsync(stream, bucketName, name);
             return new ResponseDto()
             {

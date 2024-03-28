@@ -7,14 +7,15 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using System.Threading.Tasks;
 using System;
 using Domain.ContactUs;
+using API.GraphQL.CommonServices;
 
 namespace API.GraphQL
 {
     public partial class Mutation
     {
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<ContactUs.Model.ContactUs> CreateUserContactUs(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IContactUsRepository contactusRepository,
             [Service] IEmailSender emailSender,
             Domain.ContactUs.ContactUs contactUs
@@ -22,29 +23,19 @@ namespace API.GraphQL
         {
             try
             {
-                var httpContext = httpContextAccessor.HttpContext;
-                if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
-
-                var userCp = httpContextAccessor?.HttpContext?.User;
-
-                if (userCp == null) throw new ApiException("Not authenticated");
-                var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-                if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+                var requestUserId = userContextService.GetCurrentUserId();
                 var newDomaincontactus = await contactusRepository.CreateContactUsAsync(Domain.ContactUs.ContactUs.CreateNewContactUs(
                     contactUs.Title,
                     contactUs.Description,
                     contactUs.Name,
                     contactUs.Email,
-                    user.Id.Value
+                    requestUserId
                 ));
 
-                var request = httpContext.Request;
+                var request = userContextService.GetHttpRequestContext().Request;
                 var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
                 var email = new ContactUsEmail(basePath, contactUs.Email, contactUs.Title, contactUs.Description, contactUs.Name);
                 await emailSender.SendEmailAsync(_smtpOptions.SMTP_CONTACT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
-
-
                 return ContactUs.Model.ContactUs.FromDomain(newDomaincontactus);
             }
             catch (Exception ex)

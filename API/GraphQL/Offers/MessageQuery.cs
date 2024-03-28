@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using API.GraphQL.CommonServices;
 using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
@@ -12,38 +13,22 @@ namespace API.GraphQL
 {
     public partial class Query
     {
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<List<Message>> GetMessages(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IMessageRepository messageRepository,
             Guid offerId)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-
             return Message.FromDomain(await messageRepository.GetMessagesByOfferId(offerId));
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<List<Message>> GetChat(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IMessageRepository messageRepository)
         {
             try
             {
-                var claimsPrinciple = httpContextAccessor.HttpContext.User;
-                var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-                if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-                if (user == null) throw new ApiException("Not logged in");
-
-                var chats = Message.FromDomain(await messageRepository.GetChat((Guid)user.Id));
-
+                var chats = Message.FromDomain(await messageRepository.GetChat(userContextService.GetCurrentUserId()));
                 return chats;
             }
             catch (Exception ex)
@@ -52,37 +37,21 @@ namespace API.GraphQL
             }
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<int> GetChatCount(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IMessageRepository messageRepository)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-
-            var chatCount = messageRepository.GetChatCount((Guid)user.Id);
-
+            var chatCount = messageRepository.GetChatCount(userContextService.GetCurrentUserId());
             return await chatCount;
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<int> GetMessagesCount(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IMessageRepository messageRepository)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-
-            var chatCount = messageRepository.GetMessagesCount((Guid)user.Id);
-
+            var chatCount = messageRepository.GetMessagesCount(userContextService.GetCurrentUserId());
             return await chatCount;
         }
     }

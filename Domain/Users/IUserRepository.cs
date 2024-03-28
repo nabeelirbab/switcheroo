@@ -11,7 +11,7 @@ namespace Domain.Users
         Task<List<User>> GetUserByUserId(List<Guid> userIds);
 
         Task<Paginated<User>> GetAllUsers(int limit, string? cursor);
-        Task<bool> NotifyMe(Guid? userId);
+        Task<bool> NotifyMe(Guid? userId, bool NewMatchingNotification, bool NewCashOfferNotification, bool CashOfferAcceptedNotification = false);
 
         Task<List<User>> GetUserById(Guid? userId);
         Task<List<User>> GetTargetUser(Guid? userId, Guid offerId);
@@ -42,7 +42,7 @@ namespace Domain.Users
 
         Task<bool> CheckIfUserByEmail(string email);
 
-        Task<string> GetTargetUserForMessage(Guid? userId, Guid offerId,bool getFCMToken=false);
+        Task<string> GetTargetUserForMessage(Guid? userId, Guid offerId, bool getFCMToken = false);
 
     }
 }

@@ -8,38 +8,29 @@ using Domain.UserAnalytics;
 using HotChocolate;
 using HotChocolate.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using API.GraphQL.CommonServices;
 
 namespace API.GraphQL
 {
     public partial class Query
     {
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> GetMe(
-            [Service] IHttpContextAccessor httpContextAccessor,
+            [Service] UserContextService userContextService,
             [Service] IUserAuthenticationService userAuthenticationService
         )
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            if (user == null) throw new ApiException("Not logged in");
-            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
+            var user = await userContextService.GetCurrentUser();
             return Users.Models.User.FromDomain(user);
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<Paginated<Users.Models.User>> GetUsers(
             [Service] IUserRepository userRepository,
             int limit,
             string? cursor
         )
         {
-            // var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            // var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            //
-            // if (user == null) throw new ApiException("Not logged in");
-            // if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
             var paginatedUser = await userRepository.GetAllUsers(limit, cursor);
 
             var users = new Paginated<Users.Models.User>(
@@ -51,40 +42,29 @@ namespace API.GraphQL
             return users;
         }
 
-        //[Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<List<KeyValue>> GetUsersGenderCount(
             [Service] IUserRepository userRepository
         )
         {
-            //var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            //var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            //if (user == null) throw new ApiException("Not logged in");
-            //if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
             var usersCount = await userRepository.GetUsersGenderCount();
-
             return usersCount;
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> NotifyMe(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
-            [Service] IUserRepository userRepository
+            [Service] UserContextService userContextService,
+            [Service] IUserRepository userRepository,
+            bool newMatchingNotification,
+            bool newCashOfferNotification,
+            bool cashOfferAcceptedNotification
         )
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-
-            if (user == null) throw new ApiException("Not logged in");
-            if (!user.Id.HasValue) throw new ApiException("Fatal. Db entity doesn't have a primary key...or you fucked up");
-
-            var notified = await userRepository.NotifyMe(user.Id);
-
+            var requestUserId = userContextService.GetCurrentUserId();
+            var notified = await userRepository.NotifyMe(requestUserId, newMatchingNotification, newCashOfferNotification, cashOfferAcceptedNotification);
             return notified;
         }
 
-       
+
     }
 }

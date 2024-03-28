@@ -1,4 +1,5 @@
-﻿using API.HtmlTemplates;
+﻿using API.GraphQL.CommonServices;
+using API.HtmlTemplates;
 using Domain.Complaints;
 using Domain.Items;
 using Domain.Services;
@@ -27,9 +28,9 @@ namespace API.GraphQL
             _smtpOptions = smtpOptions.Value;
             _loggerManager = loggerManager;
         }
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Complaints.Models.Complaint> CreateUserComplaint(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             [Service] IComplaintRepository complaintRepository,
             [Service] IEmailSender emailSender,
@@ -39,30 +40,23 @@ namespace API.GraphQL
         {
             try
             {
-                var httpContext = httpContextAccessor.HttpContext;
-                if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
-
-                var userCp = httpContextAccessor?.HttpContext?.User;
-
-                if (userCp == null) throw new ApiException("Not authenticated");
-                var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-                if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+                var requestUserId = userContextService.GetCurrentUserId();
+                var requestUserEmail = userContextService.GetCurrentUserEmail();
                 var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
                     complaint.Title,
                     complaint.Description,
-                    user.Id.Value,
-                    complaint.TargetUserId= userId,
+                    requestUserId,
+                    complaint.TargetUserId = userId,
                     null
                 ));
 
                 var complaintUser = await userRepository.GetById(userId);
 
-                var request = httpContext.Request;
+                var request = userContextService.GetHttpRequestContext().Request;
                 var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
-                var email = new ReportEmail(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description);
+                var email = new ReportEmail(basePath, requestUserEmail, complaintUser.Email, complaint.Title, complaint.Description);
                 await emailSender.SendEmailAsync(_smtpOptions.SMTP_USER_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
-                
+
 
                 return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
             }
@@ -72,9 +66,9 @@ namespace API.GraphQL
             }
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Complaints.Models.Complaint> CreateItemComplaint(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IItemRepository itemRepository,
             [Service] IUserRepository userRepository,
             [Service] IComplaintRepository complaintRepository,
@@ -83,30 +77,23 @@ namespace API.GraphQL
             Guid itemId
         )
         {
-            var httpContext = httpContextAccessor.HttpContext;
-            if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
-
-            var userCp = httpContextAccessor?.HttpContext?.User;
-
-            if (userCp == null) throw new ApiException("Not authenticated");
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
-            if (!user.Id.HasValue) throw new ApiException("Database failure");
-
+            var requestUserId = userContextService.GetCurrentUserId();
+            var requestUserEmail = userContextService.GetCurrentUserEmail();
             var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
                 complaint.Title,
                 complaint.Description,
-                user.Id.Value,
+                requestUserId,
                 null,
-                complaint.TargetItemId= itemId
+                complaint.TargetItemId = itemId
             ));
 
             var complaintItem = await itemRepository.GetItemByItemId(itemId);
 
             var complaintUser = await userRepository.GetById(complaintItem.CreatedByUserId);
 
-            var request = httpContext.Request;
+            var request = userContextService.GetHttpRequestContext().Request;
             var basePath = $"{request.Scheme}://{request.Host.ToUriComponent()}";
-            var email = new ItemReport(basePath, user.Email, complaintUser.Email, complaint.Title, complaint.Description, itemId.ToString(), complaintItem.Title);
+            var email = new ItemReport(basePath, requestUserEmail, complaintUser.Email, complaint.Title, complaint.Description, itemId.ToString(), complaintItem.Title);
             await emailSender.SendEmailAsync(_smtpOptions.SMTP_ITEM_SUPPORT_ADDRESS, "Switcheroo Complaint Email", email.GetHtmlString());
 
             return Complaints.Models.Complaint.FromDomain(newDomaincomplaint);
