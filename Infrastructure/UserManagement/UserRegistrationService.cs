@@ -48,9 +48,9 @@ namespace Infrastructure.UserManagement
             };
 
             var retVal = await userManager.CreateAsync(newUser, password);
-            await UpdateUserRoleAsync(newUser.Id.ToString(), "User");
             if (retVal.Succeeded)
             {
+                await UpdateUserRoleAsync(newUser.Id.ToString(), "User");
                 await userManager.GenerateEmailConfirmationTokenAsync(newUser);
                 return newUser.Id;
             }
