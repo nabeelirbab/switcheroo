@@ -61,6 +61,16 @@ namespace Infrastructure.Database.Schema
         [NotMapped]
         public int? CashOfferValue { get; set; }
 
+
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        [ForeignKey("DeletedByUserId")]
+        public User? DeletedByUser { get; set; }
+
+
         public void FromDomain(Domain.Items.Item domainItem)
         {
             Title = domainItem.Title;
@@ -91,8 +101,8 @@ namespace Infrastructure.Database.Schema
                 item.MainImageUrl
             )
             {
-                HasCashOffer=item.HasCashOffer,
-                HasMatchingOffer=item.HasMatchingOffer,
+                HasCashOffer = item.HasCashOffer,
+                HasMatchingOffer = item.HasMatchingOffer,
                 CashOfferValue = item.CashOfferValue
             };
 

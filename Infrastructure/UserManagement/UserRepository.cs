@@ -386,67 +386,63 @@ namespace Infrastructure.UserManagement
             return await GetById(id);
         }
 
-        public async Task<bool> DeleteUser(List<Guid> ids)
+        public async Task<bool> DeleteUser(List<Guid> userIds, Guid deletedByUserId)
         {
+            if (userIds == null || !userIds.Any())
+            {
+                throw new ArgumentNullException(nameof(userIds), "User IDs cannot be null or empty.");
+            }
+
+            using var transaction = await db.Database.BeginTransactionAsync();
+
             try
             {
-                var users = await db.Users
-                    .Where(u => ids.Contains(u.Id))
+                // Soft delete Users
+                var usersToUpdate = await db.Users
+                    .Where(u => userIds.Contains(u.Id))
                     .ToListAsync();
-                if (users.Count == 0)
+
+                if (!usersToUpdate.Any())
                 {
-                    throw new InfrastructureException("User not found.");
+                    throw new KeyNotFoundException("No users found with the provided IDs.");
                 }
-                var items = await db.Items.Where(u => ids.Contains(u.CreatedByUserId)).ToListAsync();
+                usersToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
 
-                var itemIds = items.Select(item => item.Id);
-
-                // get offers either created by these users or target to this user
-                var offers = await db.Offers
-                    .Where(u => ids.Contains(u.CreatedByUserId) || itemIds.Contains(u.TargetItemId))
+                // Soft delete Items
+                var itemsToUpdate = await db.Items
+                    .Where(item => userIds.Contains(item.CreatedByUserId))
                     .ToListAsync();
+                itemsToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
 
-                // delete messages
-                var offerIds = offers.Select(offer => offer.Id).ToList();
-                var messageOfferIds = await db.Messages
-                        .Where(message => offerIds.Contains(message.OfferId))
-                        .ToListAsync();
-                if (messageOfferIds == null) { _logger.LogInformation($"No message Found"); }
-                else { db.Messages.RemoveRange(messageOfferIds); }
+                // Get item IDs for later queries
+                var itemIds = itemsToUpdate.Select(item => item.Id).ToList();
 
-                // delete offers
-                if (offers == null) { _logger.LogInformation($"No offer Found"); }
-                else { db.Offers.RemoveRange(offers); }
+                // Soft delete Offers
+                var offersToUpdate = await db.Offers
+                    .Where(offer => userIds.Contains(offer.CreatedByUserId) || itemIds.Contains(offer.TargetItemId))
+                    .ToListAsync();
+                offersToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
 
-                // delete items
-                var itemsToDelete = await db.Items.Where(u => ids.Contains(u.CreatedByUserId)).ToListAsync();
-                if (itemsToDelete == null) { _logger.LogInformation($"No item Found"); }
-                else { db.Items.RemoveRange(itemsToDelete); }
+                // Soft delete Messages linked to the Offers
+                var offerIds = offersToUpdate.Select(offer => offer.Id).ToList();
+                var messagesToUpdate = await db.Messages
+                    .Where(message => offerIds.Contains(message.OfferId))
+                    .ToListAsync();
+                messagesToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
 
-                // delete user
-                db.Users.RemoveRange(users);
                 await db.SaveChangesAsync();
+                await transaction.CommitAsync();
 
-                var checkUsers = await db.Users
-                    .AsNoTracking()
-                    .Where(user => ids.Contains(user.Id))
-                    .Select(Database.Schema.User.ToDomain)
-                    .ToListAsync();
-
-                if (checkUsers.Count == 0)
-                {
-                    return true;
-                }
-                else
-                {
-                    throw new InfrastructureException("User not deleted.");
-                }
+                return true;
             }
             catch (Exception ex)
             {
-                throw new InfrastructureException($"DeleteUser: An error occurred while deleting the user {ex.Message}");
+                _logger.LogError(ex, $"An error occurred while deleting users with IDs {string.Join(", ", userIds)}");
+                await transaction.RollbackAsync();
+                throw; // Rethrow to let the caller handle it or to fail visibly if unhandled
             }
         }
+
 
         public async Task<bool> NotifyMe(Guid? id, bool NewMatchingNotification, bool NewCashOfferNotification, bool CashOfferAcceptedNotification)
         {

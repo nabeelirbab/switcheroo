@@ -943,50 +943,36 @@ namespace Infrastructure.Items
             }
         }
 
-        public async Task<bool> DeleteItemAsync(Guid itemId)
+        public async Task<bool> DeleteItemAsync(Guid itemId, Guid deletedByUserId)
         {
+            using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                var item = await db.Items
+                var items = await db.Items
                     .Where(u => u.Id == itemId)
-                    .FirstOrDefaultAsync();
+                    .ToListAsync();
 
                 var offersAgainstItem = await db.Offers
                     .Where(u => u.SourceItemId.Equals(itemId) || u.TargetItemId.Equals(itemId))
                     .ToListAsync();
-
                 if (offersAgainstItem.Count > 0)
                 {
-                    foreach (var offer in offersAgainstItem)
-                    {
-                        db.Offers.Remove(offer);
-                        await db.SaveChangesAsync();
-                    }
-
-                    var myItems = await db.Items
-                    .Where(u => u.Id == itemId)
-                    .SingleOrDefaultAsync();
-
-                    db.Items.Remove(myItems);
-                    await db.SaveChangesAsync();
-
-                    return true;
+                    offersAgainstItem.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
+                    var offerIds = offersAgainstItem.Select(offer => offer.Id).ToList();
+                    var messagesToUpdate = await db.Messages
+                        .Where(message => offerIds.Contains(message.OfferId))
+                        .ToListAsync();
+                    messagesToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
                 }
-                else
-                {
-                    var myItems = await db.Items
-                    .Where(u => u.Id == itemId)
-                    .SingleOrDefaultAsync();
-
-                    db.Items.Remove(myItems);
-                    await db.SaveChangesAsync();
-                    return true;
-                }
-
+                items.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
             }
             catch (Exception ex)
             {
-                throw new InfrastructureException(ex.Message);
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 

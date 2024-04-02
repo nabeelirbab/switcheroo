@@ -281,7 +281,9 @@ namespace Infrastructure.Offers
                     return false;
                 }
 
-                db.Offers.Remove(offer);
+                offer.IsDeleted = true;
+                offer.DeletedByUserId = userId;
+                offer.DeletedAt = DateTime.Now;
                 await db.SaveChangesAsync();
 
                 var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))

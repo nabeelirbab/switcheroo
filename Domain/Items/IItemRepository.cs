@@ -14,7 +14,7 @@ namespace Domain.Items
         Task<string> UpdateAllItemsLocation(Guid userId, decimal? latitude, decimal? longitude);
 
         Task<bool> ArchiveItemAsync(Guid itemId, Guid updatedByUserId);
-        Task<bool> DeleteItemAsync(Guid itemId);
+        Task<bool> DeleteItemAsync(Guid itemId,Guid deletedByUserId);
 
         Task<bool> DismissItemAsync(DismissedItem dismissedItem);
 

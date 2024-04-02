@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Infrastructure.Database.Schema
 {
@@ -11,7 +12,7 @@ namespace Infrastructure.Database.Schema
             SourceItemId = sourceItemId;
             TargetItemId = targetItemId;
         }
-        
+
         [Required]
         public Guid Id { get; set; }
 
@@ -28,15 +29,25 @@ namespace Infrastructure.Database.Schema
         public Guid TargetItemId { get; set; }
 
         [Required]
-        public OfferStatus SourceStatus {get; set;}
+        public OfferStatus SourceStatus { get; set; }
 
         [Required]
-        public OfferStatus TargetStatus {get; set;}
+        public OfferStatus TargetStatus { get; set; }
 
         public int? Cash { get; set; }
 
         public bool? IsRead { get; set; }
 
         public List<Message> Messages { get; private set; } = new List<Message>();
+
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        [ForeignKey("DeletedByUserId")]
+        public User? DeletedByUser { get; set; }
+
+
     }
 }

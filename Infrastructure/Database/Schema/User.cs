@@ -67,6 +67,18 @@ namespace Infrastructure.Database.Schema
 
         public DateTimeOffset? ArchivedAt { get; set; }
 
+
+
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        [ForeignKey("DeletedByUserId")]
+        public User? DeletedByUser { get; set; }
+
+
+
         public static User FromDomain(Domain.Users.User domainItem)
         {
             return new User(
