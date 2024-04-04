@@ -9,6 +9,13 @@ using Google.Apis.Auth.OAuth2.Flows;
 using Microsoft.AspNetCore.Identity;
 using System.Net.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Principal;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Text;
+using System.Security.Cryptography;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.UserManagement
 {
@@ -100,14 +107,6 @@ namespace Infrastructure.UserManagement
 
         public async Task<Tuple<bool, string, string>> AuthenticateGoogleAsync(string idToken)
         {
-
-            //var settings = new GoogleJsonWebSignature.ValidationSettings()
-            //{
-            //    Audience = new List<string>() {
-            //        "752477583659-dsi1seh5cbboe1qhs4pm10vp00d4i4l1.apps.googleusercontent.com",
-            //        "752477583659-ehabr9atvt9991kma60bmv3m5k2h1dqq.apps.googleusercontent.com"
-            //    }
-            //};
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
             bool userStatus = await userRepository.CheckIfUserByEmail(payload.Email);
             return new Tuple<bool, string, string>(userStatus, payload.Name, payload.Email);
@@ -128,5 +127,111 @@ namespace Infrastructure.UserManagement
             bool userStatus = await userRepository.CheckIfUserByEmail(userProfile.Email);
             return new Tuple<bool, string, string>(userStatus, userProfile.Name, userProfile.Email);
         }
+        public async Task<Tuple<bool, bool, string>> AuthenticateAppleAsync(string token)
+        {
+            const string ApplePublicKeysUrl = "https://appleid.apple.com/auth/keys";
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetStringAsync(ApplePublicKeysUrl);
+            var appleKeys = JsonConvert.DeserializeObject<ApplePublicKeys>(response);
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+
+            // Extract the kid from the JWT header
+            var kid = jwtToken.Header.Kid;
+            var emailClaim = jwtToken.Payload.Claims.FirstOrDefault(c => c.Type == "email");
+            var email = emailClaim?.Value;
+            if (string.IsNullOrEmpty(kid))
+            {
+                Console.WriteLine("JWT does not contain 'kid' in header.");
+                return new Tuple<bool, bool, string>(false, false, "");
+            }
+            if (string.IsNullOrEmpty(email))
+            {
+                Console.WriteLine("JWT does not contain 'email' in payload.");
+                return new Tuple<bool, bool, string>(false, false, "");
+            }
+
+            // Find the matching key
+            var matchingKey = appleKeys.Keys.FirstOrDefault(k => k.Kid == kid);
+            if (matchingKey == null)
+            {
+                Console.WriteLine($"No matching public key found for kid: {kid}");
+                return new Tuple<bool, bool, string>(false, false, "");
+            }
+
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new RsaSecurityKey(matchingKey.ToRSAParameters()),
+                ValidateIssuer = true,
+                ValidIssuer = "https://appleid.apple.com",
+                ValidateAudience = true,
+                ValidAudience = "com.switchceroo.ios",
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+
+            try
+            {
+                var claimsPrincipal = handler.ValidateToken(token, validationParameters, out var validatedToken);
+
+                // Token is valid, and you can work with the claims
+                foreach (var claim in claimsPrincipal.Claims)
+                {
+                    Console.WriteLine($"{claim.Type}: {claim.Value}");
+                }
+                bool userStatus = await userRepository.CheckIfUserByEmail(email);
+                return new Tuple<bool, bool, string>(userStatus, true, email);
+            }
+            catch (SecurityTokenException e)
+            {
+                Console.WriteLine($"Token validation failed: {e.Message}");
+                return new Tuple<bool, bool, string>(false, false, "");
+            }
+        }
+
+    }
+    public class ApplePublicKey
+    {
+        public string Kty { get; set; }
+        public string Kid { get; set; }
+        public string Use { get; set; }
+        public string Alg { get; set; }
+        public string N { get; set; }
+        public string E { get; set; }
+        public RSAParameters ToRSAParameters()
+        {
+            // Convert Base64URL to Base64
+            string base64N = Base64UrlEncoderToBase64(N);
+            string base64E = Base64UrlEncoderToBase64(E);
+
+            // Convert Base64 to byte array
+            byte[] nBytes = Convert.FromBase64String(base64N);
+            byte[] eBytes = Convert.FromBase64String(base64E);
+
+            return new RSAParameters
+            {
+                Modulus = nBytes,
+                Exponent = eBytes
+            };
+        }
+        private static string Base64UrlEncoderToBase64(string base64Url)
+        {
+            // Replace URL-safe characters and add padding if needed
+            string paddedBase64 = base64Url.Replace('-', '+').Replace('_', '/');
+            switch (paddedBase64.Length % 4)
+            {
+                case 2: paddedBase64 += "=="; break;
+                case 3: paddedBase64 += "="; break;
+            }
+            return paddedBase64;
+        }
+
+    }
+
+    public class ApplePublicKeys
+    {
+        public List<ApplePublicKey> Keys { get; set; }
     }
 }

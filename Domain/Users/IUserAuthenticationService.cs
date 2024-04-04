@@ -17,5 +17,6 @@ namespace Domain.Users
 
         Task<Tuple<bool, string, string>> AuthenticateGoogleAsync(string idToken);
         Task<Tuple<bool, string, string>> AuthenticateFacebookAsync(string accessToken);
+        Task<Tuple<bool,bool, string>> AuthenticateAppleAsync(string token);
     }
 }

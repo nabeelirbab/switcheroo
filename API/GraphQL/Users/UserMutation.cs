@@ -323,6 +323,44 @@ namespace API.GraphQL
                 throw new ApiException(ex.Message);
             }
         }
+        public async Task<Users.Models.User> SignInApple(
+            [Service] IUserRegistrationService userRegistrationService,
+            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] IUserRepository userRepository,
+            string accessToken,
+            string name
+        )
+        {
+            try
+            {
+                var (existFlag, isTokenValid, userEmail) = await userAuthenticationService.AuthenticateAppleAsync(accessToken);
+                if (!isTokenValid)
+                {
+                    throw new ApiException("Invalid Token");
+                }
+                if (!existFlag)
+                {
+                    var userToCreate = Domain.Users.User.CreateNewUser(name, "", userEmail);
+                    var createdUserId = await userRegistrationService.CreateUserAsync(userToCreate, "Abc123##", true);
+                }
+                var userId = await userAuthenticationService.SignInByEmailAsync(userEmail);
+                var user = await userRepository.GetById(userId);
+
+                if (!user.Id.HasValue)
+                {
+                    throw new ApiException("No primary key. Database cooked?");
+                }
+
+                Users.Models.User userInstance = Users.Models.User.FromDomain(user);
+                userInstance.InitiateSignUpProcess = !existFlag;
+                return userInstance;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.Message);
+            }
+        }
+
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> SignOut(
             [Service] IUserAuthenticationService userAuthenticationService,
