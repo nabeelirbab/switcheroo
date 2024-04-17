@@ -54,5 +54,35 @@ namespace API.GraphQL
             var chatCount = messageRepository.GetMessagesCount(userContextService.GetCurrentUserId());
             return await chatCount;
         }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<List<Message>> GetAllChat(
+            [Service] IMessageRepository messageRepository)
+        {
+            try
+            {
+                var chats = Message.FromDomain(await messageRepository.GetAllChat());
+                return chats;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Api Exception {ex.Message}");
+            }
+        }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<List<Message>> GetAllChatByUser(
+            [Service] IMessageRepository messageRepository, Guid userId)
+        {
+            try
+            {
+                var chats = Message.FromDomain(await messageRepository.GetAllChatByUser(userId));
+                return chats;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Api Exception {ex.Message}");
+            }
+        }
     }
 }

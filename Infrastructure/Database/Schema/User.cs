@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
+using Domain.Items;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Database.Schema
@@ -67,6 +68,18 @@ namespace Infrastructure.Database.Schema
 
         public DateTimeOffset? ArchivedAt { get; set; }
 
+
+
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        [ForeignKey("DeletedByUserId")]
+        public User? DeletedByUser { get; set; }
+
+
+
         public static User FromDomain(Domain.Users.User domainItem)
         {
             return new User(
@@ -115,6 +128,11 @@ namespace Infrastructure.Database.Schema
                 user.IsMatchNotificationsEnabled,
                 user.IsChatNotificationsEnabled,
                 user.CreatedAt
-            );
+            )
+            {
+                IsDeleted = user.IsDeleted,
+                DeletedAt = user.DeletedAt,
+                DeletedByUserId = user.DeletedByUserId
+            };
     }
 }

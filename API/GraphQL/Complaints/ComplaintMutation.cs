@@ -42,6 +42,8 @@ namespace API.GraphQL
             {
                 var requestUserId = userContextService.GetCurrentUserId();
                 var requestUserEmail = userContextService.GetCurrentUserEmail();
+                if (await complaintRepository.CheckReportedUserAgainstRequestedUser(requestUserId, userId)) throw new Exception("User has already been reported!");
+
                 var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
                     complaint.Title,
                     complaint.Description,
@@ -79,6 +81,7 @@ namespace API.GraphQL
         {
             var requestUserId = userContextService.GetCurrentUserId();
             var requestUserEmail = userContextService.GetCurrentUserEmail();
+            if (await complaintRepository.CheckReportedItemAgainstRequestedUser(requestUserId, itemId)) throw new Exception("Item has already been reported!");
             var newDomaincomplaint = await complaintRepository.CreateComplaintAsync(Complaint.CreateNewComplaint(
                 complaint.Title,
                 complaint.Description,

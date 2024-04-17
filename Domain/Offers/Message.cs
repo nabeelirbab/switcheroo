@@ -30,14 +30,18 @@ namespace Domain.Offers
 
         [Required]
         public string MessageText { get; private set; }
-        
+
         [Required]
         public Guid CreatedByUserId { get; private set; }
-        
+
         public DateTime? MessageReadAt { get; set; }
         public DateTimeOffset? CreatedAt { get; set; }
 
         public bool? IsRead { get; set; }
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
 
         public static Message CreateMessage(
             Guid offerId,

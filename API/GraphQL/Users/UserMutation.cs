@@ -338,15 +338,13 @@ namespace API.GraphQL
         }
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<bool> DeleteUser(
+            [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
             List<Guid> userIds
         )
         {
-            var user = await userRepository.GetUserByUserId(userIds);
-
-            if (user.Count == 0) return false;
-
-            await userRepository.DeleteUser(userIds);
+            var requestUserId = userContextService.GetCurrentUserId();
+            await userRepository.DeleteUser(userIds, requestUserId);
             return true;
 
         }

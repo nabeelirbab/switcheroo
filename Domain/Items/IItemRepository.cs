@@ -14,7 +14,7 @@ namespace Domain.Items
         Task<string> UpdateAllItemsLocation(Guid userId, decimal? latitude, decimal? longitude);
 
         Task<bool> ArchiveItemAsync(Guid itemId, Guid updatedByUserId);
-        Task<bool> DeleteItemAsync(Guid itemId);
+        Task<bool> DeleteItemAsync(Guid itemId,Guid deletedByUserId);
 
         Task<bool> DismissItemAsync(DismissedItem dismissedItem);
 
@@ -33,6 +33,7 @@ namespace Domain.Items
         Task<Paginated<Item>> GetItems(Guid userId, Guid itemId, decimal? amount, string[]? categories, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles);
         Task<Paginated<Item>> GetCashItems(Guid userId, int limit, string? cursor, decimal? latitude, decimal? longitude, decimal? distance, bool? inMiles = false);
         Task<Paginated<Item>> GetAllItems(Guid userId, int limit, string? cursor);
+        Task<Paginated<Item>> GetAllItemsByUserForAdmin(Guid userId, int limit, string? cursor);
         Task<Paginated<Item>> GetAllItems(int limit, string? cursor);
 
         Task<List<KeyValue>> GetCategoriesItemCount();
