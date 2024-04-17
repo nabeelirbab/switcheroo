@@ -56,6 +56,19 @@ namespace Infrastructure.Complaints
             }
         }
 
+        public async Task<bool> CheckReportedUserAgainstRequestedUser(Guid requestUserId, Guid reportedUserId)
+        {
+            var reportedUser = await db.Complaints.Where(c => c.TargetUserId == reportedUserId && c.CreatedByUserId == requestUserId).FirstOrDefaultAsync();
+            if (reportedUser != null) return true;
+            else return false;
+        }
+        public async Task<bool> CheckReportedItemAgainstRequestedUser(Guid requestUserId, Guid reportedItemId)
+        {
+            ;
+            var reportedUser = await db.Complaints.Where(c => c.TargetItemId == reportedItemId && c.CreatedByUserId == requestUserId).FirstOrDefaultAsync();
+            if (reportedUser != null) return true;
+            else return false;
+        }
         public async Task<Complaint> GetComplaintById(Guid complaintId)
         {
             var item = await db.Complaints

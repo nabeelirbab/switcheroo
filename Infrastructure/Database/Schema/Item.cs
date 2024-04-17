@@ -103,7 +103,10 @@ namespace Infrastructure.Database.Schema
             {
                 HasCashOffer = item.HasCashOffer,
                 HasMatchingOffer = item.HasMatchingOffer,
-                CashOfferValue = item.CashOfferValue
+                CashOfferValue = item.CashOfferValue,
+                IsDeleted = item.IsDeleted,
+                DeletedAt = item.DeletedAt,
+                DeletedByUserId = item.DeletedByUserId
             };
 
     }

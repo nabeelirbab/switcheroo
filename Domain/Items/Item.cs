@@ -9,7 +9,7 @@ namespace Domain.Items
     {
         public Item(Guid? id, string title, string description,
             decimal askingPrice, int? flexibilityRange, bool isHidden,
-            bool isSwapOnly, List<string> categories, List<string> imageUrls, 
+            bool isSwapOnly, List<string> categories, List<string> imageUrls,
             Guid? createdByUserId, Guid? updatedByUserId, decimal? latitude, decimal? longitude, string? mainImageUrl)
         {
             Id = id;
@@ -69,8 +69,14 @@ namespace Domain.Items
         public bool? HasCashOffer { get; set; }
 
         [NotMapped]
-        public int?  CashOfferValue { get; set; }
+        public int? CashOfferValue { get; set; }
 
+        [NotMapped]
+        public bool IsDeleted { get; set; }
+        [NotMapped]
+        public DateTimeOffset? DeletedAt { get; set; }
+        [NotMapped]
+        public Guid? DeletedByUserId { get; set; }
         public static Item CreateNewItem(
             string title,
             string description,

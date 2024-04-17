@@ -857,10 +857,47 @@ namespace Infrastructure.Items
 
             return new Paginated<Domain.Items.Item>(paginatedItems, newCursor ?? "", totalCount, paginatedItems.Count == limit);
         }
-        public async Task<Paginated<Domain.Items.Item>> GetAllItems(int limit, string? cursor)
+        public async Task<Paginated<Domain.Items.Item>> GetAllItemsByUserForAdmin(Guid userId, int limit, string? cursor)
         {
             Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
-            var query = db.Items.AsNoTracking();
+            var query = db.Items
+                .IgnoreQueryFilters()
+                .Where(item => item.CreatedByUserId == userId)
+                .AsNoTracking();
+
+            if (cursorGuid.HasValue)
+            {
+                query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+            }
+
+            var totalCountQuery = await query.CountAsync();
+
+            var paginatedItems = await query
+                .OrderBy(item => item.Id)
+                .Take(limit + 1)
+                .Select(Database.Schema.Item.ToDomain)
+                .ToListAsync();
+
+            string? newCursor = paginatedItems.Count > limit ? paginatedItems.Last().Id.ToString() : null;
+            if (newCursor != null)
+            {
+                paginatedItems = paginatedItems.Take(limit).ToList();
+            }
+
+            var totalCount = totalCountQuery;
+
+            foreach (var item in paginatedItems)
+            {
+                item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+            }
+
+            return new Paginated<Domain.Items.Item>(paginatedItems, newCursor ?? "", totalCount, paginatedItems.Count == limit);
+        }
+        public async Task<Paginated<Domain.Items.Item>> GetAllItems(int limit, string? cursor)
+        {
+
+            Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+            var query = db.Items.IgnoreQueryFilters().AsNoTracking();
             if (cursorGuid.HasValue)
             {
                 query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
@@ -945,36 +982,43 @@ namespace Infrastructure.Items
 
         public async Task<bool> DeleteItemAsync(Guid itemId, Guid deletedByUserId)
         {
-            using var transaction = await db.Database.BeginTransactionAsync();
-            try
-            {
-                var items = await db.Items
-                    .Where(u => u.Id == itemId)
-                    .ToListAsync();
+            var strategy = db.Database.CreateExecutionStrategy();
 
-                var offersAgainstItem = await db.Offers
-                    .Where(u => u.SourceItemId.Equals(itemId) || u.TargetItemId.Equals(itemId))
-                    .ToListAsync();
-                if (offersAgainstItem.Count > 0)
-                {
-                    offersAgainstItem.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
-                    var offerIds = offersAgainstItem.Select(offer => offer.Id).ToList();
-                    var messagesToUpdate = await db.Messages
-                        .Where(message => offerIds.Contains(message.OfferId))
-                        .ToListAsync();
-                    messagesToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
-                }
-                items.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
-                await db.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return true;
-            }
-            catch (Exception ex)
+            await strategy.ExecuteAsync(async () =>
             {
-                await transaction.RollbackAsync();
-                throw;
-            }
+                using var transaction = await db.Database.BeginTransactionAsync();
+                try
+                {
+                    var items = await db.Items
+                        .Where(u => u.Id == itemId)
+                        .ToListAsync();
+
+                    var offersAgainstItem = await db.Offers
+                        .Where(u => u.SourceItemId.Equals(itemId) || u.TargetItemId.Equals(itemId))
+                        .ToListAsync();
+                    if (offersAgainstItem.Count > 0)
+                    {
+                        offersAgainstItem.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTimeOffset.UtcNow; });
+                        var offerIds = offersAgainstItem.Select(offer => offer.Id).ToList();
+                        var messagesToUpdate = await db.Messages
+                            .Where(message => offerIds.Contains(message.OfferId))
+                            .ToListAsync();
+                        messagesToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTimeOffset.UtcNow; });
+                    }
+                    items.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTimeOffset.UtcNow; });
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+
+            return true;
         }
+
 
         private async Task<string> UploadImageToS3Async(byte[] imageBytes, string contentType)
         {

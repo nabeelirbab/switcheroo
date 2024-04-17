@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
+using Domain.Items;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Database.Schema
@@ -127,6 +128,11 @@ namespace Infrastructure.Database.Schema
                 user.IsMatchNotificationsEnabled,
                 user.IsChatNotificationsEnabled,
                 user.CreatedAt
-            );
+            )
+            {
+                IsDeleted = user.IsDeleted,
+                DeletedAt = user.DeletedAt,
+                DeletedByUserId = user.DeletedByUserId
+            };
     }
 }

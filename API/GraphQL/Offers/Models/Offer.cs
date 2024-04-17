@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Domain.Items;
 using Domain.Offers;
+using Domain.Users;
 using HotChocolate;
 using Item = API.GraphQL.Items.Models.Item;
 
@@ -32,6 +33,24 @@ namespace API.GraphQL.Models
         public int SourceStatus { get; set; }
         public int? TargeteStatus { get; set; }
 
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        public async Task<Users.Models.User?> GetDeletedByUser([Service] IUserRepository userRepository)
+        {
+            if (DeletedByUserId == null) return null;
+            return await GetUserByUserId(userRepository, DeletedByUserId.Value);
+        }
+
+        private async Task<Users.Models.User> GetUserByUserId(IUserRepository userRepository, Guid userId)
+        {
+            var domUser = await userRepository.GetById(userId);
+
+            if (domUser == null) throw new ApiException($"Invalid UserId {userId}");
+
+            return Users.Models.User.FromDomain(domUser);
+        }
         public async Task<Item?> GetSourceItem(
             [Service] IItemRepository itemRepository
         )
@@ -63,7 +82,7 @@ namespace API.GraphQL.Models
         {
             if (!domOffer.Id.HasValue) throw new ApiException("Mapping error. Invalid offer");
 
-            return new Offer(domOffer.Id.Value, domOffer.SourceItemId, domOffer.TargetItemId, domOffer.Cash, domOffer.CreatedAt, domOffer.SourceStatus, domOffer.TargeteStatus);
+            return new Offer(domOffer.Id.Value, domOffer.SourceItemId, domOffer.TargetItemId, domOffer.Cash, domOffer.CreatedAt, domOffer.SourceStatus, domOffer.TargeteStatus) { IsDeleted = domOffer.IsDeleted, DeletedAt = domOffer.DeletedAt, DeletedByUserId = domOffer.DeletedByUserId };
         }
     }
 }

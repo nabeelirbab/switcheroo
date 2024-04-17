@@ -143,6 +143,8 @@ namespace API
             {
                 options.Cookie.Name = "switcheroo.session";
                 options.SlidingExpiration = true;
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             });
 
 

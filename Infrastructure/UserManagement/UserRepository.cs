@@ -38,76 +38,135 @@ namespace Infrastructure.UserManagement
             return user;
         }
 
+        //public async Task<Paginated<User>> GetAllUsers(int limit, string? cursor)
+        //{
+        //    IEnumerable<Guid> requiredIds;
+
+        //    var Users = await db.Users.IgnoreQueryFilters().ToListAsync();
+
+        //    var usersIdsSorted = Users.Select(x => x.Id).ToList();
+
+        //    if (cursor != null)
+        //    {
+        //        requiredIds = usersIdsSorted
+        //        .SkipWhile(x => cursor != "" && x.ToString() != cursor)
+        //        .Skip(1)
+        //        .Take(limit);
+        //    }
+        //    else
+        //    {
+        //        requiredIds = usersIdsSorted.Take(limit);
+        //    }
+
+        //    var totalCount = usersIdsSorted.Count();
+
+        //    var data = await db.Users
+        //        .AsNoTracking()
+        //        .IgnoreQueryFilters()
+        //        .Where(x => requiredIds.Contains(x.Id))
+        //        .OrderByDescending(x => x.CreatedAt)
+        //        .Select(Database.Schema.User.ToDomain)
+        //        .ToListAsync();
+
+        //    //Item count
+        //    foreach (var user in data)
+        //    {
+        //        var userItems = await db.Items
+        //            .IgnoreQueryFilters()
+        //            .Where(i => i.CreatedByUserId == user.Id)
+        //            .ToListAsync();
+        //        user.ItemCount = userItems.Count;
+        //    }
+
+        //    //Matched items
+        //    foreach (var user in data)
+        //    {
+        //        var userItems = await db.Items
+        //            .IgnoreQueryFilters()
+        //            .Where(i => i.CreatedByUserId == user.Id)
+        //            .ToListAsync();
+
+        //        if (userItems.Count != 0)
+        //        {
+        //            var sourceItemIds = userItems.Select(item => item.Id).ToList();
+
+        //            var offers = await db.Offers.IgnoreQueryFilters()
+        //                .Where(offer =>
+        //                    sourceItemIds.Contains(offer.SourceItemId) || sourceItemIds.Contains(offer.TargetItemId))
+        //                .Where(offer =>
+        //                    offer.SourceStatus == Database.Schema.OfferStatus.Initiated &&
+        //                    offer.TargetStatus == Database.Schema.OfferStatus.Initiated)
+        //                .ToListAsync();
+
+        //            user.MatchedItemCount = offers.Count;
+        //        }
+        //        else
+        //        {
+        //            user.MatchedItemCount = 0;
+        //        }
+        //    }
+
+
+        //    var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
+
+        //    return new Paginated<User>(data, newCursor ?? "", totalCount, data.Count == limit);
+        //}
+
         public async Task<Paginated<User>> GetAllUsers(int limit, string? cursor)
         {
+            var usersIdsSorted = await db.Users.AsNoTracking().IgnoreQueryFilters().OrderByDescending(u => u.CreatedAt).Select(x => x.Id).ToListAsync();
+
             IEnumerable<Guid> requiredIds;
-
-            var Users = await db.Users.ToListAsync();
-
-            var usersIdsSorted = Users.Select(x => x.Id).ToList();
-
             if (cursor != null)
             {
                 requiredIds = usersIdsSorted
-                .SkipWhile(x => cursor != "" && x.ToString() != cursor)
-                .Skip(1)
-                .Take(limit);
+                    .SkipWhile(x => x.ToString() != cursor)
+                    .Skip(1)
+                    .Take(limit);
             }
             else
             {
                 requiredIds = usersIdsSorted.Take(limit);
             }
 
-            var totalCount = usersIdsSorted.Count();
-
             var data = await db.Users
                 .AsNoTracking()
+                .IgnoreQueryFilters()
                 .Where(x => requiredIds.Contains(x.Id))
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.User.ToDomain)
                 .ToListAsync();
+            var allItems = await db.Items.AsNoTracking().IgnoreQueryFilters().Where(i => requiredIds.Contains(i.CreatedByUserId)).ToListAsync();
+            var allItemIds = allItems.Select(i => i.Id).ToList();
+            var allOffers = await db.Offers.IgnoreQueryFilters()
+                    .Where(offer =>
+                        allItemIds.Contains(offer.SourceItemId) || allItemIds.Contains(offer.TargetItemId))
+                    .Where(offer =>
+                        offer.SourceStatus == Database.Schema.OfferStatus.Initiated &&
+                        offer.TargetStatus == Database.Schema.OfferStatus.Initiated).ToListAsync();
 
-            //Item count
             foreach (var user in data)
             {
-                var userItems = await db.Items
-                    .Where(i => i.CreatedByUserId == user.Id)
-                    .ToListAsync();
-                user.ItemCount = userItems.Count;
+                user.ItemCount = allItems.Where(i => i.CreatedByUserId == user.Id).Count();
+
+                var userItems = allItems.Where(i => i.CreatedByUserId == user.Id).ToList();
+
+                var sourceItemIds = allItems.Where(i => i.CreatedByUserId == user.Id).Select(i => i.Id).ToList();
+                user.MatchedItemCount = allOffers
+                    .Where(offer =>
+                        sourceItemIds.Contains(offer.SourceItemId) || sourceItemIds.Contains(offer.TargetItemId))
+                    .Where(offer =>
+                        offer.SourceStatus == Database.Schema.OfferStatus.Initiated &&
+                        offer.TargetStatus == Database.Schema.OfferStatus.Initiated)
+                    .Count();
             }
-
-            //Matched items
-            foreach (var user in data)
-            {
-                var userItems = await db.Items
-                    .Where(i => i.CreatedByUserId == user.Id)
-                    .ToListAsync();
-
-                if (userItems.Count != 0)
-                {
-                    var sourceItemIds = userItems.Select(item => item.Id).ToList();
-
-                    var offers = await db.Offers
-                        .Where(offer =>
-                            sourceItemIds.Contains(offer.SourceItemId) || sourceItemIds.Contains(offer.TargetItemId))
-                        .Where(offer =>
-                            offer.SourceStatus == Database.Schema.OfferStatus.Initiated &&
-                            offer.TargetStatus == Database.Schema.OfferStatus.Initiated)
-                        .ToListAsync();
-
-                    user.MatchedItemCount = offers.Count;
-                }
-                else
-                {
-                    user.MatchedItemCount = 0;
-                }
-            }
-
 
             var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
+            var totalCount = usersIdsSorted.Count;
 
-            return new Paginated<User>(data, newCursor ?? "", totalCount, data.Count == limit);
+            return new Paginated<User>(data, newCursor, totalCount, data.Count == limit);
         }
+
 
         public async Task<User> GetById(Guid? id)
         {
@@ -393,54 +452,58 @@ namespace Infrastructure.UserManagement
                 throw new ArgumentNullException(nameof(userIds), "User IDs cannot be null or empty.");
             }
 
-            using var transaction = await db.Database.BeginTransactionAsync();
+            var strategy = db.Database.CreateExecutionStrategy();
 
-            try
+            await strategy.ExecuteAsync(async () =>
             {
-                // Soft delete Users
-                var usersToUpdate = await db.Users
-                    .Where(u => userIds.Contains(u.Id))
-                    .ToListAsync();
-
-                if (!usersToUpdate.Any())
+                using var transaction = await db.Database.BeginTransactionAsync();
+                try
                 {
-                    throw new KeyNotFoundException("No users found with the provided IDs.");
+                    // Soft delete Users
+                    var usersToUpdate = await db.Users
+                        .Where(u => userIds.Contains(u.Id))
+                        .ToListAsync();
+
+                    if (!usersToUpdate.Any())
+                    {
+                        throw new KeyNotFoundException("No users found with the provided IDs.");
+                    }
+                    usersToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTimeOffset.UtcNow; });
+
+                    // Soft delete Items
+                    var itemsToUpdate = await db.Items
+                        .Where(item => userIds.Contains(item.CreatedByUserId))
+                        .ToListAsync();
+                    itemsToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTimeOffset.UtcNow; });
+
+                    // Get item IDs for later queries
+                    var itemIds = itemsToUpdate.Select(item => item.Id).ToList();
+
+                    // Soft delete Offers
+                    var offersToUpdate = await db.Offers
+                        .Where(offer => userIds.Contains(offer.CreatedByUserId) || itemIds.Contains(offer.TargetItemId))
+                        .ToListAsync();
+                    offersToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTimeOffset.UtcNow; });
+
+                    // Soft delete Messages linked to the Offers
+                    var offerIds = offersToUpdate.Select(offer => offer.Id).ToList();
+                    var messagesToUpdate = await db.Messages
+                        .Where(message => offerIds.Contains(message.OfferId))
+                        .ToListAsync();
+                    messagesToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTimeOffset.UtcNow; });
+
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
                 }
-                usersToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"An error occurred while deleting users with IDs {string.Join(", ", userIds)}");
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
 
-                // Soft delete Items
-                var itemsToUpdate = await db.Items
-                    .Where(item => userIds.Contains(item.CreatedByUserId))
-                    .ToListAsync();
-                itemsToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
-
-                // Get item IDs for later queries
-                var itemIds = itemsToUpdate.Select(item => item.Id).ToList();
-
-                // Soft delete Offers
-                var offersToUpdate = await db.Offers
-                    .Where(offer => userIds.Contains(offer.CreatedByUserId) || itemIds.Contains(offer.TargetItemId))
-                    .ToListAsync();
-                offersToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
-
-                // Soft delete Messages linked to the Offers
-                var offerIds = offersToUpdate.Select(offer => offer.Id).ToList();
-                var messagesToUpdate = await db.Messages
-                    .Where(message => offerIds.Contains(message.OfferId))
-                    .ToListAsync();
-                messagesToUpdate.ForEach(u => { u.IsDeleted = true; u.DeletedByUserId = deletedByUserId; u.DeletedAt = DateTime.Now; });
-
-                await db.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"An error occurred while deleting users with IDs {string.Join(", ", userIds)}");
-                await transaction.RollbackAsync();
-                throw; // Rethrow to let the caller handle it or to fail visibly if unhandled
-            }
+            return true;
         }
 
 

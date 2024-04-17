@@ -16,8 +16,7 @@ namespace API.GraphQL
     {
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<Users.Models.User> GetMe(
-            [Service] UserContextService userContextService,
-            [Service] IUserAuthenticationService userAuthenticationService
+            [Service] UserContextService userContextService
         )
         {
             var user = await userContextService.GetCurrentUser();

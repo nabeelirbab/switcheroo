@@ -10,6 +10,8 @@ using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Domain.Services;
 using System.Text.Json;
+using Domain;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
@@ -283,7 +285,7 @@ namespace Infrastructure.Offers
 
                 offer.IsDeleted = true;
                 offer.DeletedByUserId = userId;
-                offer.DeletedAt = DateTime.Now;
+                offer.DeletedAt = DateTimeOffset.Now;
                 await db.SaveChangesAsync();
 
                 var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
@@ -658,6 +660,203 @@ namespace Infrastructure.Offers
                     .ToListAsync();
 
                 return offers;
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+
+        public async Task<Paginated<Offer>> GetAllMatchedOffers(int limit, string? cursor)
+        {
+            try
+            {
+                Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+                var query = db.Offers.IgnoreQueryFilters().Where(o => !(o.Cash > 0) && o.SourceStatus == o.TargetStatus).AsNoTracking();
+                if (cursorGuid.HasValue)
+                {
+                    query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+                }
+                var totalCountQuery = await query.CountAsync();
+                var paginatedOffers = await query
+                    .OrderBy(item => item.Id)
+                    .Take(limit + 1)
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus,
+                    offer.IsRead)
+                    {
+                        IsDeleted = offer.IsDeleted,
+                        DeletedAt = offer.DeletedAt,
+                        DeletedByUserId = offer.DeletedByUserId
+                    })
+                    .ToListAsync();
+
+                string? newCursor = paginatedOffers.Count > limit ? paginatedOffers.Last().Id.ToString() : null;
+                if (newCursor != null)
+                {
+                    paginatedOffers = paginatedOffers.Take(limit).ToList();
+                }
+
+                var totalCount = totalCountQuery;
+
+
+                return new Paginated<Domain.Offers.Offer>(paginatedOffers, newCursor ?? "", totalCount, paginatedOffers.Count == limit);
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+        public async Task<Paginated<Offer>> GetAllPendingMatchingOffers(int limit, string? cursor)
+        {
+            try
+            {
+                Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+                var query = db.Offers.IgnoreQueryFilters().Where(o => !(o.Cash > 0) && o.SourceStatus != o.TargetStatus).AsNoTracking();
+                if (cursorGuid.HasValue)
+                {
+                    query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+                }
+                var totalCountQuery = await query.CountAsync();
+                var paginatedOffers = await query
+                    .OrderBy(item => item.Id)
+                    .Take(limit + 1)
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus,
+                    offer.IsRead)
+                    {
+                        IsDeleted = offer.IsDeleted,
+                        DeletedAt = offer.DeletedAt,
+                        DeletedByUserId = offer.DeletedByUserId
+                    })
+                    .ToListAsync();
+
+                string? newCursor = paginatedOffers.Count > limit ? paginatedOffers.Last().Id.ToString() : null;
+                if (newCursor != null)
+                {
+                    paginatedOffers = paginatedOffers.Take(limit).ToList();
+                }
+
+                var totalCount = totalCountQuery;
+
+
+                return new Paginated<Domain.Offers.Offer>(paginatedOffers, newCursor ?? "", totalCount, paginatedOffers.Count == limit);
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+        public async Task<Paginated<Offer>> GetAllAcceptedCashOffers(int limit, string? cursor)
+        {
+            try
+            {
+                Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+                var query = db.Offers.IgnoreQueryFilters().Where(o => o.Cash > 0 && o.SourceStatus == o.TargetStatus).AsNoTracking();
+                if (cursorGuid.HasValue)
+                {
+                    query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+                }
+                var totalCountQuery = await query.CountAsync();
+                var paginatedOffers = await query
+                    .OrderBy(item => item.Id)
+                    .Take(limit + 1)
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus,
+                    offer.IsRead)
+                    {
+                        IsDeleted = offer.IsDeleted,
+                        DeletedAt = offer.DeletedAt,
+                        DeletedByUserId = offer.DeletedByUserId
+                    })
+                    .ToListAsync();
+
+                string? newCursor = paginatedOffers.Count > limit ? paginatedOffers.Last().Id.ToString() : null;
+                if (newCursor != null)
+                {
+                    paginatedOffers = paginatedOffers.Take(limit).ToList();
+                }
+
+                var totalCount = totalCountQuery;
+
+
+                return new Paginated<Domain.Offers.Offer>(paginatedOffers, newCursor ?? "", totalCount, paginatedOffers.Count == limit);
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+        public async Task<Paginated<Offer>> GetAllPendingCashOffers(int limit, string? cursor)
+        {
+            try
+            {
+                Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+                var query = db.Offers.IgnoreQueryFilters().Where(o => o.Cash > 0 && o.SourceStatus != o.TargetStatus).AsNoTracking();
+                if (cursorGuid.HasValue)
+                {
+                    query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+                }
+                var totalCountQuery = await query.CountAsync();
+                var paginatedOffers = await query
+                    .OrderBy(item => item.Id)
+                    .Take(limit + 1)
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus,
+                    offer.IsRead)
+                    {
+                        IsDeleted = offer.IsDeleted,
+                        DeletedAt = offer.DeletedAt,
+                        DeletedByUserId = offer.DeletedByUserId
+                    })
+                    .ToListAsync();
+
+                string? newCursor = paginatedOffers.Count > limit ? paginatedOffers.Last().Id.ToString() : null;
+                if (newCursor != null)
+                {
+                    paginatedOffers = paginatedOffers.Take(limit).ToList();
+                }
+
+                var totalCount = totalCountQuery;
+
+
+                return new Paginated<Domain.Offers.Offer>(paginatedOffers, newCursor ?? "", totalCount, paginatedOffers.Count == limit);
             }
 
             catch (Exception ex)

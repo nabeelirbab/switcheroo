@@ -40,6 +40,25 @@ namespace API.GraphQL.Models
 
         public DateTimeOffset? CreatedAt { get; set; }
 
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        public async Task<Users.Models.User?> GetDeletedByUser([Service] IUserRepository userRepository)
+        {
+            if (DeletedByUserId == null) return null;
+            return await GetUserByUserId(userRepository, DeletedByUserId.Value);
+        }
+
+        private async Task<Users.Models.User> GetUserByUserId(IUserRepository userRepository, Guid userId)
+        {
+            var domUser = await userRepository.GetById(userId);
+
+            if (domUser == null) throw new ApiException($"Invalid UserId {userId}");
+
+            return Users.Models.User.FromDomain(domUser);
+        }
+
         [GraphQLNonNullType]
         public async Task<List<Users.Models.User>> GetTargetUser(
             [Service] IUserRepository userRepository
@@ -91,7 +110,12 @@ namespace API.GraphQL.Models
         {
             if (!domMessage.Id.HasValue) throw new ApiException("Mapping error. Invalid message");
 
-            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId, domMessage.Cash, domMessage.UserId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt);
+            return new Message(domMessage.Id.Value, domMessage.CreatedByUserId, domMessage.OfferId, domMessage.Cash, domMessage.UserId, domMessage.MessageText, domMessage.MessageReadAt, domMessage.CreatedAt)
+            {
+                IsDeleted = domMessage.IsDeleted,
+                DeletedAt = domMessage.DeletedAt,
+                DeletedByUserId = domMessage.DeletedByUserId,
+            };
         }
 
         public static List<Message> FromDomain(List<Domain.Offers.Message> domMessages)
@@ -110,8 +134,12 @@ namespace API.GraphQL.Models
                 domMessage.UserId,
                 domMessage.MessageText,
                 domMessage.MessageReadAt,
-                domMessage.CreatedAt))
-                .ToList();
+                domMessage.CreatedAt)
+            {
+                IsDeleted = domMessage.IsDeleted,
+                DeletedAt = domMessage.DeletedAt,
+                DeletedByUserId = domMessage.DeletedByUserId,
+            }).ToList();
         }
 
     }

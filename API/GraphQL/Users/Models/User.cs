@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using Domain.Items;
@@ -84,6 +85,24 @@ namespace API.GraphQL.Users.Models
 
         public bool InitiateSignUpProcess { get; set; }
 
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        public async Task<Users.Models.User?> GetDeletedByUser([Service] IUserRepository userRepository)
+        {
+            if (DeletedByUserId == null) return null;
+            return await GetUserByUserId(userRepository, DeletedByUserId.Value);
+        }
+        private async Task<Users.Models.User> GetUserByUserId(IUserRepository userRepository, Guid userId)
+        {
+            var domUser = await userRepository.GetById(userId);
+
+            if (domUser == null) throw new ApiException($"Invalid UserId {userId}");
+
+            return Users.Models.User.FromDomain(domUser);
+        }
+
         [GraphQLNonNullType]
         public async Task<IEnumerable<Offer>> GetOffers(
             [Service] IHttpContextAccessor httpContextAccessor,
@@ -111,8 +130,7 @@ namespace API.GraphQL.Users.Models
         }
 
         [GraphQLNonNullType]
-        public async Task<List<string>> GetUserRoles(
-        [Service] UserManager<Infrastructure.Database.Schema.User> userManager)
+        public async Task<List<string>> GetUserRoles([Service] UserManager<Infrastructure.Database.Schema.User> userManager)
         {
             var user = await userManager.FindByIdAsync(Id.ToString());
             if (user == null)
@@ -120,6 +138,7 @@ namespace API.GraphQL.Users.Models
                 throw new ArgumentException("User not found");
             }
 
+            // Fetch roles in a single call
             var roles = await userManager.GetRolesAsync(user);
             return roles.ToList();
         }
@@ -150,7 +169,12 @@ namespace API.GraphQL.Users.Models
                 domUser.IsMatchNotificationsEnabled,
                 domUser.IsChatNotificationsEnabled,
                 domUser.CreatedAt
-            );
+            )
+            {
+                IsDeleted = domUser.IsDeleted,
+                DeletedAt = domUser.DeletedAt,
+                DeletedByUserId = domUser.DeletedByUserId,
+            };
         }
     }
 }

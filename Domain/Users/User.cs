@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Users
 {
@@ -73,12 +74,19 @@ namespace Domain.Users
 
         public DateTimeOffset? CreatedAt { get; set; }
 
+        [NotMapped]
+        public bool IsDeleted { get; set; }
+        [NotMapped]
+        public DateTimeOffset? DeletedAt { get; set; }
+        [NotMapped]
+        public Guid? DeletedByUserId { get; set; }
+
         public static User CreateNewUser(string firstName, string lastName, string email)
         {
             return new User(
-                null, email, firstName, lastName, email, null, null, 
+                null, email, firstName, lastName, email, null, null,
                 null, null, null, null,
-                null, null, null,  true, true, null);
+                null, null, null, true, true, null);
         }
 
         public static string GenerateSixDigitVerificationCode()
