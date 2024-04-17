@@ -107,6 +107,15 @@ namespace Infrastructure.Database
             modelBuilder.Entity<DismissedItem>().HasIndex(p => p.CreatedByUserId);
             modelBuilder.Entity<DismissedItem>().HasIndex(p => new { p.CreatedByUserId, p.TargetItemId });
 
+            modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<User>().Property(u => u.IsDeleted).HasDefaultValue(false);
+            modelBuilder.Entity<Item>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Item>().Property(u => u.IsDeleted).HasDefaultValue(false);
+            modelBuilder.Entity<Offer>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Offer>().Property(u => u.IsDeleted).HasDefaultValue(false);
+            modelBuilder.Entity<Message>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Message>().Property(u => u.IsDeleted).HasDefaultValue(false);
+
             var categories = modelBuilder.SeedCategories();
         }
     }

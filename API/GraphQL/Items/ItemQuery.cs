@@ -86,7 +86,16 @@ namespace API.GraphQL
                 string? cursor
             )
         {
-            var paginatedItems = await itemRepository.GetAllItems(userId, limit, cursor);
+            var currentUserRole = userContextService.GetCurrentUserRoles();
+            Domain.Paginated<Item> paginatedItems;
+            if (currentUserRole.IndexOf("Admin") >= 0 || currentUserRole.IndexOf("SuperAdmin") >= 0)
+            {
+                paginatedItems = await itemRepository.GetAllItemsByUserForAdmin(userId, limit, cursor);
+            }
+            else
+            {
+                paginatedItems = await itemRepository.GetAllItems(userId, limit, cursor);
+            }
             return new Paginated<Items.Models.Item>(
                 paginatedItems.Data
                     .Select(Items.Models.Item.FromDomain)
@@ -96,6 +105,27 @@ namespace API.GraphQL
                 paginatedItems.HasNextPage);
 
         }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<Paginated<Items.Models.Item>> GetAllItemsByUser(
+                [Service] IItemRepository itemRepository,
+                Guid userId,
+                int limit,
+                string? cursor
+            )
+        {
+            var paginatedItems = await itemRepository.GetAllItemsByUserForAdmin(userId, limit, cursor);
+            return new Paginated<Items.Models.Item>(
+                paginatedItems.Data
+                    .Select(Items.Models.Item.FromDomain)
+                    .ToList(),
+                paginatedItems.Cursor,
+                paginatedItems.TotalCount,
+                paginatedItems.HasNextPage);
+
+        }
+
+
 
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<List<KeyValue>> CategoriesItemCount(

@@ -65,6 +65,18 @@ namespace API.GraphQL.Items.Models
         public bool? HasCashOffer { get; set; }
         public int? CashOfferValue { get; set; }
 
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+
+
+        public async Task<Users.Models.User?> GetDeletedByUser([Service] IUserRepository userRepository)
+        {
+            if (DeletedByUserId == null) return null;
+            return await GetUserByUserId(userRepository, DeletedByUserId.Value);
+        }
         public async Task<Users.Models.User> GetCreatedByUser([Service] IUserRepository userRepository)
         {
             return await GetUserByUserId(userRepository, CreatedByUserId);
@@ -113,7 +125,10 @@ namespace API.GraphQL.Items.Models
             {
                 HasMatchingOffer = domItem.HasMatchingOffer,
                 HasCashOffer = domItem.HasCashOffer,
-                CashOfferValue = domItem.CashOfferValue
+                CashOfferValue = domItem.CashOfferValue,
+                IsDeleted = domItem.IsDeleted,
+                DeletedAt = domItem.DeletedAt,
+                DeletedByUserId = domItem.DeletedByUserId,
             };
         }
     }

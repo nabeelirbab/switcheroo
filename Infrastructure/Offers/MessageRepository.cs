@@ -198,6 +198,251 @@ namespace Infrastructure.Offers
                 throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
             }
         }
+        public async Task<List<Domain.Offers.Message>> GetAllChat()
+        {
+            try
+            {
+                var now = DateTime.Now;
+
+                var allItems = await db.Items
+                   .IgnoreQueryFilters()
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+                var offers = await db.Offers
+                    .IgnoreQueryFilters()
+                    .Where(o => allItems.Contains(o.TargetItemId))
+                    .Where(o => o.SourceStatus == o.TargetStatus)
+                    .ToListAsync();
+
+                // Offer IDs with messages
+                var lastMessages = await db.Messages
+                        .IgnoreQueryFilters()
+                        .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
+                        .GroupBy(message => message.OfferId)
+                        .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
+                        .ToListAsync();
+
+                // Offer IDs without any messages
+                var offerIdsWithNoMessages = offers
+                    .Where(offer => !db.Messages.IgnoreQueryFilters().Any(message => message.OfferId == offer.Id))
+                    .Select(offer => offer.Id)
+                    .ToList();
+
+                var offersWithNoMessages = offers.Where(o => offerIdsWithNoMessages.Contains(o.Id)).ToList();
+                var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
+                var items = await db.Items
+                    .IgnoreQueryFilters()
+                    .Where(item => itemIds.Contains(item.Id))
+                    .ToListAsync();
+
+                string message = "";
+                var dummyMessages = new List<Domain.Offers.Message>();
+                foreach (var offerId in offerIdsWithNoMessages)
+                {
+                    Domain.Offers.Message newDummyMessage;
+                    var offerByOfferId = offers.Where(o => o.Id == offerId).FirstOrDefault();
+                    Guid targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    newDummyMessage = new Domain.Offers.Message(
+                    Guid.NewGuid(),
+                        offerByOfferId.CreatedByUserId,
+                        offerId,
+                        offerByOfferId.Cash,
+                        targetUserId,
+                        message,
+                        null,
+                        offerByOfferId.CreatedAt,
+                        false
+                    );
+                    dummyMessages.Add(newDummyMessage);
+                }
+                var offerIdsInLastMessages = lastMessages.Select(l => l.OfferId).ToList();
+                var itemIdsInLastMessages = offers.Where(o => offerIdsInLastMessages.Contains(o.Id)).SelectMany(o => new[] { o.SourceItemId, o.TargetItemId }).ToList();
+                var itemsInLastMessages = await db.Items.IgnoreQueryFilters()
+                    .Where(item => itemIdsInLastMessages.Contains(item.Id))
+                    .ToListAsync();
+                foreach (var _message in lastMessages)
+                {
+                    var offerInMessage = offers.Where(o => o.Id == _message.OfferId).FirstOrDefault();
+                    _message.UserId = itemsInLastMessages.Where(i => i.Id == offerInMessage.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                }
+                // Merge lastMessages and dummyMessages
+                var mergedMessages = lastMessages
+                    .Select(message => new Domain.Offers.Message(
+                        message.Id,
+                        message.CreatedByUserId,
+                        message.OfferId,
+                        message.Cash,
+                        message.UserId,
+                        message.MessageText,
+                        message.MessageReadAt,
+                        message.CreatedAt,
+                        message.IsRead
+                    )
+                    {
+                        IsDeleted = message.IsDeleted,
+                        DeletedAt = message.DeletedAt,
+                        DeletedByUserId = message.DeletedByUserId
+                    })
+                    .Concat(dummyMessages
+                        .Select(message => new Domain.Offers.Message(
+                            message.Id,
+                            message.CreatedByUserId,
+                            message.OfferId,
+                            message.Cash,
+                            message.UserId,
+                            message.MessageText,
+                            message.MessageReadAt,
+                            message.CreatedAt,
+                            message.IsRead
+                        )
+                        {
+                            IsDeleted = message.IsDeleted,
+                            DeletedAt = message.DeletedAt,
+                            DeletedByUserId = message.DeletedByUserId
+                        })
+                    )
+                    .GroupBy(message => message.OfferId)
+                    .Select(group => group.First())
+                    .ToList();
+
+                foreach (var readeMessage in mergedMessages)
+                {
+                    if (readeMessage.MessageReadAt == null)
+                    {
+                        readeMessage.MessageReadAt = now;
+                    }
+                }
+                return mergedMessages.OrderByDescending(m => m.CreatedAt).ThenBy(m => m.IsRead).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
+            }
+        }
+        public async Task<List<Domain.Offers.Message>> GetAllChatByUser(Guid userId)
+        {
+            try
+            {
+                var now = DateTime.Now;
+
+                var allItems = await db.Items
+                   .IgnoreQueryFilters()
+                   .Where(i => i.CreatedByUserId == userId)
+                   .Select(z => z.Id)
+                   .ToArrayAsync();
+
+                var offers = await db.Offers
+                    .IgnoreQueryFilters()
+                    .Where(o => allItems.Contains(o.TargetItemId))
+                    .Where(o => o.SourceStatus == o.TargetStatus)
+                    .ToListAsync();
+
+                // Offer IDs with messages
+                var lastMessages = await db.Messages
+                        .IgnoreQueryFilters()
+                        .Where(message => offers.Select(o => o.Id).Contains(message.OfferId))
+                        .GroupBy(message => message.OfferId)
+                        .Select(group => group.OrderByDescending(m => m.CreatedAt).FirstOrDefault())
+                        .ToListAsync();
+
+                // Offer IDs without any messages
+                var offerIdsWithNoMessages = offers
+                    .Where(offer => !db.Messages.IgnoreQueryFilters().Any(message => message.OfferId == offer.Id))
+                    .Select(offer => offer.Id)
+                    .ToList();
+
+                var offersWithNoMessages = offers.Where(o => offerIdsWithNoMessages.Contains(o.Id)).ToList();
+                var itemIds = offersWithNoMessages.SelectMany(offer => new[] { offer.SourceItemId, offer.TargetItemId }).ToList();
+                var items = await db.Items
+                    .IgnoreQueryFilters()
+                    .Where(item => itemIds.Contains(item.Id))
+                    .ToListAsync();
+
+                string message = "";
+                var dummyMessages = new List<Domain.Offers.Message>();
+                foreach (var offerId in offerIdsWithNoMessages)
+                {
+                    Domain.Offers.Message newDummyMessage;
+                    var offerByOfferId = offers.Where(o => o.Id == offerId).FirstOrDefault();
+                    Guid targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    newDummyMessage = new Domain.Offers.Message(
+                    Guid.NewGuid(),
+                        offerByOfferId.CreatedByUserId,
+                        offerId,
+                        offerByOfferId.Cash,
+                        targetUserId,
+                        message,
+                        null,
+                        offerByOfferId.CreatedAt,
+                        false
+                    );
+                    dummyMessages.Add(newDummyMessage);
+                }
+                var offerIdsInLastMessages = lastMessages.Select(l => l.OfferId).ToList();
+                var itemIdsInLastMessages = offers.Where(o => offerIdsInLastMessages.Contains(o.Id)).SelectMany(o => new[] { o.SourceItemId, o.TargetItemId }).ToList();
+                var itemsInLastMessages = await db.Items.IgnoreQueryFilters()
+                    .Where(item => itemIdsInLastMessages.Contains(item.Id))
+                    .ToListAsync();
+                foreach (var _message in lastMessages)
+                {
+                    var offerInMessage = offers.Where(o => o.Id == _message.OfferId).FirstOrDefault();
+                    _message.UserId = itemsInLastMessages.Where(i => i.Id == offerInMessage.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                }
+                // Merge lastMessages and dummyMessages
+                var mergedMessages = lastMessages
+                    .Select(message => new Domain.Offers.Message(
+                        message.Id,
+                        message.CreatedByUserId,
+                        message.OfferId,
+                        message.Cash,
+                        message.UserId,
+                        message.MessageText,
+                        message.MessageReadAt,
+                        message.CreatedAt,
+                        message.IsRead
+                    )
+                    {
+                        IsDeleted = message.IsDeleted,
+                        DeletedAt = message.DeletedAt,
+                        DeletedByUserId = message.DeletedByUserId
+                    })
+                    .Concat(dummyMessages
+                        .Select(message => new Domain.Offers.Message(
+                            message.Id,
+                            message.CreatedByUserId,
+                            message.OfferId,
+                            message.Cash,
+                            message.UserId,
+                            message.MessageText,
+                            message.MessageReadAt,
+                            message.CreatedAt,
+                            message.IsRead
+                        )
+                        {
+                            IsDeleted = message.IsDeleted,
+                            DeletedAt = message.DeletedAt,
+                            DeletedByUserId = message.DeletedByUserId
+                        })
+                    )
+                    .GroupBy(message => message.OfferId)
+                    .Select(group => group.First())
+                    .ToList();
+
+                foreach (var readeMessage in mergedMessages)
+                {
+                    if (readeMessage.MessageReadAt == null)
+                    {
+                        readeMessage.MessageReadAt = now;
+                    }
+                }
+                return mergedMessages.OrderByDescending(m => m.CreatedAt).ThenBy(m => m.IsRead).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException($"Infrastructure Exception {ex.Message}");
+            }
+        }
 
 
         public async Task<int> GetChatCount(Guid userId)

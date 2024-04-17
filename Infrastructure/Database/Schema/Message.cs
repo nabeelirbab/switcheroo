@@ -1,9 +1,10 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Infrastructure.Database.Schema
 {
-    public class Message: Audit
+    public class Message : Audit
     {
         public Message(Guid offerId, string messageText, DateTime? messageReadAt)
         {
@@ -26,9 +27,21 @@ namespace Infrastructure.Database.Schema
 
         [Required]
         public string MessageText { get; private set; }
-        
+
         public DateTime? MessageReadAt { get; set; }
 
         public bool? IsRead { get; set; }
+
+
+
+
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        [ForeignKey("DeletedByUserId")]
+        public User? DeletedByUser { get; set; }
+
+
     }
 }

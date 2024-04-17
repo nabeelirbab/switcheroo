@@ -7,8 +7,8 @@ namespace Domain.Offers
     {
         public Offer(Guid? id, Guid sourceItemId,
             Guid targetItemId, int? cash,
-            Guid? createdByUserId, Guid? updatedByUserId, 
-            DateTime createdAt, int sourceStatus,int? targeteStatus, bool? isRead)
+            Guid? createdByUserId, Guid? updatedByUserId,
+            DateTime createdAt, int sourceStatus, int? targeteStatus, bool? isRead)
         {
             Id = id;
             SourceItemId = sourceItemId;
@@ -43,7 +43,11 @@ namespace Domain.Offers
 
         public bool? IsRead { get; set; }
 
-        public static Offer CreateNewOffer(Guid sourceItemId, Guid targetItemId,int? cash, Guid createdByUserId, int sourceStatus, int? targeteStatus, bool? isRead)
+        public bool IsDeleted { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
+        public Guid? DeletedByUserId { get; set; }
+
+        public static Offer CreateNewOffer(Guid sourceItemId, Guid targetItemId, int? cash, Guid createdByUserId, int sourceStatus, int? targeteStatus, bool? isRead)
         {
             return new Offer(null, sourceItemId, targetItemId, cash, createdByUserId, createdByUserId, DateTime.Now, sourceStatus, targeteStatus, isRead);
         }

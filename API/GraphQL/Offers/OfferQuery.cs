@@ -24,73 +24,99 @@ namespace API.GraphQL
             return Offer.FromDomain(await offerRepository.GetOfferById(userContextService.GetCurrentUserId(), Guid.Parse(offerId)));
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<IEnumerable<Offer>> GetAllOffersByItemId(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
             [Service] IOfferRepository offerRepository,
             Guid itemId)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-
             var offers = await offerRepository.GetAllOffersByItemId(itemId);
-
             return offers.Select(Offer.FromDomain).ToList();
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<IEnumerable<Offer>> GetCreatedOffers(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-
-            var offers = await offerRepository.GetCreatedOffers(user.Id.Value);
-
+            var requestedUserId = userContextService.GetCurrentUserId();
+            var offers = await offerRepository.GetCreatedOffers(requestedUserId);
             return offers.Select(Offer.FromDomain).ToList();
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<IEnumerable<Offer>> GetReceivedOffers(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-
-            var offers = await offerRepository.GetReceivedOffers(user.Id.Value);
-
+            var requestedUserId = userContextService.GetCurrentUserId();
+            var offers = await offerRepository.GetReceivedOffers(requestedUserId);
             return offers.Select(Offer.FromDomain).ToList();
         }
 
-        [Authorize]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<int> GetNotificationCount(
-            [Service] IHttpContextAccessor httpContextAccessor,
-            [Service] IUserAuthenticationService userAuthenticationService,
+            [Service] UserContextService userContextService,
             [Service] IOfferRepository offerRepository)
         {
-            var claimsPrinciple = httpContextAccessor.HttpContext.User;
-            var user = await userAuthenticationService.GetCurrentlySignedInUserAsync(claimsPrinciple);
-            if (!user.Id.HasValue) throw new ApiException("Fatal.");
-
-            if (user == null) throw new ApiException("Not logged in");
-
-            var chatCount = offerRepository.GetNotificationCount((Guid)user.Id);
-
+            var requestUserId = userContextService.GetCurrentUserId();
+            var chatCount = offerRepository.GetNotificationCount(requestUserId);
             return await chatCount;
         }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<Paginated<Offer>> GetAllMatchedOffers(
+            [Service] IOfferRepository offerRepository, int limit, string? cursor)
+        {
+            var pageinatedOffers = await offerRepository.GetAllMatchedOffers(limit, cursor);
+            return new Paginated<Offer>(
+                pageinatedOffers.Data
+                    .Select(Offer.FromDomain)
+                    .ToList(),
+                pageinatedOffers.Cursor,
+                pageinatedOffers.TotalCount,
+                pageinatedOffers.HasNextPage);
+        }
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<Paginated<Offer>> GetAllPendingMatchingOffers(
+            [Service] IOfferRepository offerRepository, int limit, string? cursor)
+        {
+            var pageinatedOffers = await offerRepository.GetAllPendingMatchingOffers(limit, cursor);
+            return new Paginated<Offer>(
+                pageinatedOffers.Data
+                    .Select(Offer.FromDomain)
+                    .ToList(),
+                pageinatedOffers.Cursor,
+                pageinatedOffers.TotalCount,
+                pageinatedOffers.HasNextPage);
+        }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<Paginated<Offer>> GetAllAcceptedCashOffers(
+            [Service] IOfferRepository offerRepository, int limit, string? cursor)
+        {
+            var pageinatedOffers = await offerRepository.GetAllAcceptedCashOffers(limit, cursor);
+            return new Paginated<Offer>(
+                pageinatedOffers.Data
+                    .Select(Offer.FromDomain)
+                    .ToList(),
+                pageinatedOffers.Cursor,
+                pageinatedOffers.TotalCount,
+                pageinatedOffers.HasNextPage);
+        }
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<Paginated<Offer>> GetAllPendingCashOffers(
+            [Service] IOfferRepository offerRepository, int limit, string? cursor)
+        {
+            var pageinatedOffers = await offerRepository.GetAllPendingCashOffers(limit, cursor);
+            return new Paginated<Offer>(
+                pageinatedOffers.Data
+                    .Select(Offer.FromDomain)
+                    .ToList(),
+                pageinatedOffers.Cursor,
+                pageinatedOffers.TotalCount,
+                pageinatedOffers.HasNextPage);
+        }
+
+
     }
 }

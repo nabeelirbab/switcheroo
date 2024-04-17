@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(SwitcherooContext))]
-    partial class SwitcherooContextModelSnapshot : ModelSnapshot
+    [Migration("20240331083850_SoftDelete")]
+    partial class SoftDelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,22 +45,22 @@ namespace Infrastructure.Database.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("384649bd-08ae-46d0-906d-e25850986594"),
+                            Id = new Guid("99995d57-6ca1-4e71-bfd9-b3a367449781"),
                             Name = "Electronics"
                         },
                         new
                         {
-                            Id = new Guid("83c7a8db-ac16-4a8b-ae3f-08b49c6bd624"),
+                            Id = new Guid("00485988-7851-4dd9-b02e-81b62ab4296b"),
                             Name = "White Goods"
                         },
                         new
                         {
-                            Id = new Guid("94a2a3e3-203a-48f7-8a54-d723232151ad"),
+                            Id = new Guid("c6b2748c-fb80-45b7-b6ef-829ddee397f9"),
                             Name = "Clothing"
                         },
                         new
                         {
-                            Id = new Guid("96e21924-e819-4d21-8016-bdd99646e1b3"),
+                            Id = new Guid("29696f93-5780-43d3-bffa-126208c66be8"),
                             Name = "Furniture"
                         });
                 });

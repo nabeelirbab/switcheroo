@@ -19,5 +19,10 @@ namespace Domain.Offers
         Task<bool> UnmatchOffer(Guid offerId);
         Task<IEnumerable<Offer>> GetAllOffers(Guid value);
         Task<IEnumerable<Offer>> GetAllOffersByItemId(Guid userId);
+
+        Task<Paginated<Offer>> GetAllMatchedOffers(int limit, string? cursor);
+        Task<Paginated<Offer>> GetAllPendingMatchingOffers(int limit, string? cursor);
+        Task<Paginated<Offer>> GetAllAcceptedCashOffers(int limit, string? cursor);
+        Task<Paginated<Offer>> GetAllPendingCashOffers(int limit, string? cursor);
     }
 }

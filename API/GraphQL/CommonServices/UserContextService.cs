@@ -2,6 +2,8 @@
 using Infrastructure.UserManagement;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 namespace API.GraphQL.CommonServices
@@ -57,5 +59,13 @@ namespace API.GraphQL.CommonServices
         {
             return _httpContextAccessor.HttpContext;
         }
+        public List<string> GetCurrentUserRoles()
+        {
+            var userCp = _httpContextAccessor.HttpContext?.User;
+            if (userCp == null) throw new ApiException("Not authenticated");
+
+            return userCp.FindAll(ClaimTypes.Role).Select(roleClaim => roleClaim.Value).ToList();
+        }
+
     }
 }
