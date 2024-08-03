@@ -324,6 +324,51 @@ namespace Infrastructure.Offers
             }
         }
 
+        public async Task<bool> RestoreOffer(Guid offerId)
+        {
+            try
+            {
+                var offer = await db.Offers
+                    .Where(o => o.Id == offerId && o.IsDeleted)
+                    .SingleOrDefaultAsync();
+                if (offer == null)
+                {
+                    return false; // No deleted offer found with the given ID.
+                }
+
+                offer.IsDeleted = false;
+                offer.DeletedByUserId = null;
+                offer.DeletedAt = null;
+                await db.SaveChangesAsync();
+
+                var userFcmTokens = db.Items.Where(x => x.Id.Equals(offer.TargetItemId) || x.Id.Equals(offer.SourceItemId))
+                    .Select(x => x.CreatedByUser.FCMToken).ToList();
+
+                if (userFcmTokens.Count > 0)
+                {
+                    var app = FirebaseApp.DefaultInstance;
+                    var messaging = FirebaseMessaging.GetMessaging(app);
+
+                    var message = new FirebaseAdmin.Messaging.MulticastMessage()
+                    {
+                        Tokens = userFcmTokens,
+                        Notification = new Notification
+                        {
+                            Title = "Offer Restored",
+                            Body = "One of your offers has been restored"
+                        }
+                    };
+                    var response = await messaging.SendMulticastAsync(message);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+
         public async Task<bool> AcceptOffer(Guid offerId)
         {
             try

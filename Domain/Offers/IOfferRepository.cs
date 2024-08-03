@@ -15,6 +15,7 @@ namespace Domain.Offers
         Task<Offer> MarkMessagesAsRead(Guid userId, Guid offerId);
         Task<Offer> CreateOffer(Offer offer);
         Task<bool> DeleteOffer(Guid Id, Guid userId);
+        Task<bool> RestoreOffer(Guid offerId);
         Task<bool> AcceptOffer(Guid offerId);
         Task<bool> UnmatchOffer(Guid offerId);
         Task<IEnumerable<Offer>> GetAllOffers(Guid value);

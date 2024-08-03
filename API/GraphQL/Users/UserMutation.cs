@@ -374,7 +374,7 @@ namespace API.GraphQL
 
             return true;
         }
-        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin","User" })]
         public async Task<bool> DeleteUser(
             [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
@@ -383,6 +383,17 @@ namespace API.GraphQL
         {
             var requestUserId = userContextService.GetCurrentUserId();
             await userRepository.DeleteUser(userIds, requestUserId);
+            return true;
+
+        }
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<bool> RestoreUser(
+            [Service] UserContextService userContextService,
+            [Service] IUserRepository userRepository,
+            List<Guid> userIds
+        )
+        {
+            await userRepository.RestoreUser(userIds);
             return true;
 
         }

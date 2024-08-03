@@ -29,6 +29,8 @@ namespace Infrastructure.Database
         public DbSet<Schema.ContactUs> ContactUs { get; set; } = null!;
         public DbSet<Schema.CustomNotification> CustomNotification { get; set; } = null!;
         public DbSet<Schema.CustomNotificationFilters> CustomNotificationFilters { get; set; } = null!;
+        public DbSet<Schema.CustomNotificationStatus> CustomNotificationStatus { get; set; } = null!;
+        public DbSet<Schema.Feedback> Feedback { get; set; } = null!;
         public DbSet<Item> Items { get; set; } = null!;
         public DbSet<ItemCategory> ItemCategories { get; set; } = null!;
         public DbSet<ItemImage> ItemImages { get; set; } = null!;

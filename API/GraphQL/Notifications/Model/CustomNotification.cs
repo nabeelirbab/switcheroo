@@ -2,6 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using HotChocolate;
+using Infrastructure.Notifications;
+using Domain.Notifications;
 
 namespace API.GraphQL.Notifications.Model
 {
@@ -29,6 +33,17 @@ namespace API.GraphQL.Notifications.Model
         public Guid? CreatedByUserId { get; set; }
         public Guid? UpdatedByUserId { get; set; }
 
+        public async Task<List<CustomNotificationStatus>> DeliveryStatus([Service] ICustomNotificationRepository customNotifications)
+        {
+            var statuses = await customNotifications.GetDeliveryStatus(Id.Value);
+            if (statuses != null)
+            {
+                return CustomNotificationStatus.FromDomains(statuses);
+
+            }
+            else return new List<CustomNotificationStatus>();
+        }
+
         public static CustomNotification FromDomain(Domain.Notifications.CustomNotification domainNotification)
         {
             if (!domainNotification.Id.HasValue) throw new ApiException("Mapping error. Id missing");
@@ -39,7 +54,10 @@ namespace API.GraphQL.Notifications.Model
                 domainNotification.Description,
                 domainNotification.CreatedByUserId.Value,
                 domainNotification.UpdatedByUserId.Value
-                );
+                )
+            {
+                CreatedAt = domainNotification.CreatedAt,
+            };
         }
         public static List<CustomNotification> FromDomains(List<Domain.Notifications.CustomNotification> domainNotifications)
         {
@@ -53,8 +71,13 @@ namespace API.GraphQL.Notifications.Model
                 newNotification.Title,
                 newNotification.Description,
                 newNotification.CreatedByUserId,
-                newNotification.UpdatedByUserId))
+                newNotification.UpdatedByUserId)
+            {
+                CreatedAt = newNotification.CreatedAt
+            })
                 .ToList();
         }
+
+
     }
 }

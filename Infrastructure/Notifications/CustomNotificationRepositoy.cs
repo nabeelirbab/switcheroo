@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Infrastructure.Database.Schema;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Infrastructure.Notifications
 {
@@ -23,7 +25,7 @@ namespace Infrastructure.Notifications
             this.userRepository = userRepository;
         }
 
-        public async Task<Domain.Notifications.CustomNotification> CreateNotificationAsync(Domain.Notifications.CustomNotification notification, Domain.Notifications.CustomNotificationFilters filters)
+        public async Task<Domain.Notifications.CustomNotification> CreateNotificationAsync(Domain.Notifications.CustomNotification notification, Domain.Notifications.CustomNotificationFilters filters, Guid userId)
         {
             try
             {
@@ -34,8 +36,8 @@ namespace Infrastructure.Notifications
                     notification.Description
                 )
                 {
-                    CreatedByUserId = new Guid("f101ee70-8879-4f24-ac1a-eaeb36d4715c"),
-                    UpdatedByUserId = new Guid("f101ee70-8879-4f24-ac1a-eaeb36d4715c"),
+                    CreatedByUserId = userId,
+                    UpdatedByUserId = userId,
                     CreatedAt = now,
                     UpdatedAt = now
                 };
@@ -64,23 +66,35 @@ namespace Infrastructure.Notifications
                     }
                 }
                 List<string> userFcmTokens = await usersQuery.Select(u => u.FCMToken).ToListAsync();
-                //if (userFcmTokens.Any())
-                //{
-                //    var app = FirebaseApp.DefaultInstance;
-                //    var messaging = FirebaseMessaging.GetMessaging(app);
+                var filteredUsersList = await db.Users.Where(u => userFcmTokens.Contains(u.FCMToken)).ToListAsync();
+                if (userFcmTokens.Any())
+                {
+                    var app = FirebaseApp.DefaultInstance;
+                    var messaging = FirebaseMessaging.GetMessaging(app);
 
-                //    var message = new FirebaseAdmin.Messaging.MulticastMessage()
-                //    {
-                //        Tokens = userFcmTokens,
-                //        Notification = new Notification
-                //        {
-                //            Title = notification.Title,
-                //            Body = notification.Description
-                //            // Other notification parameters can be added here
-                //        }
-                //    };
-                //    var response = await messaging.SendMulticastAsync(message);
-                //}
+                    var message = new FirebaseAdmin.Messaging.MulticastMessage()
+                    {
+                        Tokens = userFcmTokens,
+                        Notification = new Notification
+                        {
+                            Title = notification.Title,
+                            Body = notification.Description
+                            // Other notification parameters can be added here
+                        }
+                    };
+                    var response = await messaging.SendMulticastAsync(message);
+                    for (int i = 0; i < response.Responses.Count; i++)
+                    {
+                        var sendResponse = response.Responses[i];
+                        var userToken = userFcmTokens[i];
+
+                        var status = new Database.Schema.CustomNotificationStatus(newDbNotificaiton.Id,
+                            filteredUsersList.Where(u => u.FCMToken == userToken).FirstOrDefault().Id,
+                            sendResponse.IsSuccess);
+                        db.CustomNotificationStatus.Add(status);
+                    }
+                }
+                await db.SaveChangesAsync();
                 return await GetNotificationById(newDbNotificaiton.Id);
             }
             catch (Exception ex)
@@ -107,6 +121,23 @@ namespace Infrastructure.Notifications
             if (item == null) throw new InfrastructureException($"Unable to locate notificaitonId");
 
             return item;
+        }
+
+        public async Task<List<Domain.Notifications.CustomNotificationStatus>> GetDeliveryStatus(Guid notificationId)
+        {
+            var statuses = await db.CustomNotificationStatus.Where(s => s.NotificationId == notificationId).ToListAsync();
+            if (statuses == null || statuses.Count==0)
+            {
+                return null;
+            }
+            var userIds = statuses.Select(s => s.UserId).ToList();
+            var usersList = await db.Users.Where(u => userIds.Contains(u.Id)).ToListAsync();
+            foreach (var status in statuses)
+            {
+                status.UserEmail = usersList.Where(u => u.Id == status.UserId).Select(u => u.Email).FirstOrDefault();
+                status.UserName = usersList.Where(u => u.Id == status.UserId).Select(u => u.FirstName).FirstOrDefault();
+            }
+            return Database.Schema.CustomNotificationStatus.ToDomains(statuses);
         }
     }
 }

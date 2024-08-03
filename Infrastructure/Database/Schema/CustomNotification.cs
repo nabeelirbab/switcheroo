@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Database.Schema
@@ -34,7 +36,10 @@ namespace Infrastructure.Database.Schema
                 notification.Description,
                 notification.CreatedByUserId,
                 notification.UpdatedByUserId
-            );
+            )
+            {
+                CreatedAt = notification.CreatedAt.DateTime
+            };
 
     }
 }

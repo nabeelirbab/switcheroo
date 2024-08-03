@@ -10,6 +10,12 @@ using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Google.Apis.Auth.OAuth2;
+using Newtonsoft.Json;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace Infrastructure.UserManagement
 {
@@ -505,8 +511,65 @@ namespace Infrastructure.UserManagement
 
             return true;
         }
+        public async Task<bool> RestoreUser(List<Guid> userIds)
+        {
+            if (userIds == null || !userIds.Any())
+            {
+                throw new ArgumentNullException(nameof(userIds), "User IDs cannot be null or empty.");
+            }
 
+            var strategy = db.Database.CreateExecutionStrategy();
 
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await db.Database.BeginTransactionAsync();
+                try
+                {
+                    // Restore Users
+                    var usersToUpdate = await db.Users
+                        .Where(u => userIds.Contains(u.Id) && u.IsDeleted)
+                        .ToListAsync();
+                    if (!usersToUpdate.Any())
+                    {
+                        throw new KeyNotFoundException("No deleted users found with the provided IDs.");
+                    }
+                    usersToUpdate.ForEach(u => { u.IsDeleted = false; u.DeletedByUserId = null; u.DeletedAt = null; });
+
+                    // Restore Items
+                    var itemsToUpdate = await db.Items
+                        .Where(item => userIds.Contains(item.CreatedByUserId) && item.IsDeleted)
+                        .ToListAsync();
+                    itemsToUpdate.ForEach(item => { item.IsDeleted = false; item.DeletedByUserId = null; item.DeletedAt = null; });
+
+                    // Get item IDs for later queries
+                    var itemIds = itemsToUpdate.Select(item => item.Id).ToList();
+
+                    // Restore Offers
+                    var offersToUpdate = await db.Offers
+                        .Where(offer => userIds.Contains(offer.CreatedByUserId) || itemIds.Contains(offer.TargetItemId))
+                        .ToListAsync();
+                    offersToUpdate.ForEach(offer => { offer.IsDeleted = false; offer.DeletedByUserId = null; offer.DeletedAt = null; });
+
+                    // Restore Messages linked to the Offers
+                    var offerIds = offersToUpdate.Select(offer => offer.Id).ToList();
+                    var messagesToUpdate = await db.Messages
+                        .Where(message => offerIds.Contains(message.OfferId) && message.IsDeleted)
+                        .ToListAsync();
+                    messagesToUpdate.ForEach(message => { message.IsDeleted = false; message.DeletedByUserId = null; message.DeletedAt = null; });
+
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"An error occurred while restoring users with IDs {string.Join(", ", userIds)}");
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+
+            return true;
+        }
         public async Task<bool> NotifyMe(Guid? id, bool NewMatchingNotification, bool NewCashOfferNotification, bool CashOfferAcceptedNotification)
         {
             try
@@ -585,7 +648,7 @@ namespace Infrastructure.UserManagement
                              offer.CreatedAt,
                              false
                          );
-                    string newDummyMessageJson = JsonSerializer.Serialize(newDummyMessage);
+                    string newDummyMessageJson = System.Text.Json.JsonSerializer.Serialize(newDummyMessage);
                     var message = new FirebaseAdmin.Messaging.Message()
                     {
                         Token = userFCMToken,
@@ -619,5 +682,128 @@ namespace Infrastructure.UserManagement
                            .AsNoTracking()
                            .AnyAsync(user => user.Email == email);
         }
+
+        public async Task<string> GetAccessTokenAsync()
+        {
+            var credential = GoogleCredential.FromFile("radvix-push-notification-firebase-adminsdk-k4y1u-2e9407127d.json")
+                .CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
+
+            var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+            return token;
+        }
+
+
+        //public async Task SendFireBaseNotification(string title, string message, List<string> deviceTokens, string eventType, string eventId)
+        //{
+        //    try
+        //    {
+        //        var accessToken = await GetAccessTokenAsync();
+        //        var url = "https://fcm.googleapis.com/v1/projects/radvix-push-notification/messages:send";
+
+        //        foreach (var token in deviceTokens)
+        //        {
+        //            var payload = new
+        //            {
+        //                message = new
+        //                {
+        //                    notification = new
+        //                    {
+        //                        title = title,
+        //                        body = message
+        //                    },
+        //                    data = new Dictionary<string, string>
+        //                {
+        //                    { "eventType", eventType },
+        //                    { "eventId", eventId }
+        //                },
+        //                    token = token
+        //                }
+        //            };
+
+        //            var jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+        //            var request = new HttpRequestMessage(HttpMethod.Post, url)
+        //            {
+        //                Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+        //            };
+        //            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        //            HttpClient httpClient = new HttpClient();
+        //            var response = await httpClient.SendAsync(request);
+
+        //            if (response.IsSuccessStatusCode)
+        //            {
+        //                Console.WriteLine($"Notification sent successfully to token: {token}");
+        //            }
+        //            else
+        //            {
+        //                var error = await response.Content.ReadAsStringAsync();
+        //                Console.WriteLine($"Error sending notification to token: {token}. Error: {error}");
+        //            }
+        //        }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Console.WriteLine($"General error: {e.Message}");
+        //    }
+        //}
+
+        public async Task SendFireBaseNotification(string title, string message, List<string> deviceTokens, string eventType, string eventId)
+        {
+            try
+            {
+                var accessToken = await GetAccessTokenAsync();
+                var url = "https://fcm.googleapis.com/v1/projects/radvix-push-notification/messages:send";
+
+                var tasks = new List<Task>();
+
+                foreach (var token in deviceTokens)
+                {
+                    var payload = new
+                    {
+                        message = new
+                        {
+                            notification = new
+                            {
+                                title = title,
+                                body = message
+                            },
+                            data = new Dictionary<string, string>
+                        {
+                            { "eventType", eventType },
+                            { "eventId", eventId }
+                        },
+                            token = token
+                        }
+                    };
+
+                    var jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+                    var request = new HttpRequestMessage(HttpMethod.Post, url)
+                    {
+                        Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+                    };
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpClient httpClient = new HttpClient();
+                    tasks.Add(httpClient.SendAsync(request).ContinueWith(responseTask =>
+                    {
+                        var response = responseTask.Result;
+                        if (response.IsSuccessStatusCode)
+                        {
+                            Console.WriteLine($"Notification sent successfully to token: {token}");
+                        }
+                        else
+                        {
+                            var error = response.Content.ReadAsStringAsync().Result;
+                            Console.WriteLine($"Error sending notification to token: {token}. Error: {error}");
+                        }
+                    }));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"General error: {e.Message}");
+            }
+        }
     }
 }
+

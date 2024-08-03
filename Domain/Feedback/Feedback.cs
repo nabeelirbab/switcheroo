@@ -1,11 +1,16 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Domain.Notifications
+namespace Domain.Feedback
 {
-    public class CustomNotification
+    public enum FeedbackStatus
     {
-        public CustomNotification(Guid? id, string title, string description, Guid? createdByUserId, Guid? updatedByUserId)
+        Pending = 0,
+        Reviewed = 1
+    }
+    public class Feedback
+    {
+        public Feedback(Guid? id, string title, string description, FeedbackStatus Status, Guid? createdByUserId, Guid? updatedByUserId)
         {
             Id = id;
             Title = title;
@@ -16,27 +21,28 @@ namespace Domain.Notifications
 
         [Required]
         public Guid? Id { get; set; }
-        [Required]
-        public string Title { get; set; }
+        public string? Title { get; set; }
         [Required]
         public string Description { get; set; }
+        public FeedbackStatus Status { get; set; }
         public DateTime? CreatedAt { get; set; }
-
         public DateTimeOffset? UpdatedAt { get; set; }
         public Guid? CreatedByUserId { get; set; }
         public Guid? UpdatedByUserId { get; set; }
 
 
-        public static CustomNotification CreateNewNotification(
+        public static Feedback CreateFeedback(
             string title,
             string description,
+            FeedbackStatus status,
             Guid createdByUserId
         )
         {
-            return new CustomNotification(
+            return new Feedback(
                 null,
                 title,
                 description,
+                status,
                 createdByUserId,
                 createdByUserId
             )
@@ -45,17 +51,19 @@ namespace Domain.Notifications
             };
         }
 
-        public static CustomNotification CreateUpdateNotification(
+        public static Feedback UpdateFeedback(
             Guid id,
             string title,
             string description,
+            FeedbackStatus status,
             Guid updatedByUserId
         )
         {
-            return new CustomNotification(
+            return new Feedback(
                 id,
                 title,
                 description,
+                status,
                 updatedByUserId,
                 updatedByUserId
             )

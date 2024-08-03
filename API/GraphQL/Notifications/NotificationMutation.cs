@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using System.Threading.Tasks;
 using System;
 using Domain.Notifications;
+using API.GraphQL.CommonServices;
 
 namespace API.GraphQL
 {
@@ -14,6 +15,7 @@ namespace API.GraphQL
     {
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<Notifications.Model.CustomNotification> CreateCusotmNotification(
+            [Service] UserContextService userContextService,
             [Service] ICustomNotificationRepository customNotificationRepository,
             Domain.Notifications.CustomNotification notification,
             Notifications.Model.CustomNotificationFilters filters
@@ -21,11 +23,12 @@ namespace API.GraphQL
         {
             try
             {
+                var requestUserId = userContextService.GetCurrentUserId();
                 var newDomainNotification = await customNotificationRepository.CreateNotificationAsync(Domain.Notifications.CustomNotification.CreateNewNotification(
                     notification.Title,
                     notification.Description,
                     Guid.NewGuid()
-                ), Domain.Notifications.CustomNotificationFilters.CreateNewNotification(null, filters.GenderFilter, filters.ItemFilter));
+                ), Domain.Notifications.CustomNotificationFilters.CreateNewNotification(null, filters.GenderFilter, filters.ItemFilter), requestUserId);
                 return Notifications.Model.CustomNotification.FromDomain(newDomainNotification);
             }
             catch (Exception ex)

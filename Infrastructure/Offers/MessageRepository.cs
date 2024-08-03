@@ -334,7 +334,7 @@ namespace Infrastructure.Offers
 
                 var offers = await db.Offers
                     .IgnoreQueryFilters()
-                    .Where(o => allItems.Contains(o.TargetItemId))
+                    .Where(o => o.CreatedByUserId == userId || o.SourceItem.CreatedByUserId == userId || o.TargetItem.CreatedByUserId == userId)
                     .Where(o => o.SourceStatus == o.TargetStatus)
                     .ToListAsync();
 
@@ -365,7 +365,10 @@ namespace Infrastructure.Offers
                 {
                     Domain.Offers.Message newDummyMessage;
                     var offerByOfferId = offers.Where(o => o.Id == offerId).FirstOrDefault();
-                    Guid targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    Guid targetUserId;
+                    if (offerByOfferId.CreatedByUserId == userId) targetUserId = items.Where(i => i.Id == offerByOfferId.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    else if (offerByOfferId.CreatedByUserId != userId) targetUserId = offerByOfferId.CreatedByUserId;
+                    else targetUserId = userId;
                     newDummyMessage = new Domain.Offers.Message(
                     Guid.NewGuid(),
                         offerByOfferId.CreatedByUserId,
@@ -387,7 +390,12 @@ namespace Infrastructure.Offers
                 foreach (var _message in lastMessages)
                 {
                     var offerInMessage = offers.Where(o => o.Id == _message.OfferId).FirstOrDefault();
-                    _message.UserId = itemsInLastMessages.Where(i => i.Id == offerInMessage.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    if (offerInMessage.Id.ToString() == "7005cc70-6556-4722-a800-76bc08aa674f")
+                    {
+                        Console.WriteLine("aljdf");
+                    }
+                    if (offerInMessage.CreatedByUserId == userId) _message.UserId = itemsInLastMessages.Where(i => i.Id == offerInMessage.TargetItemId).Select(i => i.CreatedByUserId).FirstOrDefault();
+                    else if (offerInMessage.CreatedByUserId != userId) _message.UserId = offerInMessage.CreatedByUserId;
                 }
                 // Merge lastMessages and dummyMessages
                 var mergedMessages = lastMessages

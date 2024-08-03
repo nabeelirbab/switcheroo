@@ -19,6 +19,9 @@ using Domain.Offers;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
+
+using FirebaseAdmin;
+using FirebaseAdmin.Messaging;
 namespace Infrastructure.Items
 {
     public class ItemRepository : IItemRepository
@@ -350,7 +353,7 @@ namespace Infrastructure.Items
             try
             {
                 var offer = db.Offers.Where(x => x.Id == offerId).FirstOrDefault();
-                if (offer.Cash != null)
+                if (offer?.Cash != null)
                 {
                     return null;
                 }
@@ -1019,6 +1022,84 @@ namespace Infrastructure.Items
             return true;
         }
 
+        public async Task<bool> RestoreItemAsync(Guid itemId)
+        {
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await db.Database.BeginTransactionAsync();
+                try
+                {
+                    // Restore the item
+                    var items = await db.Items
+                        .Where(i => i.Id == itemId && i.IsDeleted)
+                        .ToListAsync();
+                    if (!items.Any())
+                    {
+                        return;
+                    }
+                    items.ForEach(item =>
+                    {
+                        item.IsDeleted = false;
+                        item.DeletedByUserId = null;
+                        item.DeletedAt = null;
+                    });
+
+                    // Restore offers related to the item
+                    var offersAgainstItem = await db.Offers
+                        .Where(offer => (offer.SourceItemId.Equals(itemId) || offer.TargetItemId.Equals(itemId)) && offer.IsDeleted)
+                        .ToListAsync();
+                    offersAgainstItem.ForEach(offer =>
+                    {
+                        offer.IsDeleted = false;
+                        offer.DeletedByUserId = null;
+                        offer.DeletedAt = null;
+                    });
+                    var offerIds = offersAgainstItem.Select(offer => offer.Id).ToList();
+
+                    // Restore messages related to the restored offers
+                    var messagesToUpdate = await db.Messages
+                        .Where(message => offerIds.Contains(message.OfferId) && message.IsDeleted)
+                        .ToListAsync();
+                    messagesToUpdate.ForEach(message =>
+                    {
+                        message.IsDeleted = false;
+                        message.DeletedByUserId = null;
+                        message.DeletedAt = null;
+                    });
+                    var userIds = items.Select(i => i.CreatedByUserId).ToList();
+                    var userFcmTokens = await db.Users.Where(u => userIds.Contains(u.Id)).Select(u => u.FCMToken).ToListAsync();
+                    if (userFcmTokens.Count > 0)
+                    {
+                        var app = FirebaseApp.DefaultInstance;
+                        var messaging = FirebaseMessaging.GetMessaging(app);
+
+                        var message = new FirebaseAdmin.Messaging.MulticastMessage()
+                        {
+                            Tokens = userFcmTokens,
+                            Notification = new Notification
+                            {
+                                Title = "Item Restored",
+                                Body = "One of your Item has been restored"
+                            }
+                        };
+                        var response = await messaging.SendMulticastAsync(message);
+                    }
+
+                    // Commit all changes
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw new InfrastructureException(ex.Message);
+                }
+            });
+
+            return true;
+        }
 
         private async Task<string> UploadImageToS3Async(byte[] imageBytes, string contentType)
         {

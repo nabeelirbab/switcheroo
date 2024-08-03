@@ -50,18 +50,17 @@ namespace API.GraphQL
             return usersCount;
         }
 
-        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
+        //[HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> NotifyMe(
             [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,
-            bool newMatchingNotification,
-            bool newCashOfferNotification,
-            bool cashOfferAcceptedNotification
+            string device_token
         )
         {
             var requestUserId = userContextService.GetCurrentUserId();
-            var notified = await userRepository.NotifyMe(requestUserId, newMatchingNotification, newCashOfferNotification, cashOfferAcceptedNotification);
-            return notified;
+            //var notified = await userRepository.NotifyMe(requestUserId, newMatchingNotification, newCashOfferNotification, cashOfferAcceptedNotification);
+            await userRepository.SendFireBaseNotification("Test", "This is test notification", [device_token], "", "");
+            return true;
         }
 
 

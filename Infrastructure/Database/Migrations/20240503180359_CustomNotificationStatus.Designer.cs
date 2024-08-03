@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(SwitcherooContext))]
-    partial class SwitcherooContextModelSnapshot : ModelSnapshot
+    [Migration("20240503180359_CustomNotificationStatus")]
+    partial class CustomNotificationStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,22 +45,22 @@ namespace Infrastructure.Database.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("7ab3c845-57cc-4f5e-b05d-260591797f46"),
+                            Id = new Guid("95129bfe-02e2-4f4e-8497-b52488a0bbe9"),
                             Name = "Electronics"
                         },
                         new
                         {
-                            Id = new Guid("62085349-e04f-480b-ba15-7fb0e55164d8"),
+                            Id = new Guid("8c002103-308d-4ebb-b5ff-52a07faaed0c"),
                             Name = "White Goods"
                         },
                         new
                         {
-                            Id = new Guid("2900d3fd-b0c6-409c-a2bb-f76411900f69"),
+                            Id = new Guid("7fc851b4-d917-4088-908b-3586ad77a959"),
                             Name = "Clothing"
                         },
                         new
                         {
-                            Id = new Guid("e0651c23-21d2-4f9c-9133-e64b7a9d5bb9"),
+                            Id = new Guid("a3e8978e-a943-4eca-83c2-6fc93b180f77"),
                             Name = "Furniture"
                         });
                 });
@@ -281,47 +283,6 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("SourceItemId", "TargetItemId");
 
                     b.ToTable("DismissedItem");
-                });
-
-            modelBuilder.Entity("Infrastructure.Database.Schema.Feedback", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("character varying(3000)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UpdatedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.ToTable("Feedback");
                 });
 
             modelBuilder.Entity("Infrastructure.Database.Schema.Item", b =>
@@ -1026,25 +987,6 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("SourceItem");
 
                     b.Navigation("TargetItem");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("Infrastructure.Database.Schema.Feedback", b =>
-                {
-                    b.HasOne("Infrastructure.Database.Schema.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Infrastructure.Database.Schema.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedByUser");
 
                     b.Navigation("UpdatedByUser");
                 });

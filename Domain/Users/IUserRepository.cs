@@ -12,6 +12,7 @@ namespace Domain.Users
 
         Task<Paginated<User>> GetAllUsers(int limit, string? cursor);
         Task<bool> NotifyMe(Guid? userId, bool NewMatchingNotification, bool NewCashOfferNotification, bool CashOfferAcceptedNotification = false);
+        Task SendFireBaseNotification(string title, string message, List<string> DeviceTokens, string eventType, string eventId);
 
         Task<List<User>> GetUserById(Guid? userId);
         Task<List<User>> GetTargetUser(Guid? userId, Guid offerId);
@@ -39,6 +40,7 @@ namespace Domain.Users
         Task<User> UpdateUserFCMToken(Guid id, string? fcmToken);
 
         Task<bool> DeleteUser(List<Guid> ids,Guid deletedByUserId);
+        Task<bool> RestoreUser(List<Guid> userIds);
 
         Task<bool> CheckIfUserByEmail(string email);
 

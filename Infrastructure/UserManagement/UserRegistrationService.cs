@@ -23,39 +23,47 @@ namespace Infrastructure.UserManagement
 
         public async Task<Guid> CreateUserAsync(User user, string password, bool emailConfirmed = false)
         {
-            var now = DateTime.UtcNow;
-
-            var newUser = new Database.Schema.User(
-                user.Username,
-                user.FirstName,
-                user.LastName,
-                user.Mobile,
-                user.Gender,
-                user.DateOfBirth,
-                user.Distance ?? 25,
-                user.Latitude,
-                user.Longitude,
-                user.FCMToken,
-                user.Blurb,
-                user.AvatarUrl,
-                user.Email,
-                user.IsMatchNotificationsEnabled,
-                user.IsChatNotificationsEnabled)
+            try
             {
-                CreatedAt = now,
-                UpdatedAt = now,
-                EmailConfirmed = emailConfirmed
-            };
+                var now = DateTime.UtcNow;
 
-            var retVal = await userManager.CreateAsync(newUser, password);
-            if (retVal.Succeeded)
+                var newUser = new Database.Schema.User(
+                    user.Username,
+                    user.FirstName,
+                    user.LastName,
+                    user.Mobile,
+                    user.Gender,
+                    user.DateOfBirth,
+                    user.Distance ?? 50,
+                    user.Latitude,
+                    user.Longitude,
+                    user.FCMToken,
+                    user.Blurb,
+                    user.AvatarUrl,
+                    user.Email,
+                    user.IsMatchNotificationsEnabled,
+                    user.IsChatNotificationsEnabled)
+                {
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    EmailConfirmed = emailConfirmed
+                };
+
+                var retVal = await userManager.CreateAsync(newUser, password);
+                if (retVal.Succeeded)
+                {
+                    await UpdateUserRoleAsync(newUser.Id.ToString(), "User");
+                    await userManager.GenerateEmailConfirmationTokenAsync(newUser);
+                    return newUser.Id;
+                }
+
+                throw new InfrastructureException(retVal.Errors.Select(z => z.Description).ToArray());
+            }
+            catch (Exception ex)
             {
-                await UpdateUserRoleAsync(newUser.Id.ToString(), "User");
-                await userManager.GenerateEmailConfirmationTokenAsync(newUser);
-                return newUser.Id;
+                throw new Exception(ex.Message);
             }
 
-            throw new InfrastructureException(retVal.Errors.Select(z => z.Description).ToArray());
         }
 
         public async Task<string> GenerateConfirmationCodeAsync(Guid userId)

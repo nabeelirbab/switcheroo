@@ -51,6 +51,7 @@ using Domain.Notifications;
 using Infrastructure.Notifications;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using API.GraphQL.CommonServices;
+using Domain.Feedback;
 
 namespace API
 {
@@ -119,6 +120,7 @@ namespace API
             services.AddTransient<IComplaintRepository, ComplaintRepositoy>();
             services.AddTransient<IContactUsRepository, ContactUsRepositoy>();
             services.AddTransient<ICustomNotificationRepository, CustomNotificationRepositoy>();
+            services.AddTransient<IFeedbackRepository, FeedbackRepositoy>();
             services.AddTransient<IUserAuthenticationService, UserAuthenticationService>();
             services.AddTransient<IUserRegistrationService, UserRegistrationService>();
 

@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(SwitcherooContext))]
-    partial class SwitcherooContextModelSnapshot : ModelSnapshot
+    [Migration("20240803035104_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,22 +45,22 @@ namespace Infrastructure.Database.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("7ab3c845-57cc-4f5e-b05d-260591797f46"),
+                            Id = new Guid("7dcb12a0-98b7-4df3-a3ac-1f3d6d15d2fe"),
                             Name = "Electronics"
                         },
                         new
                         {
-                            Id = new Guid("62085349-e04f-480b-ba15-7fb0e55164d8"),
+                            Id = new Guid("092650bd-6cc1-4a3c-855b-d553024a1f61"),
                             Name = "White Goods"
                         },
                         new
                         {
-                            Id = new Guid("2900d3fd-b0c6-409c-a2bb-f76411900f69"),
+                            Id = new Guid("79e7215b-90f6-414e-8d85-cad8a5e54fc5"),
                             Name = "Clothing"
                         },
                         new
                         {
-                            Id = new Guid("e0651c23-21d2-4f9c-9133-e64b7a9d5bb9"),
+                            Id = new Guid("67942b9c-db0d-48ca-968b-646dc52caa12"),
                             Name = "Furniture"
                         });
                 });
@@ -302,9 +304,6 @@ namespace Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasMaxLength(3000)
                         .HasColumnType("character varying(3000)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .HasColumnType("text");
