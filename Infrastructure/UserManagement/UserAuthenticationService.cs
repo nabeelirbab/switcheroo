@@ -46,6 +46,8 @@ namespace Infrastructure.UserManagement
 
         public async Task<Guid> SignInAsync(string email, string password)
         {
+            var isActive = await userRepository.IsUserActive(email);
+            if (isActive == false) throw new InfrastructureException("User is Inactive, Please contact Support!");
             var result = await signInManager.PasswordSignInAsync(email, password, true, false);
 
             if (result.Succeeded)
@@ -109,6 +111,11 @@ namespace Infrastructure.UserManagement
         {
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
             bool userStatus = await userRepository.CheckIfUserByEmail(payload.Email);
+            if (userStatus)
+            {
+                var isActive = await userRepository.IsUserActive(payload.Email);
+                if (isActive == false) throw new InfrastructureException("User is Inactive, Please contact Support!");
+            }
             return new Tuple<bool, string, string>(userStatus, payload.Name, payload.Email);
             //return new Tuple<bool, string, string>(false, "Hamza Muhammad Farooqi", idToken);
         }
@@ -125,6 +132,11 @@ namespace Infrastructure.UserManagement
             var content = await response.Content.ReadAsStringAsync();
             var userProfile = JsonConvert.DeserializeObject<Infrastructure.DTOs.FacebookUserProfile>(content);
             bool userStatus = await userRepository.CheckIfUserByEmail(userProfile.Email);
+            if (userStatus)
+            {
+                var isActive = await userRepository.IsUserActive(userProfile.Email);
+                if (isActive == false) throw new InfrastructureException("User is Inactive, Please contact Support!");
+            }
             return new Tuple<bool, string, string>(userStatus, userProfile.Name, userProfile.Email);
         }
         public async Task<Tuple<bool, bool, string>> AuthenticateAppleAsync(string token)

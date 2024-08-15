@@ -28,6 +28,7 @@ namespace API.GraphQL
                     feedback.Title,
                     feedback.Description,
                     feedback.Status,
+                    feedback.Attachments,
                     Guid.NewGuid()
                 ), requestUserId);
                 return Feedback.Model.Feedback.FromDomain(newDomainFeedback);

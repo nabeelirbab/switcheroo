@@ -46,5 +46,7 @@ namespace Domain.Users
 
         Task<string> GetTargetUserForMessage(Guid? userId, Guid offerId, bool getFCMToken = false);
 
+        Task<bool> IsUserActive(string email);
+
     }
 }

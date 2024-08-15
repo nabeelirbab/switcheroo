@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Feedback
@@ -10,11 +11,13 @@ namespace Domain.Feedback
     }
     public class Feedback
     {
-        public Feedback(Guid? id, string title, string description, FeedbackStatus Status, Guid? createdByUserId, Guid? updatedByUserId)
+        public Feedback(Guid? id, string title, string description, FeedbackStatus status,List<string>? attachments, Guid? createdByUserId, Guid? updatedByUserId)
         {
             Id = id;
             Title = title;
             Description = description;
+            Status = status;
+            Attachments = attachments;
             CreatedByUserId = createdByUserId;
             UpdatedByUserId = updatedByUserId;
         }
@@ -25,6 +28,8 @@ namespace Domain.Feedback
         [Required]
         public string Description { get; set; }
         public FeedbackStatus Status { get; set; }
+
+        public List<string>? Attachments { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
         public Guid? CreatedByUserId { get; set; }
@@ -35,6 +40,7 @@ namespace Domain.Feedback
             string title,
             string description,
             FeedbackStatus status,
+            List<string>? attachments,
             Guid createdByUserId
         )
         {
@@ -43,6 +49,7 @@ namespace Domain.Feedback
                 title,
                 description,
                 status,
+                attachments,
                 createdByUserId,
                 createdByUserId
             )
@@ -56,6 +63,7 @@ namespace Domain.Feedback
             string title,
             string description,
             FeedbackStatus status,
+            List<string>? attachments,
             Guid updatedByUserId
         )
         {
@@ -64,6 +72,7 @@ namespace Domain.Feedback
                 title,
                 description,
                 status,
+                attachments,
                 updatedByUserId,
                 updatedByUserId
             )

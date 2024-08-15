@@ -9,11 +9,12 @@ namespace Infrastructure.Database.Schema
 {
     public class Feedback : Audit
     {
-        public Feedback(string title, string description, FeedbackStatus status)
+        public Feedback(string title, string description, FeedbackStatus status, List<string>? attachments)
         {
             Title = title;
             Description = description;
             Status = status;
+            Attachments = attachments;
         }
 
         [Required]
@@ -25,11 +26,14 @@ namespace Infrastructure.Database.Schema
 
         public FeedbackStatus Status { get; set; }
 
+        public List<string>? Attachments { get; set; }
+
         public void FromDomain(Domain.Feedback.Feedback domainFeedback)
         {
             Title = domainFeedback.Title;
             Description = domainFeedback.Description;
             Status = domainFeedback.Status;
+            Attachments = domainFeedback.Attachments;
         }
 
         public static Expression<Func<Feedback, Domain.Feedback.Feedback>> ToDomain =>
@@ -38,6 +42,7 @@ namespace Infrastructure.Database.Schema
                 feedback.Title,
                 feedback.Description,
                 feedback.Status,
+                feedback.Attachments,
                 feedback.CreatedByUserId,
                 feedback.UpdatedByUserId
             )

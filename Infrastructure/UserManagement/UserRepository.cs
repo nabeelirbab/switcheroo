@@ -679,6 +679,7 @@ namespace Infrastructure.UserManagement
         public async Task<bool> CheckIfUserByEmail(string email)
         {
             return await db.Users
+                           .IgnoreQueryFilters()
                            .AsNoTracking()
                            .AnyAsync(user => user.Email == email);
         }
@@ -803,6 +804,15 @@ namespace Infrastructure.UserManagement
             {
                 Console.WriteLine($"General error: {e.Message}");
             }
+        }
+
+        public async Task<bool> IsUserActive(string email)
+        {
+            var user = await db.Users.IgnoreQueryFilters().Where(u => u.Email == email).FirstOrDefaultAsync();
+            if (user == null) return true;
+            if (user.IsDeleted) return false;
+            return true;
+
         }
     }
 }
