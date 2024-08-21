@@ -12,6 +12,7 @@ using Domain.Services;
 using System.Text.Json;
 using Domain;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using SendGrid.Helpers.Mail;
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
@@ -27,12 +28,34 @@ namespace Infrastructure.Offers
             _loggerManager = loggerManager;
         }
 
+        public async Task<int> GetSwipesInfo(Guid userId)
+        {
+            Console.WriteLine($"Debug: Current UTC time: {DateTime.UtcNow}");
+            var today = DateTime.UtcNow.Date;
+            Console.WriteLine($"Debug: Querying for date: {today:yyyy-MM-dd}");
+
+            var offers = await db.Offers
+                .Where(o => o.CreatedByUserId == userId && !o.IsDeleted)
+                .ToListAsync();
+            int todayCount = 0;
+            foreach (var offer in offers)
+            {
+                if (offer.CreatedAt.Date == today)
+                    todayCount += 1;
+            }
+            return todayCount;
+        }
         public async Task<Offer>? CreateOffer(Offer offer)
         {
             try
             {
                 var now = DateTime.UtcNow;
                 Offer? myoffer = null;
+
+                // Find out the total number of swipes today and restrict if quota reached
+                int swipes_used = await GetSwipesInfo(offer.CreatedByUserId.Value);
+                if (swipes_used == 10)
+                    throw new InfrastructureException("You have used all your swipes for today. Come back tomorrow and try again.");
 
                 var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
                            .Select(x => x.CreatedByUserId).FirstOrDefault();

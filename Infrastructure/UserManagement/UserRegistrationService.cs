@@ -12,19 +12,23 @@ namespace Infrastructure.UserManagement
     {
         private readonly UserManager<Database.Schema.User> userManager;
         private readonly RoleManager<IdentityRole<Guid>> roleManager;
+        private readonly IUserRepository userRepository;
         private readonly SwitcherooContext db;
 
-        public UserRegistrationService(SwitcherooContext db, UserManager<Database.Schema.User> userManager, RoleManager<IdentityRole<Guid>> _roleManager)
+        public UserRegistrationService(SwitcherooContext db, UserManager<Database.Schema.User> userManager, RoleManager<IdentityRole<Guid>> _roleManager, IUserRepository userRepository)
         {
             this.db = db;
             this.userManager = userManager;
             roleManager = _roleManager;
+            this.userRepository = userRepository;
         }
 
         public async Task<Guid> CreateUserAsync(User user, string password, bool emailConfirmed = false)
         {
             try
             {
+                var isActive = await userRepository.IsUserActive(user.Email);
+                if (isActive == false) throw new InfrastructureException("Your account has been temporarily deactivated. For reactivation, please reach out to our support.");
                 var now = DateTime.UtcNow;
 
                 var newUser = new Database.Schema.User(

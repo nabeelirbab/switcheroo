@@ -47,7 +47,7 @@ namespace Infrastructure.UserManagement
         public async Task<Guid> SignInAsync(string email, string password)
         {
             var isActive = await userRepository.IsUserActive(email);
-            if (isActive == false) throw new InfrastructureException("User is Inactive, Please contact Support!");
+            if (isActive == false) throw new InfrastructureException("Your account has been temporarily deactivated. For reactivation, please reach out to our support.");
             var result = await signInManager.PasswordSignInAsync(email, password, true, false);
 
             if (result.Succeeded)
@@ -114,7 +114,7 @@ namespace Infrastructure.UserManagement
             if (userStatus)
             {
                 var isActive = await userRepository.IsUserActive(payload.Email);
-                if (isActive == false) throw new InfrastructureException("User is Inactive, Please contact Support!");
+                if (isActive == false) throw new InfrastructureException("Your account has been temporarily deactivated. For reactivation, please reach out to our support.");
             }
             return new Tuple<bool, string, string>(userStatus, payload.Name, payload.Email);
             //return new Tuple<bool, string, string>(false, "Hamza Muhammad Farooqi", idToken);

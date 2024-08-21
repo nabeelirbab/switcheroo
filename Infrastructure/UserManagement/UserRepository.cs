@@ -527,6 +527,7 @@ namespace Infrastructure.UserManagement
                 {
                     // Restore Users
                     var usersToUpdate = await db.Users
+                        .IgnoreQueryFilters()
                         .Where(u => userIds.Contains(u.Id) && u.IsDeleted)
                         .ToListAsync();
                     if (!usersToUpdate.Any())
@@ -534,30 +535,51 @@ namespace Infrastructure.UserManagement
                         throw new KeyNotFoundException("No deleted users found with the provided IDs.");
                     }
                     usersToUpdate.ForEach(u => { u.IsDeleted = false; u.DeletedByUserId = null; u.DeletedAt = null; });
-
+                    await db.SaveChangesAsync();
                     // Restore Items
                     var itemsToUpdate = await db.Items
+                        .IgnoreQueryFilters()
                         .Where(item => userIds.Contains(item.CreatedByUserId) && item.IsDeleted)
                         .ToListAsync();
                     itemsToUpdate.ForEach(item => { item.IsDeleted = false; item.DeletedByUserId = null; item.DeletedAt = null; });
-
+                    await db.SaveChangesAsync();
                     // Get item IDs for later queries
                     var itemIds = itemsToUpdate.Select(item => item.Id).ToList();
 
                     // Restore Offers
-                    var offersToUpdate = await db.Offers
+                    var deletedOffersRelatedToUser = await db.Offers
+                        .Include(o => o.SourceItem).ThenInclude(i => i.CreatedByUser)
+                        .Include(o => o.TargetItem).ThenInclude(i => i.CreatedByUser)
+                        .IgnoreQueryFilters()
                         .Where(offer => userIds.Contains(offer.CreatedByUserId) || itemIds.Contains(offer.TargetItemId))
                         .ToListAsync();
-                    offersToUpdate.ForEach(offer => { offer.IsDeleted = false; offer.DeletedByUserId = null; offer.DeletedAt = null; });
+                    // Find offers that were initiated by other users so that we can check if there is deleted enityt in heirarchy 
+                    var offersToUpdate = new List<Database.Schema.Offer>();
+                    foreach (var deletedOffer in deletedOffersRelatedToUser)
+                    {
+                        if (userIds.Contains(deletedOffer.CreatedByUserId))
+                        {
+                            if (deletedOffer.TargetItem.IsDeleted) continue;
+                        }
+                        else
+                        {
+                            if (deletedOffer.SourceItem.IsDeleted) continue;
+                        }
+                        offersToUpdate.Add(deletedOffer);
+                    }
+                    if (offersToUpdate.Count > 0)
+                    {
+                        offersToUpdate.ForEach(offer => { offer.IsDeleted = false; offer.DeletedByUserId = null; offer.DeletedAt = null; });
+                        await db.SaveChangesAsync();
 
-                    // Restore Messages linked to the Offers
-                    var offerIds = offersToUpdate.Select(offer => offer.Id).ToList();
-                    var messagesToUpdate = await db.Messages
-                        .Where(message => offerIds.Contains(message.OfferId) && message.IsDeleted)
-                        .ToListAsync();
-                    messagesToUpdate.ForEach(message => { message.IsDeleted = false; message.DeletedByUserId = null; message.DeletedAt = null; });
-
-                    await db.SaveChangesAsync();
+                        // Restore Messages linked to the Offers
+                        var offerIds = offersToUpdate.Select(offer => offer.Id).ToList();
+                        var messagesToUpdate = await db.Messages
+                            .Where(message => offerIds.Contains(message.OfferId) && message.IsDeleted)
+                            .ToListAsync();
+                        messagesToUpdate.ForEach(message => { message.IsDeleted = false; message.DeletedByUserId = null; message.DeletedAt = null; });
+                        await db.SaveChangesAsync();
+                    }
                     await transaction.CommitAsync();
                 }
                 catch (Exception ex)

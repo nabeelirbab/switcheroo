@@ -6,17 +6,22 @@ namespace API.GraphQL
     {
         public IError OnError(IError error)
         {
-            if (!(error.Exception is ApiException apiException))
+            if (error.Exception is ApiException apiException)
             {
-                if (string.IsNullOrWhiteSpace(error.Message)) {
-                    return error.WithMessage("Whoopsie, a bit of a buggy wuggy :(");
-                }
+                return ErrorBuilder.New()
+                    .SetMessage(apiException.Message ?? "An error occurred.")
+                    .Build();
+            }
 
-                return error;
+            if (error.Exception != null && !string.IsNullOrWhiteSpace(error.Exception.Message))
+            {
+                return ErrorBuilder.New()
+                    .SetMessage(error.Exception.Message)
+                    .Build();
             }
 
             return ErrorBuilder.New()
-                .SetMessage(apiException.Message ?? "")
+                .SetMessage("Whoopsie, a bit of a buggy wuggy :(")
                 .Build();
         }
     }

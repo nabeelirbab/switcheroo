@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using API.GraphQL.Offers.Models;
 using Domain.Items;
 using Domain.Offers;
 using Domain.Users;
@@ -36,6 +37,8 @@ namespace API.GraphQL.Models
         public bool IsDeleted { get; set; }
         public DateTimeOffset? DeletedAt { get; set; }
         public Guid? DeletedByUserId { get; set; }
+
+        public SwipesInfo SwipesInfo { get; set; }
 
         public async Task<Users.Models.User?> GetDeletedByUser([Service] IUserRepository userRepository)
         {

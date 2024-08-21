@@ -1,22 +1,24 @@
 ﻿using Domain.Users;
 using Infrastructure.UserManagement;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+
 namespace API.GraphQL.CommonServices
 {
-    public class UserContextService
+    public class UserContextService : IUserRoleProvider
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IUserAuthenticationService _userAuthenticationService;
+        private readonly IServiceProvider _serviceProvider;
 
-        public UserContextService(IHttpContextAccessor httpContextAccessor, IUserAuthenticationService userAuthenticationService)
+        public UserContextService(IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider)
         {
             _httpContextAccessor = httpContextAccessor;
-            _userAuthenticationService = userAuthenticationService;
+            _serviceProvider = serviceProvider;
         }
 
         public Guid GetCurrentUserId()
@@ -36,6 +38,7 @@ namespace API.GraphQL.CommonServices
 
             return userId;
         }
+
         public string GetCurrentUserEmail()
         {
             var userCp = _httpContextAccessor.HttpContext?.User;
@@ -48,17 +51,22 @@ namespace API.GraphQL.CommonServices
 
             return emailClaim;
         }
+
         public async Task<Domain.Users.User> GetCurrentUser()
         {
             var userCp = _httpContextAccessor.HttpContext?.User;
             if (userCp == null) throw new ApiException("Not authenticated");
-            return await _userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
+
+            // Resolve IUserAuthenticationService using IServiceProvider
+            var userAuthenticationService = _serviceProvider.GetRequiredService<IUserAuthenticationService>();
+            return await userAuthenticationService.GetCurrentlySignedInUserAsync(userCp);
         }
 
         public HttpContext GetHttpRequestContext()
         {
             return _httpContextAccessor.HttpContext;
         }
+
         public List<string> GetCurrentUserRoles()
         {
             var userCp = _httpContextAccessor.HttpContext?.User;
@@ -67,5 +75,15 @@ namespace API.GraphQL.CommonServices
             return userCp.FindAll(ClaimTypes.Role).Select(roleClaim => roleClaim.Value).ToList();
         }
 
+        public bool IsAdminOrSuperAdmin
+        {
+            get
+            {
+                var userCp = _httpContextAccessor.HttpContext?.User;
+                if (userCp == null) return false;
+
+                return userCp.IsInRole("SuperAdmin") || userCp.IsInRole("Admin");
+            }
+        }
     }
 }

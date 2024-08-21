@@ -104,6 +104,7 @@ namespace API
 
             AddRepositories(services);
             services.AddScoped<UserContextService>();
+            services.AddScoped<IUserRoleProvider, UserContextService>();
 
         }
 
@@ -149,6 +150,7 @@ namespace API
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             });
 
+            services.AddScoped<UserRoleService>();
 
         }
 

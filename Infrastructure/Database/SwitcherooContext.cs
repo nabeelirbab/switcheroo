@@ -10,10 +10,12 @@ namespace Infrastructure.Database
     public class SwitcherooContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         private readonly IDbContextConfigurator configurator;
+        private readonly Domain.Users.IUserRoleProvider _userRoleProvider;
 
-        public SwitcherooContext(IDbContextConfigurator configurator)
+        public SwitcherooContext(IDbContextConfigurator configurator, Domain.Users.IUserRoleProvider userRoleProvider)
         {
             this.configurator = configurator;
+            this._userRoleProvider = userRoleProvider;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -109,13 +111,13 @@ namespace Infrastructure.Database
             modelBuilder.Entity<DismissedItem>().HasIndex(p => p.CreatedByUserId);
             modelBuilder.Entity<DismissedItem>().HasIndex(p => new { p.CreatedByUserId, p.TargetItemId });
 
-            modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<User>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
             modelBuilder.Entity<User>().Property(u => u.IsDeleted).HasDefaultValue(false);
-            modelBuilder.Entity<Item>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Item>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
             modelBuilder.Entity<Item>().Property(u => u.IsDeleted).HasDefaultValue(false);
-            modelBuilder.Entity<Offer>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Offer>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
             modelBuilder.Entity<Offer>().Property(u => u.IsDeleted).HasDefaultValue(false);
-            modelBuilder.Entity<Message>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Message>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
             modelBuilder.Entity<Message>().Property(u => u.IsDeleted).HasDefaultValue(false);
 
             var categories = modelBuilder.SeedCategories();

@@ -8,6 +8,7 @@ using API.HtmlTemplates;
 using Domain.Users;
 using GraphQL;
 using HotChocolate;
+using HotChocolate.Types;
 using Infrastructure.UserManagement;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -26,6 +27,7 @@ namespace API.GraphQL
             string password
         )
         {
+
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext == null) throw new ApiException("No httpcontext. Well isn't this just awkward?");
 
@@ -374,7 +376,7 @@ namespace API.GraphQL
 
             return true;
         }
-        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin","User" })]
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> DeleteUser(
             [Service] UserContextService userContextService,
             [Service] IUserRepository userRepository,

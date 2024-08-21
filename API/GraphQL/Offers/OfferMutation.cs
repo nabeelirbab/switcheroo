@@ -43,9 +43,13 @@ namespace API.GraphQL
         )
         {
             bool isRead = false;
+            var requestUserId = userContextService.GetCurrentUserId();
             if (cash != null && cash > 0) sourceItemId = targetItemId;
-            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId ?? targetItemId, targetItemId, cash, userContextService.GetCurrentUserId(), sourceStatus ?? 1, targeteStatus, isRead));
-            return Offer.FromDomain(domainOffer);
+            var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId ?? targetItemId, targetItemId, cash, requestUserId, sourceStatus ?? 1, targeteStatus, isRead));
+            var createdOffer = Offer.FromDomain(domainOffer);
+            var swipes_count = await offerRepository.GetSwipesInfo(requestUserId);
+            createdOffer.SwipesInfo = new Offers.Models.SwipesInfo(10-swipes_count,swipes_count);
+            return createdOffer;
         }
 
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
