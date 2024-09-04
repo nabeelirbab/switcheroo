@@ -40,7 +40,7 @@ namespace Infrastructure.Offers
             int todayCount = 0;
             foreach (var offer in offers)
             {
-                if (offer.CreatedAt.Date == today)
+                if (offer.Cash == null && offer.CreatedAt.Date == today)
                     todayCount += 1;
             }
             return todayCount;
@@ -741,7 +741,7 @@ namespace Infrastructure.Offers
             try
             {
                 Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
-                var query = db.Offers.IgnoreQueryFilters().Where(o => !(o.Cash > 0) && o.SourceStatus == o.TargetStatus).AsNoTracking();
+                var query = db.Offers.IgnoreQueryFilters().Where(o => (o.Cash <= 0 || o.Cash == null) && o.SourceStatus == o.TargetStatus).AsNoTracking();
                 if (cursorGuid.HasValue)
                 {
                     query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
@@ -931,6 +931,15 @@ namespace Infrastructure.Offers
             {
                 throw new InfrastructureException(ex.Message);
             }
+        }
+
+        public async Task<List<Offer>> GetMatchedOffers()
+        {
+            var offers = await db.Offers
+                .Where(o => o.SourceStatus == Infrastructure.Database.Schema.OfferStatus.Initiated && o.TargetStatus == Infrastructure.Database.Schema.OfferStatus.Initiated)
+            .Select(offer => new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.DateTime.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead))
+            .ToListAsync();
+            return offers;
         }
     }
 }

@@ -49,7 +49,7 @@ namespace API.GraphQL.Items.Models
 
         public bool IsSwapOnly { get; private set; }
 
-        [GraphQLNonNullType]
+        //[GraphQLNonNullType]
         public List<string> Categories { get; private set; }
 
         [GraphQLNonNullType]

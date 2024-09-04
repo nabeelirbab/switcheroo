@@ -71,11 +71,11 @@ namespace Domain.Items
         [NotMapped]
         public int? CashOfferValue { get; set; }
 
-        [NotMapped]
+        //[NotMapped]
         public bool IsDeleted { get; set; }
-        [NotMapped]
+        //[NotMapped]
         public DateTimeOffset? DeletedAt { get; set; }
-        [NotMapped]
+        //[NotMapped]
         public Guid? DeletedByUserId { get; set; }
         public static Item CreateNewItem(
             string title,

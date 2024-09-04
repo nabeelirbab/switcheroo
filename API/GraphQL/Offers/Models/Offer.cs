@@ -59,6 +59,8 @@ namespace API.GraphQL.Models
         )
         {
             var retVal = await itemRepository.GetItemByItemId(SourceItemId);
+            if (retVal == null)
+                return null;
             return Item.FromDomain(retVal);
         }
 
@@ -68,6 +70,8 @@ namespace API.GraphQL.Models
         )
         {
             var retVal = await itemRepository.GetItemByItemId(TargetItemId);
+            if (retVal == null)
+                return null;
             return Item.FromDomain(retVal);
         }
 
@@ -86,6 +90,22 @@ namespace API.GraphQL.Models
             if (!domOffer.Id.HasValue) throw new ApiException("Mapping error. Invalid offer");
 
             return new Offer(domOffer.Id.Value, domOffer.SourceItemId, domOffer.TargetItemId, domOffer.Cash, domOffer.CreatedAt, domOffer.SourceStatus, domOffer.TargeteStatus) { IsDeleted = domOffer.IsDeleted, DeletedAt = domOffer.DeletedAt, DeletedByUserId = domOffer.DeletedByUserId };
+        }
+        public static List<Offer> FromDomains(List<Domain.Offers.Offer> domOffers)
+        {
+            var offersList = new List<Offer>();
+            if (domOffers == null || domOffers.Count == 0)
+            {
+                // Handle the case where there are no messages if needed.
+                return offersList;
+            }
+            foreach (var domOffer in domOffers)
+            {
+                var offer = new Offer(domOffer.Id.Value, domOffer.SourceItemId, domOffer.TargetItemId, domOffer.Cash, domOffer.CreatedAt, domOffer.SourceStatus, domOffer.TargeteStatus) { IsDeleted = domOffer.IsDeleted, DeletedAt = domOffer.DeletedAt, DeletedByUserId = domOffer.DeletedByUserId };
+                offersList.Add(offer);
+            }
+            return offersList;
+
         }
     }
 }

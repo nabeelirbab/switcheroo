@@ -385,18 +385,28 @@ namespace Infrastructure.Items
 
         public async Task<Domain.Items.Item> GetItemByItemId(Guid itemId)
         {
-            var item = await db.Items
-                .Include(i => i.ItemCategories)
-                .ThenInclude(c => c.Category)
-                .Where(z => z.Id == itemId)
-                .Select(Database.Schema.Item.ToDomain)
-                .SingleOrDefaultAsync();
+            try
+            {
+                var item = await db.Items
+                    .Include(i => i.ItemCategories)
+                    .ThenInclude(c => c.Category)
+                    .Where(z => z.Id == itemId)
+                    .Select(Database.Schema.Item.ToDomain)
+                    .SingleOrDefaultAsync();
+                if (item is null)
+                    return null;
+                item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
 
-            item.ImageUrls = item.ImageUrls.Where(url => url != item.MainImageUrl).ToList();
+                if (item == null) throw new InfrastructureException($"Unable to locate item {itemId}");
 
-            if (item == null) throw new InfrastructureException($"Unable to locate item {itemId}");
+                return item;
 
-            return item;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
         }
 
         public async Task<Domain.Items.Item> UpdateItemAsync(Domain.Items.Item item)

@@ -117,6 +117,12 @@ namespace API.GraphQL
                 pageinatedOffers.HasNextPage);
         }
 
+        //[HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        //public async Task<Paginated<Offer>> GetMatchedOffers(
+        //    [Service] IOfferRepository offerRepository)
+        //{
+        //    return Offer.FromDomains(await offerRepository.GetMatchedOffers());
+        //}
 
     }
 }

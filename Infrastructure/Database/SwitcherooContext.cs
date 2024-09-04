@@ -111,15 +111,17 @@ namespace Infrastructure.Database
             modelBuilder.Entity<DismissedItem>().HasIndex(p => p.CreatedByUserId);
             modelBuilder.Entity<DismissedItem>().HasIndex(p => new { p.CreatedByUserId, p.TargetItemId });
 
-            modelBuilder.Entity<User>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
             modelBuilder.Entity<User>().Property(u => u.IsDeleted).HasDefaultValue(false);
-            modelBuilder.Entity<Item>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
             modelBuilder.Entity<Item>().Property(u => u.IsDeleted).HasDefaultValue(false);
-            modelBuilder.Entity<Offer>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
-            modelBuilder.Entity<Offer>().Property(u => u.IsDeleted).HasDefaultValue(false);
-            modelBuilder.Entity<Message>().HasQueryFilter(e => !_userRoleProvider.IsAdminOrSuperAdmin || !e.IsDeleted);
             modelBuilder.Entity<Message>().Property(u => u.IsDeleted).HasDefaultValue(false);
-
+            modelBuilder.Entity<Offer>().Property(u => u.IsDeleted).HasDefaultValue(false);
+            if (!_userRoleProvider.IsAdminOrSuperAdmin)
+            {
+                modelBuilder.Entity<Message>().HasQueryFilter(e => !e.IsDeleted);
+                modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
+                modelBuilder.Entity<Item>().HasQueryFilter(e => !e.IsDeleted);
+                modelBuilder.Entity<Offer>().HasQueryFilter(e => !e.IsDeleted);
+            }
             var categories = modelBuilder.SeedCategories();
         }
     }
