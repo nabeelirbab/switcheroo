@@ -1,4 +1,5 @@
 ﻿using Domain.Items;
+using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
 using Infrastructure.Items;
@@ -87,6 +88,14 @@ namespace API.GraphQL.Models
             return domainItems
                 .Select(Items.Models.Item.FromDomain)
                 .ToList();
+        }
+        public async Task<Offer> GetOffer(
+            [Service] IOfferRepository offerRepository
+        )
+        {
+            var domainOffer = await offerRepository.GetOfferByOfferId(OfferId);
+            return Offer.FromDomain(domainOffer);
+
         }
 
         public async Task<List<Items.Models.Item>> GetSourceItem(

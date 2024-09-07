@@ -13,7 +13,9 @@ namespace API.GraphQL.Models
 {
     public class Offer
     {
-        public Offer(Guid id, Guid sourceItemId, Guid targetItemId, int? cash, DateTime createdAt, int sourceStatus, int? targeteStatus)
+        public Offer(Guid id, Guid sourceItemId, Guid targetItemId, int? cash, DateTime createdAt, int sourceStatus, int? targeteStatus,
+            bool? confirmedBySourceUser,
+            bool? confirmedByTargetUser)
         {
             Id = id;
             SourceItemId = sourceItemId;
@@ -22,6 +24,8 @@ namespace API.GraphQL.Models
             CreatedAt = createdAt;
             SourceStatus = sourceStatus;
             TargeteStatus = targeteStatus;
+            ConfirmedBySourceUser = confirmedBySourceUser;
+            ConfirmedByTargetUser = confirmedByTargetUser;
         }
 
         public Guid Id { get; private set; }
@@ -37,6 +41,9 @@ namespace API.GraphQL.Models
         public bool IsDeleted { get; set; }
         public DateTimeOffset? DeletedAt { get; set; }
         public Guid? DeletedByUserId { get; set; }
+
+        public bool? ConfirmedBySourceUser { get; set; }
+        public bool? ConfirmedByTargetUser { get; set; }
 
         public SwipesInfo SwipesInfo { get; set; }
 
@@ -89,7 +96,16 @@ namespace API.GraphQL.Models
         {
             if (!domOffer.Id.HasValue) throw new ApiException("Mapping error. Invalid offer");
 
-            return new Offer(domOffer.Id.Value, domOffer.SourceItemId, domOffer.TargetItemId, domOffer.Cash, domOffer.CreatedAt, domOffer.SourceStatus, domOffer.TargeteStatus) { IsDeleted = domOffer.IsDeleted, DeletedAt = domOffer.DeletedAt, DeletedByUserId = domOffer.DeletedByUserId };
+            return new Offer(domOffer.Id.Value,
+                domOffer.SourceItemId,
+                domOffer.TargetItemId,
+                domOffer.Cash,
+                domOffer.CreatedAt,
+                domOffer.SourceStatus,
+                domOffer.TargeteStatus,
+                domOffer.ConfirmedBySourceUser,
+                domOffer.ConfirmedByTargetUser)
+            { IsDeleted = domOffer.IsDeleted, DeletedAt = domOffer.DeletedAt, DeletedByUserId = domOffer.DeletedByUserId };
         }
         public static List<Offer> FromDomains(List<Domain.Offers.Offer> domOffers)
         {
@@ -101,7 +117,16 @@ namespace API.GraphQL.Models
             }
             foreach (var domOffer in domOffers)
             {
-                var offer = new Offer(domOffer.Id.Value, domOffer.SourceItemId, domOffer.TargetItemId, domOffer.Cash, domOffer.CreatedAt, domOffer.SourceStatus, domOffer.TargeteStatus) { IsDeleted = domOffer.IsDeleted, DeletedAt = domOffer.DeletedAt, DeletedByUserId = domOffer.DeletedByUserId };
+                var offer = new Offer(domOffer.Id.Value,
+                    domOffer.SourceItemId,
+                    domOffer.TargetItemId,
+                    domOffer.Cash,
+                    domOffer.CreatedAt,
+                    domOffer.SourceStatus,
+                    domOffer.TargeteStatus,
+                    domOffer.ConfirmedBySourceUser,
+                    domOffer.ConfirmedByTargetUser)
+                { IsDeleted = domOffer.IsDeleted, DeletedAt = domOffer.DeletedAt, DeletedByUserId = domOffer.DeletedByUserId };
                 offersList.Add(offer);
             }
             return offersList;

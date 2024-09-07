@@ -12,11 +12,8 @@ using FirebaseAdmin.Messaging;
 using Domain.Services;
 using System.Text.Json;
 using Domain;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using SendGrid.Helpers.Mail;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
-using System.Net.Http;
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
@@ -561,7 +558,9 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead))
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser))
                     .ToListAsync();
 
                 return offers;
@@ -597,7 +596,9 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead))
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser))
                     .ToListAsync();
 
                 /*var filteredOffers = offers.Where(offer =>
@@ -711,7 +712,19 @@ namespace Infrastructure.Offers
                 throw new SecurityException("You cant access this offer");
             }
 
-            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead);
+            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead,
+                offer.ConfirmedBySourceUser,
+                offer.ConfirmedByTargetUser);
+        }
+
+        public async Task<Offer> GetOfferByOfferId(Guid offerId)
+        {
+            var offer = await db.Offers
+                .Where(o => o.Id.Equals(offerId))
+                .SingleOrDefaultAsync(z => z.Id == offerId);
+            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead,
+                offer.ConfirmedBySourceUser,
+                offer.ConfirmedByTargetUser);
         }
 
         public async Task<Offer> MarkMessagesAsRead(Guid userId, Guid offerId)
@@ -740,7 +753,7 @@ namespace Infrastructure.Offers
 
             await db.SaveChangesAsync();
 
-            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead);
+            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead, offer.ConfirmedBySourceUser, offer.ConfirmedByTargetUser);
         }
 
         public async Task<IEnumerable<Offer>> GetAllOffers(Guid userId)
@@ -766,7 +779,9 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead))
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser))
                     .ToListAsync();
 
                 return offers;
@@ -801,7 +816,9 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead))
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser))
                     .ToListAsync();
 
                 return offers;
@@ -837,7 +854,115 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead)
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser)
+                    {
+                        IsDeleted = offer.IsDeleted,
+                        DeletedAt = offer.DeletedAt,
+                        DeletedByUserId = offer.DeletedByUserId
+                    })
+                    .ToListAsync();
+
+                string? newCursor = paginatedOffers.Count > limit ? paginatedOffers.Last().Id.ToString() : null;
+                if (newCursor != null)
+                {
+                    paginatedOffers = paginatedOffers.Take(limit).ToList();
+                }
+
+                var totalCount = totalCountQuery;
+
+
+                return new Paginated<Domain.Offers.Offer>(paginatedOffers, newCursor ?? "", totalCount, paginatedOffers.Count == limit);
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+
+        public async Task<Paginated<Offer>> GetAllConfirmedOffers(int limit, string? cursor)
+        {
+            try
+            {
+                Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+                var query = db.Offers.IgnoreQueryFilters().Where(o => (o.Cash <= 0 || o.Cash == null) && o.SourceStatus == o.TargetStatus && o.ConfirmedBySourceUser == true && o.ConfirmedByTargetUser == true).AsNoTracking();
+                if (cursorGuid.HasValue)
+                {
+                    query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+                }
+                var totalCountQuery = await query.CountAsync();
+                var paginatedOffers = await query
+                    .OrderBy(item => item.Id)
+                    .Take(limit + 1)
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus,
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser)
+                    {
+                        IsDeleted = offer.IsDeleted,
+                        DeletedAt = offer.DeletedAt,
+                        DeletedByUserId = offer.DeletedByUserId
+                    })
+                    .ToListAsync();
+
+                string? newCursor = paginatedOffers.Count > limit ? paginatedOffers.Last().Id.ToString() : null;
+                if (newCursor != null)
+                {
+                    paginatedOffers = paginatedOffers.Take(limit).ToList();
+                }
+
+                var totalCount = totalCountQuery;
+
+
+                return new Paginated<Domain.Offers.Offer>(paginatedOffers, newCursor ?? "", totalCount, paginatedOffers.Count == limit);
+            }
+
+            catch (Exception ex)
+            {
+                throw new InfrastructureException(ex.Message);
+            }
+        }
+        public async Task<Paginated<Offer>> GetAllOffersConfirmedByOneParty(int limit, string? cursor)
+        {
+            try
+            {
+                Guid? cursorGuid = cursor != null ? Guid.Parse(cursor) : (Guid?)null;
+                var query = db.Offers.IgnoreQueryFilters().Where(o => (o.Cash <= 0 || o.Cash == null) &&
+                o.SourceStatus == o.TargetStatus &&
+                (o.ConfirmedBySourceUser == true || o.ConfirmedByTargetUser == true))
+                    .AsNoTracking();
+                if (cursorGuid.HasValue)
+                {
+                    query = query.Where(item => item.Id.CompareTo(cursorGuid.Value) > 0);
+                }
+                var totalCountQuery = await query.CountAsync();
+                var paginatedOffers = await query
+                    .OrderBy(item => item.Id)
+                    .Take(limit + 1)
+                    .Select(offer => new Offer(
+                    offer.Id,
+                    offer.SourceItemId,
+                    offer.TargetItemId,
+                    offer.Cash,
+                    offer.CreatedByUserId,
+                    offer.UpdatedByUserId,
+                    offer.CreatedAt.DateTime,
+                    (int)offer.SourceStatus,
+                    (int)offer.TargetStatus,
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser)
                     {
                         IsDeleted = offer.IsDeleted,
                         DeletedAt = offer.DeletedAt,
@@ -886,7 +1011,9 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead)
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser)
                     {
                         IsDeleted = offer.IsDeleted,
                         DeletedAt = offer.DeletedAt,
@@ -935,7 +1062,9 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead)
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser)
                     {
                         IsDeleted = offer.IsDeleted,
                         DeletedAt = offer.DeletedAt,
@@ -984,7 +1113,9 @@ namespace Infrastructure.Offers
                     offer.CreatedAt.DateTime,
                     (int)offer.SourceStatus,
                     (int)offer.TargetStatus,
-                    offer.IsRead)
+                    offer.IsRead,
+                    offer.ConfirmedBySourceUser,
+                    offer.ConfirmedByTargetUser)
                     {
                         IsDeleted = offer.IsDeleted,
                         DeletedAt = offer.DeletedAt,
@@ -1014,9 +1145,24 @@ namespace Infrastructure.Offers
         {
             var offers = await db.Offers
                 .Where(o => o.SourceStatus == Infrastructure.Database.Schema.OfferStatus.Initiated && o.TargetStatus == Infrastructure.Database.Schema.OfferStatus.Initiated)
-            .Select(offer => new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.DateTime.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead))
+            .Select(offer => new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.DateTime.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead,
+            offer.ConfirmedBySourceUser,
+            offer.ConfirmedByTargetUser))
             .ToListAsync();
             return offers;
+        }
+        public async Task<Offer> ConfirmOffer(Guid offerId, Guid userId)
+        {
+            var offer = await db.Offers.Include(o => o.TargetItem).Where(o => o.Id == offerId).FirstOrDefaultAsync();
+            if (offer == null) throw new InfrastructureException("Invalid Offer Id");
+            else if (offer.CreatedByUserId != userId && offer.TargetItem.CreatedByUserId != userId) throw new InfrastructureException("Oops, how can you confirm when you're not even involved with this offer?");
+            else if (offer.SourceStatus != offer.TargetStatus) throw new InfrastructureException("Oops, how can you confirm when the offer hasn't even been matched yet?");
+
+            if (offer.CreatedByUserId == userId) offer.ConfirmedBySourceUser = true;
+            else offer.ConfirmedByTargetUser = true;
+            await db.SaveChangesAsync();
+            return await GetOfferById(userId, offerId);
+
         }
     }
 }

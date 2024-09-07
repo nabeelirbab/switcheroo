@@ -48,7 +48,7 @@ namespace API.GraphQL
             var domainOffer = await offerRepository.CreateOffer(Domain.Offers.Offer.CreateNewOffer(sourceItemId ?? targetItemId, targetItemId, cash, requestUserId, sourceStatus ?? 1, targeteStatus, isRead));
             var createdOffer = Offer.FromDomain(domainOffer);
             var swipes_count = await offerRepository.GetSwipesInfo(requestUserId);
-            createdOffer.SwipesInfo = new Offers.Models.SwipesInfo(10-swipes_count,swipes_count);
+            createdOffer.SwipesInfo = new Offers.Models.SwipesInfo(10 - swipes_count, swipes_count);
             return createdOffer;
         }
 
@@ -82,5 +82,18 @@ namespace API.GraphQL
             await offerRepository.UnmatchOffer(offerId);
             return true;
         }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
+        public async Task<Offer> ConfirmOffer(
+            [Service] UserContextService userContextService,
+            [Service] IOfferRepository offerRepository,
+            Guid offerId
+        )
+        {
+            var requestUserId = userContextService.GetCurrentUserId();
+            var offer = await offerRepository.ConfirmOffer(offerId, requestUserId);
+            return Offer.FromDomain(offer);
+        }
+
     }
 }

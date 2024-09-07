@@ -77,6 +77,34 @@ namespace API.GraphQL
                 pageinatedOffers.TotalCount,
                 pageinatedOffers.HasNextPage);
         }
+        
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<Paginated<Offer>> GetAllConfirmedOffers(
+            [Service] IOfferRepository offerRepository, int limit, string? cursor)
+        {
+            var pageinatedOffers = await offerRepository.GetAllConfirmedOffers(limit, cursor);
+            return new Paginated<Offer>(
+                pageinatedOffers.Data
+                    .Select(Offer.FromDomain)
+                    .ToList(),
+                pageinatedOffers.Cursor,
+                pageinatedOffers.TotalCount,
+                pageinatedOffers.HasNextPage);
+        }
+        
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<Paginated<Offer>> GetAllOffersConfirmedByOneParty(
+            [Service] IOfferRepository offerRepository, int limit, string? cursor)
+        {
+            var pageinatedOffers = await offerRepository.GetAllOffersConfirmedByOneParty(limit, cursor);
+            return new Paginated<Offer>(
+                pageinatedOffers.Data
+                    .Select(Offer.FromDomain)
+                    .ToList(),
+                pageinatedOffers.Cursor,
+                pageinatedOffers.TotalCount,
+                pageinatedOffers.HasNextPage);
+        }
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<Paginated<Offer>> GetAllPendingMatchingOffers(
             [Service] IOfferRepository offerRepository, int limit, string? cursor)

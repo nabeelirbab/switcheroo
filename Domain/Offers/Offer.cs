@@ -8,7 +8,9 @@ namespace Domain.Offers
         public Offer(Guid? id, Guid sourceItemId,
             Guid targetItemId, int? cash,
             Guid? createdByUserId, Guid? updatedByUserId,
-            DateTime createdAt, int sourceStatus, int? targeteStatus, bool? isRead)
+            DateTime createdAt, int sourceStatus, int? targeteStatus, bool? isRead,
+            bool? confirmedBySourceUser,
+            bool? confirmedByTargetUser)
         {
             Id = id;
             SourceItemId = sourceItemId;
@@ -20,6 +22,8 @@ namespace Domain.Offers
             SourceStatus = sourceStatus;
             TargeteStatus = targeteStatus;
             IsRead = isRead;
+            ConfirmedBySourceUser = confirmedBySourceUser;
+            ConfirmedByTargetUser = confirmedByTargetUser;
         }
 
         [Required]
@@ -47,9 +51,12 @@ namespace Domain.Offers
         public DateTimeOffset? DeletedAt { get; set; }
         public Guid? DeletedByUserId { get; set; }
 
+        public bool? ConfirmedBySourceUser { get; set; }
+        public bool? ConfirmedByTargetUser { get; set; }
+
         public static Offer CreateNewOffer(Guid sourceItemId, Guid targetItemId, int? cash, Guid createdByUserId, int sourceStatus, int? targeteStatus, bool? isRead)
         {
-            return new Offer(null, sourceItemId, targetItemId, cash, createdByUserId, createdByUserId, DateTime.Now, sourceStatus, targeteStatus, isRead);
+            return new Offer(null, sourceItemId, targetItemId, cash, createdByUserId, createdByUserId, DateTime.Now, sourceStatus, targeteStatus, isRead,false,false);
         }
     }
 }

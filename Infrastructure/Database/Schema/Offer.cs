@@ -47,6 +47,8 @@ namespace Infrastructure.Database.Schema
 
         [ForeignKey("DeletedByUserId")]
         public User? DeletedByUser { get; set; }
+        public bool? ConfirmedBySourceUser { get; set; }
+        public bool? ConfirmedByTargetUser { get; set; }
 
 
     }
