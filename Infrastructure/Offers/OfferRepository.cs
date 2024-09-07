@@ -78,12 +78,13 @@ namespace Infrastructure.Offers
             }
             return userTimeZoneId;
         }
-        public async Task<int> GetSwipesInfo(Guid userId)
+        public async Task<Tuple<int, int>> GetTodayAndYesturdaySwipesInfo(Guid userId)
         {
             // Get the current date in the user's timezone
             var userTimeZoneId = "Eastern Standard Time";
             var easternZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
             var todayEastern = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone).Date;
+            var yesterdayEastern = todayEastern.AddDays(-1);
 
             Console.WriteLine($"Debug: Current date in user timezone ({userTimeZoneId}): {todayEastern:yyyy-MM-dd}");
 
@@ -94,6 +95,7 @@ namespace Infrastructure.Offers
                 .ToListAsync();
 
             int todayCount = 0;
+            int yesturdayCount = 0;
             foreach (var offer in offers)
             {
                 if (!(offer.Cash == null || offer.Cash <= 0))
@@ -103,10 +105,22 @@ namespace Infrastructure.Offers
                 var offerCreatedInUserTimeZone = TimeZoneInfo.ConvertTimeFromUtc(offer.CreatedAt.DateTime, easternZone).Date;
                 if (offerCreatedInUserTimeZone == todayEastern)
                     todayCount += 1;
+                if (offerCreatedInUserTimeZone == yesterdayEastern)
+                    yesturdayCount += 1;
             }
 
-            return todayCount;
+            return Tuple.Create(todayCount, yesturdayCount);
 
+        }
+        public async Task<int> GetSwipesInfo(Guid userId)
+        {
+            Tuple<int, int> info = await GetTodayAndYesturdaySwipesInfo(userId);
+            return info.Item1;
+        }
+        public async Task<int> GetYesturdaySwipesInfo(Guid userId)
+        {
+            Tuple<int, int> info = await GetTodayAndYesturdaySwipesInfo(userId);
+            return info.Item2;
         }
         public async Task<Offer>? CreateOffer(Offer offer)
         {

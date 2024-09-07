@@ -25,8 +25,9 @@ namespace Domain.Offers
         Task<Paginated<Offer>> GetAllPendingMatchingOffers(int limit, string? cursor);
         Task<Paginated<Offer>> GetAllAcceptedCashOffers(int limit, string? cursor);
         Task<Paginated<Offer>> GetAllPendingCashOffers(int limit, string? cursor);
-
+        Task<Tuple<int, int>> GetTodayAndYesturdaySwipesInfo(Guid userId);
         Task<int> GetSwipesInfo(Guid userId);
+        Task<int> GetYesturdaySwipesInfo(Guid userId);
         Task<List<Offer>> GetMatchedOffers();
 
 

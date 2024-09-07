@@ -14,6 +14,7 @@
             else if (currentSwipeNumber > 9)
                 Message = "You have used all your swipes for today.\nCome back tomorrow and try again!";
         }
+        public bool WasLocked { get; set; }
         public int RemainingSwipes { get; set; }
         public int CurrentSwipeNumber { get; set; }
         public string Message { get; set; }

@@ -122,8 +122,11 @@ namespace API.GraphQL
         public async Task<SwipesInfo> GetSwipeInfo([Service] UserContextService userContextService, [Service] IOfferRepository offerRepository)
         {
             var requestUserId = userContextService.GetCurrentUserId();
-            var swipesCount = await offerRepository.GetSwipesInfo(requestUserId);
-            var swipesInfo = new Offers.Models.SwipesInfo(10 - swipesCount, swipesCount);
+            var todayAndYesturdaySwipesCount = await offerRepository.GetTodayAndYesturdaySwipesInfo(requestUserId);
+            var swipesInfo = new Offers.Models.SwipesInfo(10 - todayAndYesturdaySwipesCount.Item1, todayAndYesturdaySwipesCount.Item1);
+            if (todayAndYesturdaySwipesCount.Item2 == 10 && todayAndYesturdaySwipesCount.Item1 == 0) swipesInfo.WasLocked = true;
+            else swipesInfo.WasLocked = false;
+
             return swipesInfo;
         }
 
