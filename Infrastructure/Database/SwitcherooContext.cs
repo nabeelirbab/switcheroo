@@ -10,12 +10,10 @@ namespace Infrastructure.Database
     public class SwitcherooContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         private readonly IDbContextConfigurator configurator;
-        private readonly Domain.Users.IUserRoleProvider _userRoleProvider;
 
-        public SwitcherooContext(IDbContextConfigurator configurator, Domain.Users.IUserRoleProvider userRoleProvider)
+        public SwitcherooContext(IDbContextConfigurator configurator)
         {
             this.configurator = configurator;
-            this._userRoleProvider = userRoleProvider;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -115,13 +113,11 @@ namespace Infrastructure.Database
             modelBuilder.Entity<Item>().Property(u => u.IsDeleted).HasDefaultValue(false);
             modelBuilder.Entity<Message>().Property(u => u.IsDeleted).HasDefaultValue(false);
             modelBuilder.Entity<Offer>().Property(u => u.IsDeleted).HasDefaultValue(false);
-            if (!_userRoleProvider.IsAdminOrSuperAdmin)
-            {
-                modelBuilder.Entity<Message>().HasQueryFilter(e => !e.IsDeleted);
-                modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
-                modelBuilder.Entity<Item>().HasQueryFilter(e => !e.IsDeleted);
-                modelBuilder.Entity<Offer>().HasQueryFilter(e => !e.IsDeleted);
-            }
+            modelBuilder.Entity<Message>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<Item>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<Offer>().HasQueryFilter(e => !e.IsDeleted);
+
             var categories = modelBuilder.SeedCategories();
         }
     }

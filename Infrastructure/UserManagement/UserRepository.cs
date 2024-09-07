@@ -23,19 +23,23 @@ namespace Infrastructure.UserManagement
     {
         private readonly SwitcherooContext db;
         private readonly ILogger<UserRepository> _logger;
+        private readonly Domain.Users.IUserRoleProvider _userRoleProvider;
 
-        public UserRepository(SwitcherooContext db, ILogger<UserRepository> logger)
+        public UserRepository(SwitcherooContext db, ILogger<UserRepository> logger, IUserRoleProvider userRoleProvider)
         {
             this.db = db;
             _logger = logger;
             _logger.LogDebug("Nlog is integrated to User repository");
+            _userRoleProvider = userRoleProvider;
         }
 
         public async Task<User> GetByEmail(string email)
         {
-            var user = await db.Users
+            var query = db.Users
                 .AsNoTracking()
-                .Where(user => user.Email == email)
+                .Where(user => user.Email == email);
+            if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+            var user = await query
                 .Select(Database.Schema.User.ToDomain)
                 .SingleOrDefaultAsync();
 
@@ -43,81 +47,6 @@ namespace Infrastructure.UserManagement
 
             return user;
         }
-
-        //public async Task<Paginated<User>> GetAllUsers(int limit, string? cursor)
-        //{
-        //    IEnumerable<Guid> requiredIds;
-
-        //    var Users = await db.Users.IgnoreQueryFilters().ToListAsync();
-
-        //    var usersIdsSorted = Users.Select(x => x.Id).ToList();
-
-        //    if (cursor != null)
-        //    {
-        //        requiredIds = usersIdsSorted
-        //        .SkipWhile(x => cursor != "" && x.ToString() != cursor)
-        //        .Skip(1)
-        //        .Take(limit);
-        //    }
-        //    else
-        //    {
-        //        requiredIds = usersIdsSorted.Take(limit);
-        //    }
-
-        //    var totalCount = usersIdsSorted.Count();
-
-        //    var data = await db.Users
-        //        .AsNoTracking()
-        //        .IgnoreQueryFilters()
-        //        .Where(x => requiredIds.Contains(x.Id))
-        //        .OrderByDescending(x => x.CreatedAt)
-        //        .Select(Database.Schema.User.ToDomain)
-        //        .ToListAsync();
-
-        //    //Item count
-        //    foreach (var user in data)
-        //    {
-        //        var userItems = await db.Items
-        //            .IgnoreQueryFilters()
-        //            .Where(i => i.CreatedByUserId == user.Id)
-        //            .ToListAsync();
-        //        user.ItemCount = userItems.Count;
-        //    }
-
-        //    //Matched items
-        //    foreach (var user in data)
-        //    {
-        //        var userItems = await db.Items
-        //            .IgnoreQueryFilters()
-        //            .Where(i => i.CreatedByUserId == user.Id)
-        //            .ToListAsync();
-
-        //        if (userItems.Count != 0)
-        //        {
-        //            var sourceItemIds = userItems.Select(item => item.Id).ToList();
-
-        //            var offers = await db.Offers.IgnoreQueryFilters()
-        //                .Where(offer =>
-        //                    sourceItemIds.Contains(offer.SourceItemId) || sourceItemIds.Contains(offer.TargetItemId))
-        //                .Where(offer =>
-        //                    offer.SourceStatus == Database.Schema.OfferStatus.Initiated &&
-        //                    offer.TargetStatus == Database.Schema.OfferStatus.Initiated)
-        //                .ToListAsync();
-
-        //            user.MatchedItemCount = offers.Count;
-        //        }
-        //        else
-        //        {
-        //            user.MatchedItemCount = 0;
-        //        }
-        //    }
-
-
-        //    var newCursor = data.Count > 0 ? data.Last().Id.ToString() : "";
-
-        //    return new Paginated<User>(data, newCursor ?? "", totalCount, data.Count == limit);
-        //}
-
         public async Task<Paginated<User>> GetAllUsers(int limit, string? cursor)
         {
             var usersIdsSorted = await db.Users.AsNoTracking().IgnoreQueryFilters().OrderByDescending(u => u.CreatedAt).Select(x => x.Id).ToListAsync();
@@ -176,9 +105,11 @@ namespace Infrastructure.UserManagement
 
         public async Task<User> GetById(Guid? id)
         {
-            var user = await db.Users
+            var query = db.Users
                 .AsNoTracking()
-                .Where(user => user.Id == id)
+                .Where(user => user.Id == id.Value);
+            if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+            var user = await query
                 .Select(Database.Schema.User.ToDomain)
                 .SingleOrDefaultAsync();
 
@@ -190,9 +121,11 @@ namespace Infrastructure.UserManagement
         public async Task<List<User>> GetUserByUserId(List<Guid> userIds)
         {
 
-            var users = await db.Users
+            var query = db.Users
                 .AsNoTracking()
-                .Where(user => userIds.Contains(user.Id))
+                .Where(user => userIds.Contains(user.Id));
+            if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+            var users = await query
                 .Select(Database.Schema.User.ToDomain)
                 .ToListAsync();
 
@@ -209,6 +142,7 @@ namespace Infrastructure.UserManagement
                     TargetUser = o.TargetItem.CreatedByUserId,
                     TargetUserFcm = getFCMToken ? o.TargetItem.CreatedByUser.FCMToken : null
                 });
+            if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
 
             var offerUsers = await query.FirstOrDefaultAsync();
 
@@ -232,13 +166,16 @@ namespace Infrastructure.UserManagement
         {
             try
             {
-                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+
+                var query = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
                 {
                     SourceItemId = o.SourceItemId,
                     TargetItemId = o.TargetItemId,
                     OfferCreatedBy = o.CreatedByUserId,
                     Cash = o.Cash,
-                }).FirstOrDefault();
+                });
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var itemIds = await query.FirstOrDefaultAsync();
 
 
                 var sourceItemId = itemIds.SourceItemId;
@@ -247,18 +184,19 @@ namespace Infrastructure.UserManagement
                 List<Domain.Items.Item> items;
                 if (Cash)
                 {
-                    items = await db.Items
+                    var itemsQuery = db.Items
                     .Where(item => (item.Id == sourceItemId || item.Id == targetItemId))
-                    .Select(Database.Schema.Item.ToDomain)
-                    .ToListAsync();
+                    .Select(Database.Schema.Item.ToDomain);
+                    if (_userRoleProvider.IsAdminOrSuperAdmin) itemsQuery = itemsQuery.IgnoreQueryFilters();
+                    items = await itemsQuery.ToListAsync();
                 }
                 else
                 {
-
-                    items = await db.Items
+                    var itemsQuery = db.Items
                         .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
-                        .Select(Database.Schema.Item.ToDomain)
-                        .ToListAsync();
+                        .Select(Database.Schema.Item.ToDomain);
+                    if (_userRoleProvider.IsAdminOrSuperAdmin) itemsQuery = itemsQuery.IgnoreQueryFilters();
+                    items = await itemsQuery.ToListAsync();
                 }
 
                 var creatorIds = items.Select(item => item.CreatedByUserId).Distinct().ToList();
@@ -281,11 +219,12 @@ namespace Infrastructure.UserManagement
         {
             try
             {
-                var users = await db.Users
+                var query = db.Users
                     .AsNoTracking()
                     .Where(user => user.Id == userId)
-                    .Select(Database.Schema.User.ToDomain)
-                    .ToListAsync();
+                    .Select(Database.Schema.User.ToDomain);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var users = await query.ToListAsync();
 
                 return users;
             }
@@ -299,12 +238,12 @@ namespace Infrastructure.UserManagement
         {
             try
             {
-                var keyValueList = await db.Users
-                                      .Where(user => user.Gender != null)
-                                      .GroupBy(user => user.Gender)
+                var query = db.Users
+                                      .Where(user => user.Gender != null);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var keyValueList = await query.GroupBy(user => user.Gender)
                                       .Select(group => new KeyValue(group.Key, group.Count()))
                                       .ToListAsync();
-
                 return keyValueList;
             }
             catch (Exception ex)
@@ -575,6 +514,7 @@ namespace Infrastructure.UserManagement
                         // Restore Messages linked to the Offers
                         var offerIds = offersToUpdate.Select(offer => offer.Id).ToList();
                         var messagesToUpdate = await db.Messages
+                            .IgnoreQueryFilters()
                             .Where(message => offerIds.Contains(message.OfferId) && message.IsDeleted)
                             .ToListAsync();
                         messagesToUpdate.ForEach(message => { message.IsDeleted = false; message.DeletedByUserId = null; message.DeletedAt = null; });

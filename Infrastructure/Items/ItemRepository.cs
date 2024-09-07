@@ -22,6 +22,8 @@ using SixLabors.ImageSharp.Formats.Webp;
 
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
+using Domain.Users;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 namespace Infrastructure.Items
 {
     public class ItemRepository : IItemRepository
@@ -29,17 +31,21 @@ namespace Infrastructure.Items
         private readonly SwitcherooContext db;
         private readonly ICategoryRepository categoryRepository;
         private readonly ILoggerManager _loggerManager;
+        private readonly IUserRoleProvider _userRoleProvider;
 
-        public ItemRepository(SwitcherooContext db, ICategoryRepository categoryRepository, ILoggerManager loggerManager)
+        public ItemRepository(SwitcherooContext db, ICategoryRepository categoryRepository, ILoggerManager loggerManager, IUserRoleProvider userRoleProvider)
         {
             this.db = db;
             this.categoryRepository = categoryRepository;
             _loggerManager = loggerManager;
+            _userRoleProvider = userRoleProvider;
         }
 
         public async Task<bool> ArchiveItemAsync(Guid itemId, Guid updatedByUserId)
         {
-            var existingItem = await db.Items
+            var query = db.Items.Where(i => i.Id == itemId);
+            if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+            var existingItem = await query
                 .SingleOrDefaultAsync(z => z.Id == itemId);
 
             if (existingItem == null) return false;
@@ -189,8 +195,10 @@ namespace Infrastructure.Items
         {
             try
             {
-                var items = await db.Items
-                    .Where(item => item.CreatedByUserId == userId)
+                var query = db.Items
+                    .Where(item => item.CreatedByUserId == userId);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var items = await query
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
@@ -211,8 +219,10 @@ namespace Infrastructure.Items
         {
             try
             {
-                var items = await db.Items
-                    .Where(x => itemIds.Contains(x.Id))
+                var query = db.Items
+                    .Where(x => itemIds.Contains(x.Id));
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var items = await query
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
@@ -229,17 +239,22 @@ namespace Infrastructure.Items
         {
             try
             {
-                var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                var query = db.Offers.Where(o => o.Id.Equals(offerId));
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var itemIds = await query
+                .Select(o => new
                 {
                     SourceItemId = o.SourceItemId,
                     TargetItemId = o.TargetItemId
-                }).FirstOrDefault();
+                }).FirstOrDefaultAsync();
 
                 var sourceItemId = itemIds.SourceItemId;
                 var targetItemId = itemIds.TargetItemId;
 
-                var items = await db.Items
-                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
+                var itemsQuery = db.Items
+                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var items = await itemsQuery
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
@@ -255,20 +270,27 @@ namespace Infrastructure.Items
         {
             try
             {
-                var offer = db.Offers.Where(x => x.Id == offerId).FirstOrDefault();
+                var query = db.Offers.Where(x => x.Id == offerId);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var offer = await query.FirstOrDefaultAsync();
                 if (offer.Cash != null)
                 {
-                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+
+                    var itemIdsQuery = db.Offers.Where(o => o.Id.Equals(offerId));
+                    if (_userRoleProvider.IsAdminOrSuperAdmin) itemIdsQuery = itemIdsQuery.IgnoreQueryFilters();
+                    var itemIds = await itemIdsQuery.Select(o => new
                     {
                         SourceItemId = o.SourceItemId,
                         TargetItemId = o.TargetItemId
-                    }).FirstOrDefault();
+                    }).FirstOrDefaultAsync();
 
                     var sourceItemId = itemIds.SourceItemId;
                     var targetItemId = itemIds.TargetItemId;
 
-                    var items = await db.Items
-                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId))
+                    var itemsQuery = db.Items
+                    .Where(item => (item.Id == sourceItemId || item.Id == targetItemId));
+                    if (_userRoleProvider.IsAdminOrSuperAdmin) itemsQuery = itemsQuery.IgnoreQueryFilters();
+                    var items = await itemsQuery
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
@@ -277,17 +299,20 @@ namespace Infrastructure.Items
                 else
                 {
 
-                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                    var itemIdsQuery = db.Offers.Where(o => o.Id.Equals(offerId));
+                    if (_userRoleProvider.IsAdminOrSuperAdmin) itemIdsQuery = itemIdsQuery.IgnoreQueryFilters();
+                    var itemIds = await itemIdsQuery.Select(o => new
                     {
                         SourceItemId = o.SourceItemId,
                         TargetItemId = o.TargetItemId
-                    }).FirstOrDefault();
+                    }).FirstOrDefaultAsync();
 
                     var sourceItemId = itemIds.SourceItemId;
                     var targetItemId = itemIds.TargetItemId;
 
-                    var items = await db.Items
-                        .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId)
+                    var itemsQuery = db.Items
+                        .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId != userId);
+                    var items = await itemsQuery
                         .Select(Database.Schema.Item.ToDomain)
                         .ToListAsync();
 
@@ -305,8 +330,10 @@ namespace Infrastructure.Items
             try
             {
 
-                var items = await db.Items
-                    .Where(item => item.Id == itemId)
+                var query = db.Items
+                    .Where(item => item.Id == itemId);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var items = await query
                     .Select(Database.Schema.Item.ToDomain)
                     .ToListAsync();
 
@@ -322,12 +349,21 @@ namespace Infrastructure.Items
         {
             try
             {
+                if (_userRoleProvider.IsAdminOrSuperAdmin)
+                {
+                    return await db.ItemCategories
+                            .IgnoreQueryFilters()
+                            .GroupBy(itemCategory => itemCategory.Category.Name)
+                            .Select(group => new KeyValue(group.Key, group.Count()))
+                            .ToListAsync();
+                }
                 var keyValueList = await db.ItemCategories
                                    .GroupBy(itemCategory => itemCategory.Category.Name)
                                    .Select(group => new KeyValue(group.Key, group.Count()))
                                    .ToListAsync();
 
                 return keyValueList;
+
             }
             catch (Exception ex)
             {
@@ -338,6 +374,10 @@ namespace Infrastructure.Items
         {
             try
             {
+                if (_userRoleProvider.IsAdminOrSuperAdmin)
+                {
+                    return await db.Items.IgnoreQueryFilters().CountAsync();
+                }
                 int itemsCount = await db.Items.CountAsync();
                 return itemsCount;
             }
@@ -352,25 +392,29 @@ namespace Infrastructure.Items
         {
             try
             {
-                var offer = db.Offers.Where(x => x.Id == offerId).FirstOrDefault();
-                if (offer?.Cash != null)
-                {
-                    return null;
-                }
+                var offerQuery = db.Offers.Where(x => x.Id == offerId);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) offerQuery = offerQuery.IgnoreQueryFilters();
+                var offer = await offerQuery.FirstOrDefaultAsync();
+                if (offer?.Cash != null) return null;
                 else
                 {
 
-                    var itemIds = db.Offers.Where(o => o.Id.Equals(offerId)).Select(o => new
+                    var itemIdsQuery = db.Offers.Where(o => o.Id.Equals(offerId));
+                    if (_userRoleProvider.IsAdminOrSuperAdmin) itemIdsQuery = itemIdsQuery.IgnoreQueryFilters();
+
+                    var itemIds = await itemIdsQuery.Select(o => new
                     {
                         SourceItemId = o.SourceItemId,
                         TargetItemId = o.TargetItemId
-                    }).FirstOrDefault();
+                    }).FirstOrDefaultAsync();
 
                     var sourceItemId = itemIds.SourceItemId;
                     var targetItemId = itemIds.TargetItemId;
 
-                    var items = await db.Items
-                        .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId)
+                    var itemsQuery = db.Items
+                        .Where(item => (item.Id == sourceItemId || item.Id == targetItemId) && item.CreatedByUserId == userId);
+                    if (_userRoleProvider.IsAdminOrSuperAdmin) itemsQuery = itemsQuery.IgnoreQueryFilters();
+                    var items = await itemsQuery
                         .Select(Database.Schema.Item.ToDomain)
                         .ToListAsync();
                     return items;
@@ -387,10 +431,12 @@ namespace Infrastructure.Items
         {
             try
             {
-                var item = await db.Items
+                var query = db.Items
                     .Include(i => i.ItemCategories)
                     .ThenInclude(c => c.Category)
-                    .Where(z => z.Id == itemId)
+                    .Where(z => z.Id == itemId);
+                if (_userRoleProvider.IsAdminOrSuperAdmin) query = query.IgnoreQueryFilters();
+                var item = await query
                     .Select(Database.Schema.Item.ToDomain)
                     .SingleOrDefaultAsync();
                 if (item is null)
@@ -495,38 +541,6 @@ namespace Infrastructure.Items
             }
         }
 
-        //public static bool IsDistanceWithinRange(double sourceLatitude, double sourceLongitude, double destinationLatitude, double destinationLongitude, double desiredDistance, bool isUnitMiles = false)
-        //{
-        //    const double earthRadiusKm = 6371; // Earth's radius in kilometers
-        //    const double milesPerKm = 0.621371; // Conversion factor from kilometers to miles
-
-        //    // Convert coordinates to radians
-        //    double lat1 = DegreeToRadian(sourceLatitude);
-        //    double lon1 = DegreeToRadian(sourceLongitude);
-        //    double lat2 = DegreeToRadian(destinationLatitude);
-        //    double lon2 = DegreeToRadian(destinationLongitude);
-
-        //    Console.Write($"lat lngs in rads {lat1} {lon1}  {lat2}  {lon2} ");
-
-        //    // Calculate differences in latitude and longitude
-        //    double dLat = lat2 - lat1;
-        //    double dLon = lon2 - lon1;
-
-        //    Console.Write($"lat lngs distances {dLat} {dLon} ");
-
-
-        //    // Calculate the Haversine formula components
-        //    double a = Math.Pow(Math.Sin(dLat / 2), 2) + Math.Cos(lat1) * Math.Cos(lat2) * Math.Pow(Math.Sin(dLon / 2), 2);
-        //    double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-        //    double distanceKm = earthRadiusKm * c;
-        //    double distanceMiles = distanceKm * milesPerKm;
-
-        //    Console.Write($"What is a: {a}, c: {c} dKm: {distanceKm} dM: {distanceMiles}");
-
-
-        //    // Check if the distance is within the desired range
-        //    return isUnitMiles ? distanceMiles <= desiredDistance : distanceKm <= desiredDistance;
-        //}
         public static bool IsDistanceWithinRange(double sourceLatitude, double sourceLongitude, double destinationLatitude, double destinationLongitude, double desiredDistance, bool isUnitMiles = false)
         {
             const double EarthRadiusKm = 6371.0; // Earth's radius in kilometers
@@ -1043,6 +1057,7 @@ namespace Infrastructure.Items
                 {
                     // Restore the item
                     var items = await db.Items
+                        .IgnoreQueryFilters()
                         .Where(i => i.Id == itemId && i.IsDeleted)
                         .ToListAsync();
                     if (!items.Any())
@@ -1058,6 +1073,7 @@ namespace Infrastructure.Items
 
                     // Restore offers related to the item
                     var offersAgainstItem = await db.Offers
+                        .IgnoreQueryFilters()
                         .Where(offer => (offer.SourceItemId.Equals(itemId) || offer.TargetItemId.Equals(itemId)) && offer.IsDeleted)
                         .ToListAsync();
                     offersAgainstItem.ForEach(offer =>
@@ -1070,6 +1086,7 @@ namespace Infrastructure.Items
 
                     // Restore messages related to the restored offers
                     var messagesToUpdate = await db.Messages
+                        .IgnoreQueryFilters()
                         .Where(message => offerIds.Contains(message.OfferId) && message.IsDeleted)
                         .ToListAsync();
                     messagesToUpdate.ForEach(message =>
@@ -1079,7 +1096,7 @@ namespace Infrastructure.Items
                         message.DeletedAt = null;
                     });
                     var userIds = items.Select(i => i.CreatedByUserId).ToList();
-                    var userFcmTokens = await db.Users.Where(u => userIds.Contains(u.Id)).Select(u => u.FCMToken).ToListAsync();
+                    var userFcmTokens = await db.Users.IgnoreQueryFilters().Where(u => userIds.Contains(u.Id)).Select(u => u.FCMToken).ToListAsync();
                     if (userFcmTokens.Count > 0)
                     {
                         var app = FirebaseApp.DefaultInstance;

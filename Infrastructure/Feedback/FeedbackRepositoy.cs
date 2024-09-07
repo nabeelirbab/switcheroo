@@ -128,6 +128,7 @@ namespace Infrastructure.Notifications
         public async Task<List<Domain.Feedback.Feedback>> GetFeedbacks()
         {
             return await db.Feedback
+                .IgnoreQueryFilters()
                 .Select(Database.Schema.Feedback.ToDomain)
                 .ToListAsync();
         }

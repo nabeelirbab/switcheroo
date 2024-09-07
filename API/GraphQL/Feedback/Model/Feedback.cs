@@ -48,11 +48,18 @@ namespace API.GraphQL.Feedback.Model
         }
         private async Task<Users.Models.User> GetUserByUserId(IUserRepository userRepository, Guid userId)
         {
-            var domUser = await userRepository.GetById(userId);
+            try
+            {
+                var domUser = await userRepository.GetById(userId);
 
-            if (domUser == null) throw new ApiException($"Invalid UserId {userId}");
+                if (domUser == null) throw new ApiException($"Invalid UserId {userId}");
 
-            return Users.Models.User.FromDomain(domUser);
+                return Users.Models.User.FromDomain(domUser);
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.Message);
+            }
         }
         public static Feedback FromDomain(Domain.Feedback.Feedback domainFeedback)
         {
