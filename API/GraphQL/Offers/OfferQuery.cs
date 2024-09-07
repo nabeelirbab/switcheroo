@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.GraphQL.CommonServices;
+using API.GraphQL.Offers.Models;
 using Domain.Offers;
 using Domain.Users;
 using HotChocolate;
@@ -115,6 +116,15 @@ namespace API.GraphQL
                 pageinatedOffers.Cursor,
                 pageinatedOffers.TotalCount,
                 pageinatedOffers.HasNextPage);
+        }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "User" })]
+        public async Task<SwipesInfo> GetSwipeInfo([Service] UserContextService userContextService, [Service] IOfferRepository offerRepository)
+        {
+            var requestUserId = userContextService.GetCurrentUserId();
+            var swipesCount = await offerRepository.GetSwipesInfo(requestUserId);
+            var swipesInfo = new Offers.Models.SwipesInfo(10 - swipesCount, swipesCount);
+            return swipesInfo;
         }
 
         //[HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
