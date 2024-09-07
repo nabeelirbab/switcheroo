@@ -8,11 +8,11 @@
             CurrentSwipeNumber = currentSwipeNumber;
             Message = string.Empty;
             if (currentSwipeNumber == 1)
-                Message = "You only have 10 right swipes a day. You have just used one and have 9 lefts. Use them wisely.";
+                Message = "You only have 10 right swipes a day.\nYou have just used one and have 9 left.\nUse them wisely.";
             else if (currentSwipeNumber == 7)
-                Message = "You have 3 right swipes left";
+                Message = "You have three right swipes left.";
             else if (currentSwipeNumber > 9)
-                Message = "You have used all your swipes for today. Come back tomorrow and try again.";
+                Message = "You have used all your swipes for today.\nCome back tomorrow and try again!";
         }
         public int RemainingSwipes { get; set; }
         public int CurrentSwipeNumber { get; set; }

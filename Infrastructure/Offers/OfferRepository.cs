@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security;
@@ -13,37 +14,99 @@ using System.Text.Json;
 using Domain;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using SendGrid.Helpers.Mail;
+using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Linq;
+using System.Net.Http;
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
     {
         private readonly SwitcherooContext db;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
 
         private readonly ILoggerManager _loggerManager;
 
-        public OfferRepository(SwitcherooContext db, ILoggerManager loggerManager)
+        public OfferRepository(SwitcherooContext db, ILoggerManager loggerManager, IHttpContextAccessor httpContextAccessor)
         {
             this.db = db;
             _loggerManager = loggerManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
+        //public async Task<int> GetSwipesInfo(Guid userId)
+        //{
+        //    Console.WriteLine($"Debug: Current UTC time: {DateTime.UtcNow}");
+        //    var today = DateTime.UtcNow.Date;
+        //    Console.WriteLine($"Debug: Querying for date: {today:yyyy-MM-dd}");
+
+        //    var offers = await db.Offers
+        //        .Where(o => o.CreatedByUserId == userId && !o.IsDeleted)
+        //        .ToListAsync();
+        //    int todayCount = 0;
+        //    foreach (var offer in offers)
+        //    {
+        //        if (offer.Cash == null || offer.Cash <= 0)
+        //            continue;
+        //        if (offer.CreatedAt.Date == today)
+        //            todayCount += 1;
+        //    }
+        //    return todayCount;
+        //}
+        private async Task<string> GetUserTimeZone()
+        {
+            var userIp = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+            if (string.IsNullOrEmpty(userIp))
+            {
+                throw new Exception("Could not determine the user's IP address.");
+            }
+
+            // Fetch timezone information using the IP geolocation API
+            string apiKey = "fcfdbee0835b41099b47686aa3a3e758";
+            string apiUrl = $"https://api.ipgeolocation.io/timezone?apiKey={apiKey}&ip={userIp}";
+            string userTimeZoneId = "";
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.GetStringAsync(apiUrl);
+                var jsonResponse = JObject.Parse(response);
+
+                userTimeZoneId = jsonResponse["timezone"]?.ToString();
+                if (string.IsNullOrEmpty(userTimeZoneId))
+                {
+                    throw new Exception("Could not determine the user's time zone.");
+                }
+            }
+            return userTimeZoneId;
+        }
         public async Task<int> GetSwipesInfo(Guid userId)
         {
-            Console.WriteLine($"Debug: Current UTC time: {DateTime.UtcNow}");
-            var today = DateTime.UtcNow.Date;
-            Console.WriteLine($"Debug: Querying for date: {today:yyyy-MM-dd}");
+            // Get the current date in the user's timezone
+            var userTimeZoneId = "Eastern Standard Time";
+            var easternZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
+            var todayEastern = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternZone).Date;
 
+            Console.WriteLine($"Debug: Current date in user timezone ({userTimeZoneId}): {todayEastern:yyyy-MM-dd}");
+
+            // Query offers from the database
             var offers = await db.Offers
                 .Where(o => o.CreatedByUserId == userId && !o.IsDeleted)
+                .Where(o => o.Cash == null || o.Cash <= 0)
                 .ToListAsync();
+
             int todayCount = 0;
             foreach (var offer in offers)
             {
-                if (offer.Cash == null && offer.CreatedAt.Date == today)
+                if (!(offer.Cash == null || offer.Cash <= 0))
+                    continue;
+
+                // Convert offer's CreatedAt to the user's timezone
+                var offerCreatedInUserTimeZone = TimeZoneInfo.ConvertTimeFromUtc(offer.CreatedAt.DateTime, easternZone).Date;
+                if (offerCreatedInUserTimeZone == todayEastern)
                     todayCount += 1;
             }
+
             return todayCount;
+
         }
         public async Task<Offer>? CreateOffer(Offer offer)
         {
