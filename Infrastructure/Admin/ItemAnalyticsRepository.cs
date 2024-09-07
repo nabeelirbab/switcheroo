@@ -81,5 +81,15 @@ namespace Infrastructure.Admin
             .ToListAsync();
             return monthlyTrends;
         }
+
+        public async Task<decimal> GetAveragePriceOfAllItems()
+        {
+            var items = await db.Items.ToListAsync();
+            if (!items.Any())
+                return 0;
+            var averagePrice = Math.Round(items.Average(item => item.AskingPrice),2);
+
+            return averagePrice;
+        }
     }
 }

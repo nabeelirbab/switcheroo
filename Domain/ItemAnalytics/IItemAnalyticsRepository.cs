@@ -9,6 +9,7 @@ namespace Domain.ItemAnalytics
         Task<List<ItemDailyRegistrationTrend>> GetDailyRegistrationTrend();
         Task<List<ItemWeeklyRegistrationTrend>> GetWeeklyRegistrationTrend();
         Task<List<ItemMonthlyRegistrationTrend>> GetMonthlyRegistrationTrend();
+        Task<decimal> GetAveragePriceOfAllItems();
 
     }
 }

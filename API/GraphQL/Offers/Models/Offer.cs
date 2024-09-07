@@ -13,7 +13,7 @@ namespace API.GraphQL.Models
 {
     public class Offer
     {
-        public Offer(Guid id, Guid sourceItemId, Guid targetItemId, int? cash, DateTime createdAt, int sourceStatus, int? targeteStatus,
+        public Offer(Guid id, Guid sourceItemId, Guid targetItemId, int? cash, Guid createdByUserId, DateTime createdAt, int sourceStatus, int? targeteStatus,
             bool? confirmedBySourceUser,
             bool? confirmedByTargetUser)
         {
@@ -21,6 +21,7 @@ namespace API.GraphQL.Models
             SourceItemId = sourceItemId;
             TargetItemId = targetItemId;
             Cash = cash;
+            CreatedByUserId = createdByUserId;
             CreatedAt = createdAt;
             SourceStatus = sourceStatus;
             TargeteStatus = targeteStatus;
@@ -35,6 +36,7 @@ namespace API.GraphQL.Models
         public int? Cash { get; private set; }
 
         public DateTime CreatedAt { get; set; }
+        public Guid CreatedByUserId { get; set; }
         public int SourceStatus { get; set; }
         public int? TargeteStatus { get; set; }
 
@@ -51,6 +53,10 @@ namespace API.GraphQL.Models
         {
             if (DeletedByUserId == null) return null;
             return await GetUserByUserId(userRepository, DeletedByUserId.Value);
+        }
+        public async Task<Users.Models.User?> GetCreatedByUser([Service] IUserRepository userRepository)
+        {
+            return await GetUserByUserId(userRepository, CreatedByUserId);
         }
 
         private async Task<Users.Models.User> GetUserByUserId(IUserRepository userRepository, Guid userId)
@@ -100,6 +106,7 @@ namespace API.GraphQL.Models
                 domOffer.SourceItemId,
                 domOffer.TargetItemId,
                 domOffer.Cash,
+                domOffer.CreatedByUserId.Value,
                 domOffer.CreatedAt,
                 domOffer.SourceStatus,
                 domOffer.TargeteStatus,
@@ -121,6 +128,7 @@ namespace API.GraphQL.Models
                     domOffer.SourceItemId,
                     domOffer.TargetItemId,
                     domOffer.Cash,
+                    domOffer.CreatedByUserId.Value,
                     domOffer.CreatedAt,
                     domOffer.SourceStatus,
                     domOffer.TargeteStatus,

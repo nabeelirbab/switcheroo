@@ -19,5 +19,12 @@ namespace API.GraphQL
         {
             return new ItemAnalytics.Models.ItemEnagement();
         }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<decimal> GetAllItemsAveragePrice([Service] IItemAnalyticsRepository itemAnalyticsRepository)
+        {
+            return await itemAnalyticsRepository.GetAveragePriceOfAllItems();
+        }
+
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +33,7 @@ namespace Infrastructure.Categories
             await db.SaveChangesAsync();
 
             var caregories = await db.Categories.ToListAsync();
-            if ( caregories.Count > 0 ) { return true; }
+            if (caregories.Count > 0) { return true; }
             else { return false; }
 
         }
@@ -50,6 +51,19 @@ namespace Infrastructure.Categories
                 .Where(cat => categoryNames.Contains(cat.Name))
                 .Select(cat => new Category(cat.Id, cat.Name))
                 .ToListAsync();
+        }
+
+        public async Task<decimal> GetAveragePrice(Guid categoryId)
+        {
+            var itemsInCategory = await db.ItemCategories
+            .Where(ic => ic.CategoryId == categoryId)
+            .Select(ic => ic.Item)
+            .ToListAsync();
+            if (!itemsInCategory.Any())
+                return 0;
+            var averagePrice = Math.Round(itemsInCategory.Average(item => item.AskingPrice),2);
+
+            return averagePrice;
         }
     }
 }
