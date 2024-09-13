@@ -84,10 +84,10 @@ namespace Infrastructure.Admin
 
         public async Task<decimal> GetAveragePriceOfAllItems()
         {
-            var items = await db.Items.ToListAsync();
+            var items = await db.Items.Where(i => i.IsDeleted != true).ToListAsync();
             if (!items.Any())
                 return 0;
-            var averagePrice = Math.Round(items.Average(item => item.AskingPrice),2);
+            var averagePrice = Math.Round(items.Average(item => item.AskingPrice), 2);
 
             return averagePrice;
         }

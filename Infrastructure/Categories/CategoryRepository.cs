@@ -57,11 +57,12 @@ namespace Infrastructure.Categories
         {
             var itemsInCategory = await db.ItemCategories
             .Where(ic => ic.CategoryId == categoryId)
+            .Where(ic => ic.Item.IsDeleted != true)
             .Select(ic => ic.Item)
             .ToListAsync();
             if (!itemsInCategory.Any())
                 return 0;
-            var averagePrice = Math.Round(itemsInCategory.Average(item => item.AskingPrice),2);
+            var averagePrice = Math.Round(itemsInCategory.Average(item => item.AskingPrice), 2);
 
             return averagePrice;
         }

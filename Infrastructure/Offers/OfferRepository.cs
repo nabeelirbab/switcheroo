@@ -379,6 +379,7 @@ namespace Infrastructure.Offers
                 {
                     return false;
                 }
+                if (offer.ConfirmedBySourceUser == true && offer.ConfirmedByTargetUser == true) throw new InfrastructureException("Cannot delete offer because it is already confirmed!");
 
                 offer.IsDeleted = true;
                 offer.DeletedByUserId = userId;
@@ -524,6 +525,7 @@ namespace Infrastructure.Offers
             try
             {
                 var offer = db.Offers.Where(u => u.Id == offerId).FirstOrDefault();
+                if (offer.ConfirmedBySourceUser == true && offer.ConfirmedByTargetUser == true) throw new InfrastructureException("Cannot Un-Match offer because it is already confirmed!");
                 offer.TargetStatus = 0;
                 await db.SaveChangesAsync();
                 return true;
@@ -705,6 +707,26 @@ namespace Infrastructure.Offers
             var offer = await db.Offers
                 .Where(o => o.Id.Equals(offerId))
                 .Where(o => o.CreatedByUserId.Equals(userId))
+                .SingleOrDefaultAsync(z => z.Id == offerId);
+            /*!myItems.Contains(offer.SourceItemId) || !myItems.Contains(offer.TargetItemId)*/
+            if (offer == null)
+            {
+                throw new SecurityException("You cant access this offer");
+            }
+
+            return new Offer(offer.Id, offer.SourceItemId, offer.TargetItemId, offer.Cash, offer.CreatedByUserId, offer.UpdatedByUserId, offer.CreatedAt.Date, (int)offer.SourceStatus, (int)offer.TargetStatus, offer.IsRead,
+                offer.ConfirmedBySourceUser,
+                offer.ConfirmedByTargetUser);
+        }
+        public async Task<Offer> GetOfferById(Guid offerId)
+        {
+            /* var myItems = await db.Items
+                 .Where(z => z.CreatedByUserId == userId)
+                 .Select(z => z.Id)
+                 .ToArrayAsync();
+ */
+            var offer = await db.Offers
+                .Where(o => o.Id.Equals(offerId))
                 .SingleOrDefaultAsync(z => z.Id == offerId);
             /*!myItems.Contains(offer.SourceItemId) || !myItems.Contains(offer.TargetItemId)*/
             if (offer == null)
@@ -1158,10 +1180,14 @@ namespace Infrastructure.Offers
             else if (offer.CreatedByUserId != userId && offer.TargetItem.CreatedByUserId != userId) throw new InfrastructureException("Oops, how can you confirm when you're not even involved with this offer?");
             else if (offer.SourceStatus != offer.TargetStatus) throw new InfrastructureException("Oops, how can you confirm when the offer hasn't even been matched yet?");
 
-            if (offer.CreatedByUserId == userId) offer.ConfirmedBySourceUser = true;
-            else offer.ConfirmedByTargetUser = true;
+            if (offer.ConfirmedBySourceUser == true && offer.ConfirmedByTargetUser == true) throw new InfrastructureException("Cannot unconfirm offer once it is confirmed!");
+
+            if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser != true) offer.ConfirmedBySourceUser = true;
+            else if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser == true) offer.ConfirmedBySourceUser = false;
+            else if (offer.ConfirmedByTargetUser != true) offer.ConfirmedByTargetUser = true;
+            else if (offer.ConfirmedByTargetUser == true) offer.ConfirmedByTargetUser = false;
             await db.SaveChangesAsync();
-            return await GetOfferById(userId, offerId);
+            return await GetOfferById(offerId);
 
         }
     }

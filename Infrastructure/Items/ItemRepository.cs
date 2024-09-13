@@ -349,15 +349,16 @@ namespace Infrastructure.Items
         {
             try
             {
-                if (_userRoleProvider.IsAdminOrSuperAdmin)
-                {
-                    return await db.ItemCategories
-                            .IgnoreQueryFilters()
-                            .GroupBy(itemCategory => itemCategory.Category.Name)
-                            .Select(group => new KeyValue(group.Key, group.Count()))
-                            .ToListAsync();
-                }
+                //if (_userRoleProvider.IsAdminOrSuperAdmin)
+                //{
+                //    return await db.ItemCategories
+                //            .IgnoreQueryFilters()
+                //            .GroupBy(itemCategory => itemCategory.Category.Name)
+                //            .Select(group => new KeyValue(group.Key, group.Count()))
+                //            .ToListAsync();
+                //}
                 var keyValueList = await db.ItemCategories
+                                   .Where(ic => ic.Item.IsDeleted != true)
                                    .GroupBy(itemCategory => itemCategory.Category.Name)
                                    .Select(group => new KeyValue(group.Key, group.Count()))
                                    .ToListAsync();
@@ -374,10 +375,10 @@ namespace Infrastructure.Items
         {
             try
             {
-                if (_userRoleProvider.IsAdminOrSuperAdmin)
-                {
-                    return await db.Items.IgnoreQueryFilters().CountAsync();
-                }
+                //if (_userRoleProvider.IsAdminOrSuperAdmin)
+                //{
+                //    return await db.Items.IgnoreQueryFilters().CountAsync();
+                //}
                 int itemsCount = await db.Items.CountAsync();
                 return itemsCount;
             }

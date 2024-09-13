@@ -12,6 +12,7 @@ namespace Domain.Offers
         Task<int> GetNotificationCount(Guid userId);
         Task<bool> MarkNotificationRead(Guid userId);
         Task<Offer> GetOfferById(Guid userId, Guid offerId);
+        Task<Offer> GetOfferById(Guid offerId);
         Task<Offer> GetOfferByOfferId(Guid offerId);
         Task<Offer> MarkMessagesAsRead(Guid userId, Guid offerId);
         Task<Offer> CreateOffer(Offer offer);
