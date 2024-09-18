@@ -1,5 +1,4 @@
 ﻿using Domain.Notifications;
-using Domain.Services;
 using Domain.Users;
 using FirebaseAdmin.Messaging;
 using FirebaseAdmin;
@@ -8,10 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Infrastructure.Database.Schema;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Infrastructure.Notifications
 {

@@ -14,21 +14,24 @@ using System.Text.Json;
 using Domain;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
+using Domain.Notifications;
 namespace Infrastructure.Offers
 {
     public class OfferRepository : IOfferRepository
     {
         private readonly SwitcherooContext db;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ISystemNotificationRepository _systemNotificationRepository;
 
 
         private readonly ILoggerManager _loggerManager;
 
-        public OfferRepository(SwitcherooContext db, ILoggerManager loggerManager, IHttpContextAccessor httpContextAccessor)
+        public OfferRepository(SwitcherooContext db, ILoggerManager loggerManager, IHttpContextAccessor httpContextAccessor, ISystemNotificationRepository systemNotificationRepository)
         {
             this.db = db;
             _loggerManager = loggerManager;
             _httpContextAccessor = httpContextAccessor;
+            _systemNotificationRepository = systemNotificationRepository;
         }
 
         //public async Task<int> GetSwipesInfo(Guid userId)
@@ -137,7 +140,7 @@ namespace Infrastructure.Offers
                 var userIds = new[] { offer.CreatedByUserId, targetUserId };
 
                 var sourceUserFCMToken = await db.Users.Where(u => u.Id == offer.CreatedByUserId).Select(u => u.FCMToken).FirstOrDefaultAsync();
-                var targetUserFCMToken = await db.Users.Where(u => u.Id == targetUserId).Select(u => u.FCMToken).FirstOrDefaultAsync();
+                //var targetUserFCMToken = await db.Users.Where(u => u.Id == targetUserId).Select(u => u.FCMToken).FirstOrDefaultAsync();
 
                 if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
                     throw new InfrastructureException("No createdByUserId provided");
@@ -164,43 +167,35 @@ namespace Infrastructure.Offers
                             };
 
                             await db.Offers.AddAsync(newDbOffer);
-                            if (!string.IsNullOrEmpty(targetUserFCMToken))
-                            {
-                                var app = FirebaseApp.DefaultInstance;
-                                var messaging = FirebaseMessaging.GetMessaging(app);
+                            var targetItemForCashOffer = await db.Items.Where(i => i.Id == offer.TargetItemId).FirstOrDefaultAsync();
 
-                                var message = new FirebaseAdmin.Messaging.Message()
-                                {
-                                    Token = targetUserFCMToken,
-                                    Notification = new Notification
-                                    {
-                                        Title = "New Cash Offer",
-                                        Body = "You have a new cash offer"
-                                        // Other notification parameters can be added here
-                                    },
-                                    Data = new Dictionary<string, string>
-                                    {
-                                        {"NavigateTo", "NewCashOffer"},
-                                        {"TargetItemId", offer.TargetItemId.ToString()}
-                                    }
-                                };
-                                string response = await messaging.SendAsync(message);
-                            }
-                            else
-                            {
-                                throw new InfrastructureException($"No FCM Token exist against this user");
-                            }
                             await db.SaveChangesAsync();
                             myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
+                            string newCashOfferNotificationData = JsonSerializer.Serialize(myoffer);
+                            var notificationData = new Dictionary<string, string>
+                                    {
+                                        {"TargetItemId", offer.TargetItemId.ToString()}
+                                    };
+                            var newCashOfferNotification = SystemNotification.NewCashOfferNotification(targetItemForCashOffer.Title, offer.Cash, targetUserId, newCashOfferNotificationData);
+                            await _systemNotificationRepository.CreateAsync(newCashOfferNotification, true, notificationData);
                             return myoffer;
                         }
                         else
                         {
                             match.TargetStatus = Database.Schema.OfferStatus.Initiated;
-                            //await SendMatchingPushNotification(sourceUserFCMToken);
-                            await SendMatchingPushNotification(targetUserFCMToken, match.SourceItemId.ToString(), match.SourceItem.MainImageUrl, match.TargetItemId.ToString(), match.TargetItem.MainImageUrl);
                             await db.SaveChangesAsync();
                             myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
+                            var data = JsonSerializer.Serialize(myoffer);
+                            var matchingOfferNotificationData = new Dictionary<string, string>
+                            {
+                                {"IsMatch", "true"},
+                                {"SourceItemId", match.SourceItemId.ToString()},
+                                {"SourceItemImage", match.SourceItem.MainImageUrl},
+                                {"TargetItemId", match.TargetItemId.ToString()},
+                                {"TargetItemImage", match.TargetItem.MainImageUrl}
+                            };
+                            var matchingOfferNotification = SystemNotification.ItemMatchedNotification(targetUserId, data);
+                            await _systemNotificationRepository.CreateAsync(matchingOfferNotification, true, matchingOfferNotificationData);
                         }
                     }
                     else
@@ -250,47 +245,16 @@ namespace Infrastructure.Offers
                                 };
 
                                 await db.Offers.AddAsync(newDbOffer);
-                                try
-                                {
-                                    if (!string.IsNullOrEmpty(targetUserFCMToken))
-                                    {
-                                        var app = FirebaseApp.DefaultInstance;
-                                        var messaging = FirebaseMessaging.GetMessaging(app);
-
-                                        var message = new FirebaseAdmin.Messaging.Message()
-                                        {
-                                            Token = targetUserFCMToken,
-                                            Notification = new Notification
-                                            {
-                                                Title = "New Cash Offer",
-                                                Body = "You have a new cash offer",
-
-                                                // Other notification parameters can be added here
-                                            },
-                                            Data = new Dictionary<string, string>
-                                            {
-                                                {"NavigateTo", "NewCashOffer"},
-                                                {"TargetItemId", offer.TargetItemId.ToString()}
-                                            }
-                                        };
-                                        string response = await messaging.SendAsync(message);
-                                    }
-                                    else
-                                    {
-                                        throw new InfrastructureException($"No FCM Token exist against this user");
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine(ex.Message);
-                                }
                                 await db.SaveChangesAsync();
                                 myoffer = await GetOfferById(newDbOffer.CreatedByUserId, newDbOffer.Id);
-                                // }
-                                // else
-                                // {
-                                //    throw new InfrastructureException($"You can only offer from {(int)lowerAmountLimit}$ to {(int)upperAmountBound}$ against this product");
-                                //}
+                                string newCashOfferNotificationData = JsonSerializer.Serialize(myoffer);
+                                var notificationData = new Dictionary<string, string>
+                                    {
+                                        {"TargetItemId", offer.TargetItemId.ToString()}
+                                    };
+                                var targetItemForCashOffer = await db.Items.Where(i => i.Id == offer.TargetItemId).FirstOrDefaultAsync();
+                                var newCashOfferNotification = SystemNotification.NewCashOfferNotification(targetItemForCashOffer.Title, offer.Cash, targetUserId, newCashOfferNotificationData);
+                                await _systemNotificationRepository.CreateAsync(newCashOfferNotification, true, notificationData);
                             }
                             else
                             {
@@ -471,14 +435,9 @@ namespace Infrastructure.Offers
         {
             try
             {
-                var offer = db.Offers.Where(u => u.Id == offerId).FirstOrDefault();
-
+                var offer = db.Offers.Include(o => o.TargetItem).ThenInclude(i => i.CreatedByUser).Where(u => u.Id == offerId).FirstOrDefault();
                 offer.TargetStatus = Database.Schema.OfferStatus.Initiated;
-
-                var userFCMToken = db.Users
-                    .Where(x => x.Id == offer.CreatedByUserId)
-                    .Select(x => x.FCMToken).FirstOrDefault();
-
+                string data = JsonSerializer.Serialize(offer);
                 var newDummyMessage = new Domain.Offers.Message(
                          Guid.NewGuid(),
                              offer.CreatedByUserId,
@@ -491,26 +450,13 @@ namespace Infrastructure.Offers
                              false
                          );
                 string newDummyMessageJson = JsonSerializer.Serialize(newDummyMessage);
-                var app = FirebaseApp.DefaultInstance;
-                var messaging = FirebaseMessaging.GetMessaging(app);
-
-                var message = new FirebaseAdmin.Messaging.Message()
-                {
-                    Token = userFCMToken,
-                    Notification = new Notification
+                var notification = SystemNotification.OfferAcceptedNotification(offer.TargetItem.Title, offer.Cash, offer.TargetItem.CreatedByUser.LastName, offer.CreatedByUserId, data);
+                var notificationData = new Dictionary<string, string>
                     {
-                        Title = "Offer Accpeted",
-                        Body = "One of your offer is accepted"
-                        // Other notification parameters can be added here
-                    },
-                    Data = new Dictionary<string, string>
-                    {
-                        {"NavigateTo", "OfferAccepted"},
                         {"TargetItemId", offer.TargetItemId.ToString()},
                         {"ChatListingStrigifiedObject", newDummyMessageJson}
-                    }
-                };
-                string response = await messaging.SendAsync(message);
+                    };
+                await _systemNotificationRepository.CreateAsync(notification, true, notificationData);
                 await db.SaveChangesAsync();
                 return true;
             }
@@ -1175,17 +1121,73 @@ namespace Infrastructure.Offers
         }
         public async Task<Offer> ConfirmOffer(Guid offerId, Guid userId)
         {
-            var offer = await db.Offers.Include(o => o.TargetItem).Where(o => o.Id == offerId).FirstOrDefaultAsync();
+            var offer = await db.Offers
+                .Include(o => o.SourceItem)
+                .ThenInclude(i => i.CreatedByUser)
+                .Include(o => o.TargetItem)
+                .ThenInclude(i => i.CreatedByUser)
+                .Where(o => o.Id == offerId)
+                .FirstOrDefaultAsync();
             if (offer == null) throw new InfrastructureException("Invalid Offer Id");
             else if (offer.CreatedByUserId != userId && offer.TargetItem.CreatedByUserId != userId) throw new InfrastructureException("Oops, how can you confirm when you're not even involved with this offer?");
             else if (offer.SourceStatus != offer.TargetStatus) throw new InfrastructureException("Oops, how can you confirm when the offer hasn't even been matched yet?");
 
             if (offer.ConfirmedBySourceUser == true && offer.ConfirmedByTargetUser == true) throw new InfrastructureException("Cannot unconfirm offer once it is confirmed!");
 
-            if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser != true) offer.ConfirmedBySourceUser = true;
-            else if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser == true) offer.ConfirmedBySourceUser = false;
-            else if (offer.ConfirmedByTargetUser != true) offer.ConfirmedByTargetUser = true;
-            else if (offer.ConfirmedByTargetUser == true) offer.ConfirmedByTargetUser = false;
+
+            string data = JsonSerializer.Serialize(offer);
+            if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser != true)
+            {
+                offer.ConfirmedBySourceUser = true;
+                var notification = SystemNotification.OfferConfirmationNotification(offer.SourceItem.Title,
+                    offer.TargetItem.Title,
+                    offer.Cash > 0,
+                    offer.Cash,
+                    offer.SourceItem.CreatedByUser.LastName,
+                    offer.ConfirmedByTargetUser == true,
+                    offer.TargetItem.CreatedByUser.Id,
+                    data);
+                await _systemNotificationRepository.CreateAsync(notification);
+
+            }
+            else if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser == true)
+            {
+                offer.ConfirmedBySourceUser = false;
+                var notification = SystemNotification.OfferConfirmationCancellationNotification(offer.SourceItem.Title,
+                    offer.TargetItem.Title,
+                    offer.Cash > 0,
+                    offer.Cash,
+                    offer.SourceItem.CreatedByUser.LastName,
+                    offer.TargetItem.CreatedByUser.Id,
+                    data);
+                await _systemNotificationRepository.CreateAsync(notification);
+            }
+            else if (offer.ConfirmedByTargetUser != true)
+            {
+                offer.ConfirmedByTargetUser = true;
+                var notification = SystemNotification.OfferConfirmationNotification(offer.TargetItem.Title,
+                    offer.SourceItem.Title,
+                    offer.Cash > 0,
+                    offer.Cash,
+                    offer.TargetItem.CreatedByUser.LastName,
+                    offer.ConfirmedBySourceUser == true,
+                    offer.SourceItem.CreatedByUser.Id,
+                    data);
+                await _systemNotificationRepository.CreateAsync(notification);
+            }
+            else if (offer.ConfirmedByTargetUser == true)
+            {
+                offer.ConfirmedByTargetUser = false;
+                var notification = SystemNotification.OfferConfirmationCancellationNotification(offer.TargetItem.Title,
+                    offer.SourceItem.Title,
+                    offer.Cash > 0,
+                    offer.Cash,
+                    offer.TargetItem.CreatedByUser.LastName,
+                    offer.SourceItem.CreatedByUser.Id,
+                    data);
+                await _systemNotificationRepository.CreateAsync(notification);
+
+            }
             await db.SaveChangesAsync();
             return await GetOfferById(offerId);
 

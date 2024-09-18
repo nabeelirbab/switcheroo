@@ -1,8 +1,4 @@
-﻿using Domain.Notifications;
-using Domain.Services;
-using Domain.Users;
-using FirebaseAdmin.Messaging;
-using FirebaseAdmin;
+﻿using Domain.Users;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using System;

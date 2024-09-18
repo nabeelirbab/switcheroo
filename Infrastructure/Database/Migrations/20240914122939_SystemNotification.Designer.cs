@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(SwitcherooContext))]
-    partial class SwitcherooContextModelSnapshot : ModelSnapshot
+    [Migration("20240914122939_SystemNotification")]
+    partial class SystemNotification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,22 +84,22 @@ namespace Infrastructure.Database.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("d6b8f176-f115-4f52-8f7a-854cacfa8540"),
+                            Id = new Guid("3038a173-8886-415f-be16-b82ffb2a414f"),
                             Name = "Electronics"
                         },
                         new
                         {
-                            Id = new Guid("bc2cb9ec-f77b-4d1a-8af4-4e964c0f3edd"),
+                            Id = new Guid("560f8b31-f88c-42b2-82f5-0c8d5bf8e63d"),
                             Name = "White Goods"
                         },
                         new
                         {
-                            Id = new Guid("d960610a-65a6-451c-a041-fb97ba6adef1"),
+                            Id = new Guid("fd5cf32c-6c82-4232-b3ed-8b1f2b8f214f"),
                             Name = "Clothing"
                         },
                         new
                         {
-                            Id = new Guid("aa72401a-ef28-497e-9aa7-caadd2a468a0"),
+                            Id = new Guid("22bab7f6-28d5-46dc-91fd-96edca4dc5dc"),
                             Name = "Furniture"
                         });
                 });
@@ -685,10 +687,6 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("NavigateTo")
                         .IsRequired()
                         .HasColumnType("text");
 

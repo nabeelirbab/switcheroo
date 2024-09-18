@@ -19,6 +19,12 @@ namespace API.GraphQL
                     .SetMessage(error.Exception.Message)
                     .Build();
             }
+            if (error.Message != null)
+            {
+                return ErrorBuilder.New()
+                    .SetMessage(error.Message)
+                    .Build();
+            }
 
             return ErrorBuilder.New()
                 .SetMessage("Whoopsie, a bit of a buggy wuggy :(")

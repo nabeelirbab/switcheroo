@@ -124,6 +124,7 @@ namespace API
             services.AddTransient<IContactUsRepository, ContactUsRepositoy>();
             services.AddTransient<ICustomNotificationRepository, CustomNotificationRepositoy>();
             services.AddTransient<IAppVersionRepository, AppVersionRepository>();
+            services.AddTransient<ISystemNotificationRepository, SystemNotificationRepositoy>();
             services.AddTransient<IFeedbackRepository, FeedbackRepositoy>();
             services.AddTransient<IUserAuthenticationService, UserAuthenticationService>();
             services.AddTransient<IUserRegistrationService, UserRegistrationService>();
