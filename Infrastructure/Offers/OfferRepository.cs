@@ -194,8 +194,11 @@ namespace Infrastructure.Offers
                                 {"TargetItemId", match.TargetItemId.ToString()},
                                 {"TargetItemImage", match.TargetItem.MainImageUrl}
                             };
-                            var matchingOfferNotification = SystemNotification.ItemMatchedNotification(targetUserId, data);
-                            await _systemNotificationRepository.CreateAsync(matchingOfferNotification, true, matchingOfferNotificationData);
+                            var matchingOfferNotificationForTargetUser = SystemNotification.ItemMatchedNotification(targetUserId, data);
+                            await _systemNotificationRepository.CreateAsync(matchingOfferNotificationForTargetUser, true, matchingOfferNotificationData);
+                            var sourceUserId = await db.Items.Where(i => i.Id == myoffer.SourceItemId).Select(i => i.CreatedByUserId).FirstOrDefaultAsync();
+                            var matchingOfferNotificationForSourceUser = SystemNotification.ItemMatchedNotification(sourceUserId, data);
+                            await _systemNotificationRepository.CreateAsync(matchingOfferNotificationForSourceUser, true, matchingOfferNotificationData);
                         }
                     }
                     else
@@ -1148,20 +1151,25 @@ namespace Infrastructure.Offers
                     offer.TargetItem.CreatedByUser.Id,
                     data);
                 await _systemNotificationRepository.CreateAsync(notification);
+                if (offer.ConfirmedByTargetUser == true)
+                {
+                    notification.UserId = offer.TargetItem.CreatedByUserId;
+                    await _systemNotificationRepository.CreateAsync(notification);
+                }
 
             }
-            else if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser == true)
-            {
-                offer.ConfirmedBySourceUser = false;
-                var notification = SystemNotification.OfferConfirmationCancellationNotification(offer.SourceItem.Title,
-                    offer.TargetItem.Title,
-                    offer.Cash > 0,
-                    offer.Cash,
-                    offer.SourceItem.CreatedByUser.LastName,
-                    offer.TargetItem.CreatedByUser.Id,
-                    data);
-                await _systemNotificationRepository.CreateAsync(notification);
-            }
+            //else if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser == true)
+            //{
+            //    offer.ConfirmedBySourceUser = false;
+            //    var notification = SystemNotification.OfferConfirmationCancellationNotification(offer.SourceItem.Title,
+            //        offer.TargetItem.Title,
+            //        offer.Cash > 0,
+            //        offer.Cash,
+            //        offer.SourceItem.CreatedByUser.LastName,
+            //        offer.TargetItem.CreatedByUser.Id,
+            //        data);
+            //    await _systemNotificationRepository.CreateAsync(notification);
+            //}
             else if (offer.ConfirmedByTargetUser != true)
             {
                 offer.ConfirmedByTargetUser = true;
@@ -1174,20 +1182,25 @@ namespace Infrastructure.Offers
                     offer.SourceItem.CreatedByUser.Id,
                     data);
                 await _systemNotificationRepository.CreateAsync(notification);
+                if (offer.ConfirmedBySourceUser == true)
+                {
+                    notification.UserId = offer.SourceItem.CreatedByUserId;
+                    await _systemNotificationRepository.CreateAsync(notification);
+                }
             }
-            else if (offer.ConfirmedByTargetUser == true)
-            {
-                offer.ConfirmedByTargetUser = false;
-                var notification = SystemNotification.OfferConfirmationCancellationNotification(offer.TargetItem.Title,
-                    offer.SourceItem.Title,
-                    offer.Cash > 0,
-                    offer.Cash,
-                    offer.TargetItem.CreatedByUser.LastName,
-                    offer.SourceItem.CreatedByUser.Id,
-                    data);
-                await _systemNotificationRepository.CreateAsync(notification);
+            //else if (offer.ConfirmedByTargetUser == true)
+            //{
+            //    offer.ConfirmedByTargetUser = false;
+            //    var notification = SystemNotification.OfferConfirmationCancellationNotification(offer.TargetItem.Title,
+            //        offer.SourceItem.Title,
+            //        offer.Cash > 0,
+            //        offer.Cash,
+            //        offer.TargetItem.CreatedByUser.LastName,
+            //        offer.SourceItem.CreatedByUser.Id,
+            //        data);
+            //    await _systemNotificationRepository.CreateAsync(notification);
 
-            }
+            //}
             await db.SaveChangesAsync();
             return await GetOfferById(offerId);
 

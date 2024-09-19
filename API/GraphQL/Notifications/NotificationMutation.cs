@@ -36,5 +36,12 @@ namespace API.GraphQL
                 throw new InfrastructureException($"API Exception {ex}");
             }
         }
+
+        public async Task<bool> MarkSystemNotificationAsRead(
+            [Service] ISystemNotificationRepository systemNotificationRepository,
+            Guid id)
+        {
+            return await systemNotificationRepository.MarkAsRead(id);
+        }
     }
 }

@@ -41,13 +41,13 @@ namespace Infrastructure.Notifications
                 };
                 await db.SystemNotification.AddAsync(newDbNotificaiton);
                 await db.SaveChangesAsync();
-                if (sendNotification)
-                {
-                    Task.Run(() => SendFirebaseNotification(notification, notificationData));
-                }
                 //await SendFirebaseNotification(notification);
                 await Task.Delay(1000);
                 var savedNotification = await GetById(newDbNotificaiton.Id);
+                if (sendNotification)
+                {
+                    Task.Run(() => SendFirebaseNotification(savedNotification, notificationData));
+                }
                 return savedNotification;
 
             }
@@ -69,9 +69,10 @@ namespace Infrastructure.Notifications
                 var messaging = FirebaseMessaging.GetMessaging(app);
                 var data = new Dictionary<string, string>
                                     {
-                                        {"NavigateTo", notification.NavigateTo},
-                                        {"Data", notification.Data??""}
-                                    };
+                                        { "NotificationId",notification.Id.ToString() },
+                                        { "NavigateTo", notification.NavigateTo},
+                                        { "Data", notification.Data ?? ""}
+        };
                 if (notificationData != null)
                 {
                     foreach (var kvp in notificationData)
@@ -98,6 +99,15 @@ namespace Infrastructure.Notifications
                 Console.WriteLine(ex.Message);
                 return false;
             }
+        }
+        public async Task<bool> MarkAsRead(Guid id)
+        {
+            var notification = await db.SystemNotification.Where(n => n.Id == id).FirstOrDefaultAsync();
+            if (notification == null) throw new InfrastructureException("Invalid notification id!");
+            notification.IsRead = true;
+            notification.ReadAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return true;
         }
         public async Task<Domain.Notifications.SystemNotification> GetById(Guid id)
         {

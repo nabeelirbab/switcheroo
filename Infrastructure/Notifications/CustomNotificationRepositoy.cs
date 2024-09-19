@@ -15,10 +15,12 @@ namespace Infrastructure.Notifications
     {
         private readonly SwitcherooContext db;
         private readonly IUserRepository userRepository;
-        public CustomNotificationRepositoy(SwitcherooContext db, IUserRepository userRepository)
+        private readonly ISystemNotificationRepository _systemNotificationRepository;
+        public CustomNotificationRepositoy(SwitcherooContext db, IUserRepository userRepository, ISystemNotificationRepository systemNotificationRepository)
         {
             this.db = db;
             this.userRepository = userRepository;
+            this._systemNotificationRepository = systemNotificationRepository;
         }
 
         public async Task<Domain.Notifications.CustomNotification> CreateNotificationAsync(Domain.Notifications.CustomNotification notification, Domain.Notifications.CustomNotificationFilters filters, Guid userId)
@@ -63,6 +65,7 @@ namespace Infrastructure.Notifications
                 }
                 List<string> userFcmTokens = await usersQuery.Select(u => u.FCMToken).ToListAsync();
                 var filteredUsersList = await db.Users.Where(u => userFcmTokens.Contains(u.FCMToken)).ToListAsync();
+                Task.Run(() => InsertCustomNotificationInSystemNotifications(newDbNotificaiton, filteredUsersList));
                 if (userFcmTokens.Any())
                 {
                     var app = FirebaseApp.DefaultInstance;
@@ -100,6 +103,15 @@ namespace Infrastructure.Notifications
             }
         }
 
+        private async Task<bool> InsertCustomNotificationInSystemNotifications(Database.Schema.CustomNotification customNotification, List<Database.Schema.User> users)
+        {
+            foreach (var user in users)
+            {
+                var systemNotification = SystemNotification.CreateNewNotification(customNotification.Title, customNotification.Description, NotificationType.Promotional, user.Id, "", "");
+                await _systemNotificationRepository.CreateAsync(systemNotification, false);
+            }
+            return true;
+        }
         public async Task<List<Domain.Notifications.CustomNotification>> GeNotifications()
         {
             return await db.CustomNotification
@@ -122,7 +134,7 @@ namespace Infrastructure.Notifications
         public async Task<List<Domain.Notifications.CustomNotificationStatus>> GetDeliveryStatus(Guid notificationId)
         {
             var statuses = await db.CustomNotificationStatus.Where(s => s.NotificationId == notificationId).ToListAsync();
-            if (statuses == null || statuses.Count==0)
+            if (statuses == null || statuses.Count == 0)
             {
                 return null;
             }
