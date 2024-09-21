@@ -37,6 +37,7 @@ namespace API.GraphQL
             }
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> MarkSystemNotificationAsRead(
             [Service] ISystemNotificationRepository systemNotificationRepository,
             Guid id)

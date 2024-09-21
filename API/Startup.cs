@@ -164,7 +164,8 @@ namespace API
 
             // For now we are always using the dev email sender, which will send to localhost
             // and expect an SMTP server to be present
-            services.AddTransient<IEmailSender, ZohoEmailSender>();
+            services.AddTransient<IEmailSender, MailTrapEmailSender>();
+            //services.AddTransient<IEmailSender, ZohoEmailSender>();
             // services.AddTransient<IEmailSender, DevEmailSender>();
             // services.AddTransient<IEmailSender, SendGridEmailSender>();
 
