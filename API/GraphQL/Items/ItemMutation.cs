@@ -123,6 +123,15 @@ namespace API.GraphQL
             return await itemRepository.DeleteItemAsync(itemId, requestUserId);
         }
 
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<bool> DeleteItemPermanently(
+            [Service] IItemRepository itemRepository,
+            Guid itemId
+        )
+        {
+            return await itemRepository.DeleteItemPermanentlyAsync(itemId);
+        }
+
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
         public async Task<bool> DismissItem(
             [Service] UserContextService userContextService,

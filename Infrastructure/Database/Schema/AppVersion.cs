@@ -31,7 +31,7 @@ namespace Infrastructure.Database.Schema
             entity => new Domain.Version.AppVersion(
                 entity.Id,
                 entity.AndroidVersion,
-                entity.AndroidVersion,
+                entity.IOSVersion,
                 entity.CreatedByUserId,
                 entity.UpdatedByUserId
             )

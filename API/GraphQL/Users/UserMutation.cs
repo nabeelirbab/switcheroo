@@ -388,6 +388,17 @@ namespace API.GraphQL
             return true;
 
         }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
+        public async Task<bool> DeleteUserPermanently(
+            [Service] IUserRepository userRepository,
+            List<Guid> userIds
+        )
+        {
+            await userRepository.DeleteUserPermanently(userIds);
+            return true;
+
+        }
         [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin" })]
         public async Task<bool> RestoreUser(
             [Service] UserContextService userContextService,

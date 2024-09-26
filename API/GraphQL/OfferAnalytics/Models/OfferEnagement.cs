@@ -53,5 +53,55 @@ namespace API.GraphQL.OfferAnalytics.Models
             return await offerAnalyticsRepository.GetCountByType();
         }
 
+        [GraphQLNonNullType]
+        public async Task<int> GetTotalRightSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetTotalRightSwipes();
+        }
+        [GraphQLNonNullType]
+        public async Task<int> GetTotalLeftSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetTotalLeftSwipes();
+        }
+
+        [GraphQLNonNullType]
+        public async Task<List<DailyOfferCreationTrend>> GetDailyRightSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetDailyRightSwipes();
+        }
+        [GraphQLNonNullType]
+        public async Task<List<WeeklyOfferCreationTrend>> GetWeeklyRightSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetWeeklyRightSwipes();
+        }
+        [GraphQLNonNullType]
+        public async Task<List<MonthlyOfferCreationTrend>> GetMonthlyRightSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetMonthlyRightSwipes();
+        }
+        [GraphQLNonNullType]
+        public async Task<List<DailyOfferCreationTrend>> GetDailyLeftSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetDailyLeftSwipes();
+        }
+        [GraphQLNonNullType]
+        public async Task<List<WeeklyOfferCreationTrend>> GetWeeklyLeftSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetWeeklyLeftSwipes();
+        }
+        [GraphQLNonNullType]
+        public async Task<List<MonthlyOfferCreationTrend>> GetMonthlyLeftSwipes(
+            [Service] IOfferAnalyticsRepository offerAnalyticsRepository)
+        {
+            return await offerAnalyticsRepository.GetMonthlyLeftSwipes();
+        }
+
     }
 }

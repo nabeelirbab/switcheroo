@@ -81,7 +81,7 @@ namespace Infrastructure.Notifications
                             // Other notification parameters can be added here
                         }
                     };
-                    var response = await messaging.SendMulticastAsync(message);
+                    var response = await messaging.SendEachForMulticastAsync(message);
                     for (int i = 0; i < response.Responses.Count; i++)
                     {
                         var sendResponse = response.Responses[i];

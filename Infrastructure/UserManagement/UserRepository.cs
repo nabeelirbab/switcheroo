@@ -450,6 +450,77 @@ namespace Infrastructure.UserManagement
 
             return true;
         }
+        public async Task<bool> DeleteUserPermanently(List<Guid> userIds)
+        {
+            if (userIds == null || !userIds.Any())
+            {
+                throw new ArgumentNullException(nameof(userIds), "User IDs cannot be null or empty.");
+            }
+
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await db.Database.BeginTransactionAsync();
+                try
+                {
+                    var usersToDelete = await db.Users.IgnoreQueryFilters()
+                        .Where(user => userIds.Contains(user.Id))
+                        .ToListAsync();
+                    // Get all items created by users
+                    var itemsToDelete = await db.Items.IgnoreQueryFilters()
+                        .Where(item => userIds.Contains(item.CreatedByUserId))
+                        .ToListAsync();
+
+                    if (!itemsToDelete.Any())
+                    {
+                        db.Users.RemoveRange(usersToDelete);
+                        await db.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        return;
+                    }
+
+                    var itemIds = itemsToDelete.Select(item => item.Id).ToList();
+
+                    // Get all offers related to the items
+                    var offersToDelete = await db.Offers.IgnoreQueryFilters()
+                        .Where(offer => itemIds.Contains(offer.SourceItemId) || itemIds.Contains(offer.TargetItemId))
+                        .ToListAsync();
+
+                    if (offersToDelete.Any())
+                    {
+                        var offerIds = offersToDelete.Select(offer => offer.Id).ToList();
+
+                        // Get and delete all messages related to the offers
+                        var messagesToDelete = await db.Messages.IgnoreQueryFilters()
+                            .Where(message => offerIds.Contains(message.OfferId))
+                            .ToListAsync();
+                        db.Messages.RemoveRange(messagesToDelete);
+                    }
+
+                    // Delete the offers
+                    db.Offers.RemoveRange(offersToDelete);
+
+                    // Delete the items
+                    db.Items.RemoveRange(itemsToDelete);
+
+                    db.Users.RemoveRange(usersToDelete);
+
+                    // Save changes
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"An error occurred while permanently deleting users with IDs {string.Join(", ", userIds)}");
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+
+            return true;
+        }
+
         public async Task<bool> RestoreUser(List<Guid> userIds)
         {
             if (userIds == null || !userIds.Any())

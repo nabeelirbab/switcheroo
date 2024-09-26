@@ -15,40 +15,47 @@ namespace Infrastructure.Notifications
     {
         private readonly SwitcherooContext db;
         private readonly IUserRepository userRepository;
-        public SystemNotificationRepositoy(SwitcherooContext db, IUserRepository userRepository)
+        private readonly IDbContextConfigurator _configurator;
+        public SystemNotificationRepositoy(SwitcherooContext db, IUserRepository userRepository, IDbContextConfigurator configurator)
         {
             this.db = db;
             this.userRepository = userRepository;
+            _configurator = configurator;
         }
 
         public async Task<Domain.Notifications.SystemNotification> CreateAsync(Domain.Notifications.SystemNotification notification, bool sendNotification = true, Dictionary<string, string> notificationData = null)
         {
             try
             {
-                var now = DateTime.UtcNow;
 
-                var newDbNotificaiton = new Database.Schema.SystemNotification(
-                    notification.Title,
-                    notification.Message,
-                    notification.Type,
-                    notification.UserId,
-                    notification.Data,
-                    false,
-                    notification.NavigateTo
-                )
+                using (var context = new SwitcherooContext(_configurator))
                 {
-                    CreatedAt = now
-                };
-                await db.SystemNotification.AddAsync(newDbNotificaiton);
-                await db.SaveChangesAsync();
-                //await SendFirebaseNotification(notification);
-                await Task.Delay(1000);
-                var savedNotification = await GetById(newDbNotificaiton.Id);
-                if (sendNotification)
-                {
-                    Task.Run(() => SendFirebaseNotification(savedNotification, notificationData));
+                    var now = DateTime.UtcNow;
+
+                    var newDbNotificaiton = new Database.Schema.SystemNotification(
+                        notification.Title,
+                        notification.Message,
+                        notification.Type,
+                        notification.UserId,
+                        notification.Data,
+                        false,
+                        notification.NavigateTo
+                    )
+                    {
+                        CreatedAt = now
+                    };
+                    await context.SystemNotification.AddAsync(newDbNotificaiton);
+                    await context.SaveChangesAsync();
+                    //await SendFirebaseNotification(notification);
+                    await Task.Delay(1000);
+                    var savedNotification = await GetById(newDbNotificaiton.Id, context);
+                    if (sendNotification)
+                    {
+                        Task.Run(() => SendFirebaseNotification(savedNotification, notificationData));
+                    }
+                    return savedNotification;
                 }
-                return savedNotification;
+
 
             }
             catch (Exception ex)
@@ -116,9 +123,18 @@ namespace Infrastructure.Notifications
                 .Select(Database.Schema.SystemNotification.ToDomain)
                 .FirstOrDefaultAsync();
         }
+        private async Task<Domain.Notifications.SystemNotification> GetById(Guid id, SwitcherooContext context)
+        {
+            return await context.SystemNotification
+                .Where(n => n.Id == id)
+                .Select(Database.Schema.SystemNotification.ToDomain)
+                .FirstOrDefaultAsync();
+        }
         public async Task<List<Domain.Notifications.SystemNotification>> GetAll()
         {
             return await db.SystemNotification
+                .OrderBy(x => x.IsRead)
+                .ThenByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.SystemNotification.ToDomain)
                 .ToListAsync();
         }
@@ -126,6 +142,8 @@ namespace Infrastructure.Notifications
         {
             return await db.SystemNotification
                 .Where(n => n.IsRead == false)
+                .OrderBy(x => x.IsRead)
+                .ThenByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.SystemNotification.ToDomain)
                 .ToListAsync();
         }
@@ -133,6 +151,8 @@ namespace Infrastructure.Notifications
         {
             return await db.SystemNotification
                 .Where(n => n.UserId == userId)
+                .OrderBy(x => x.IsRead)
+                .ThenByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.SystemNotification.ToDomain)
                 .ToListAsync();
         }
@@ -141,8 +161,24 @@ namespace Infrastructure.Notifications
             return await db.SystemNotification
                 .Where(n => n.IsRead == false)
                 .Where(n => n.UserId == userId)
+                .OrderBy(x => x.IsRead)
+                .ThenByDescending(x => x.CreatedAt)
                 .Select(Database.Schema.SystemNotification.ToDomain)
                 .ToListAsync();
+        }
+        public async Task<int> GetUnreadByUserCount(Guid userId)
+        {
+            return await db.SystemNotification
+                .Where(n => n.IsRead == false)
+                .Where(n => n.UserId == userId)
+                .CountAsync();
+        }
+        public async Task<int> GetReadByUserCount(Guid userId)
+        {
+            return await db.SystemNotification
+                .Where(n => n.IsRead == true)
+                .Where(n => n.UserId == userId)
+                .CountAsync();
         }
     }
 }

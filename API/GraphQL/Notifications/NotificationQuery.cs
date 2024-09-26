@@ -53,5 +53,22 @@ namespace API.GraphQL
             var notifications = await notificationRepository.GetUnreadByUserId(requestUserId);
             return Notifications.Model.SystemNotification.FromDomains(notifications);
         }
+
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
+        public async Task<int> GetUserSystemNotificationUnReadCount(
+            [Service] UserContextService userContextService,
+            [Service] ISystemNotificationRepository notificationRepository)
+        {
+            var requestUserId = userContextService.GetCurrentUserId();
+            return await notificationRepository.GetUnreadByUserCount(requestUserId);
+        }
+        [HotChocolate.AspNetCore.Authorization.Authorize(Roles = new string[] { "SuperAdmin", "Admin", "User" })]
+        public async Task<int> GetUserSystemNotificationReadCount(
+            [Service] UserContextService userContextService,
+            [Service] ISystemNotificationRepository notificationRepository)
+        {
+            var requestUserId = userContextService.GetCurrentUserId();
+            return await notificationRepository.GetReadByUserCount(requestUserId);
+        }
     }
 }

@@ -131,7 +131,7 @@ namespace Infrastructure.Offers
 
                 // Find out the total number of swipes today and restrict if quota reached
                 int swipes_used = await GetSwipesInfo(offer.CreatedByUserId.Value);
-                if (swipes_used == 10)
+                if (swipes_used == 30)
                     throw new InfrastructureException("You have used all your swipes for today. Come back tomorrow and try again.");
 
                 var targetUserId = db.Items.Where(x => x.Id.Equals(offer.TargetItemId))
@@ -145,7 +145,7 @@ namespace Infrastructure.Offers
                 if (!offer.CreatedByUserId.HasValue || !offer.UpdatedByUserId.HasValue)
                     throw new InfrastructureException("No createdByUserId provided");
 
-                var match = db.Offers.Include(o => o.SourceItem).Include(o => o.TargetItem)
+                var match = db.Offers.Include(o => o.SourceItem).ThenInclude(i => i.CreatedByUser).Include(o => o.TargetItem).ThenInclude(i => i.CreatedByUser)
                     .Where(x => (x.SourceItemId.Equals(offer.TargetItemId) && x.TargetItemId.Equals(offer.SourceItemId)) && (x.SourceItem.CreatedByUserId == offer.CreatedByUserId || x.TargetItem.CreatedByUserId == offer.CreatedByUserId || x.CreatedByUserId == offer.CreatedByUserId))
                     .FirstOrDefault();
                 if (match != null)
@@ -184,8 +184,11 @@ namespace Infrastructure.Offers
                         {
                             match.TargetStatus = Database.Schema.OfferStatus.Initiated;
                             await db.SaveChangesAsync();
-                            myoffer = await GetOfferById(match.CreatedByUserId, match.Id);
-                            var data = JsonSerializer.Serialize(myoffer);
+                            var saved_offer = await db.Offers.Include(o => o.SourceItem).ThenInclude(i => i.CreatedByUser)
+                                .Include(o => o.TargetItem).ThenInclude(i => i.CreatedByUser)
+                                .Where(o => o.Id == match.Id)
+                                .FirstOrDefaultAsync();
+                            var data = JsonSerializer.Serialize(saved_offer);
                             var matchingOfferNotificationData = new Dictionary<string, string>
                             {
                                 {"IsMatch", "true"},
@@ -194,10 +197,10 @@ namespace Infrastructure.Offers
                                 {"TargetItemId", match.TargetItemId.ToString()},
                                 {"TargetItemImage", match.TargetItem.MainImageUrl}
                             };
-                            var matchingOfferNotificationForTargetUser = SystemNotification.ItemMatchedNotification(targetUserId, data);
+                            var matchingOfferNotificationForTargetUser = SystemNotification.ItemMatchedNotification(saved_offer.TargetItem.Title, saved_offer.SourceItem.Title, match.TargetItem.CreatedByUserId, data);
                             await _systemNotificationRepository.CreateAsync(matchingOfferNotificationForTargetUser, true, matchingOfferNotificationData);
-                            var sourceUserId = await db.Items.Where(i => i.Id == myoffer.SourceItemId).Select(i => i.CreatedByUserId).FirstOrDefaultAsync();
-                            var matchingOfferNotificationForSourceUser = SystemNotification.ItemMatchedNotification(sourceUserId, data);
+                            var sourceUserId = await db.Items.Where(i => i.Id == saved_offer.SourceItemId).Select(i => i.CreatedByUserId).FirstOrDefaultAsync();
+                            var matchingOfferNotificationForSourceUser = SystemNotification.ItemMatchedNotification(saved_offer.SourceItem.Title, saved_offer.TargetItem.Title, match.SourceItem.CreatedByUserId, data);
                             await _systemNotificationRepository.CreateAsync(matchingOfferNotificationForSourceUser, true, matchingOfferNotificationData);
                         }
                     }
@@ -1137,9 +1140,11 @@ namespace Infrastructure.Offers
 
             if (offer.ConfirmedBySourceUser == true && offer.ConfirmedByTargetUser == true) throw new InfrastructureException("Cannot unconfirm offer once it is confirmed!");
 
+            if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser == true) throw new InfrastructureException("Cannot reconfirm offer it is already confirmed!");
+            if (offer.CreatedByUserId != userId && offer.ConfirmedByTargetUser == true) throw new InfrastructureException("Cannot reconfirm offer it is already confirmed!");
 
             string data = JsonSerializer.Serialize(offer);
-            if (offer.CreatedByUserId == userId && offer.ConfirmedBySourceUser != true)
+            if (offer.CreatedByUserId == userId)
             {
                 offer.ConfirmedBySourceUser = true;
                 var notification = SystemNotification.OfferConfirmationNotification(offer.SourceItem.Title,
@@ -1153,7 +1158,7 @@ namespace Infrastructure.Offers
                 await _systemNotificationRepository.CreateAsync(notification);
                 if (offer.ConfirmedByTargetUser == true)
                 {
-                    notification.UserId = offer.TargetItem.CreatedByUserId;
+                    notification.UserId = offer.SourceItem.CreatedByUserId;
                     await _systemNotificationRepository.CreateAsync(notification);
                 }
 
@@ -1170,7 +1175,7 @@ namespace Infrastructure.Offers
             //        data);
             //    await _systemNotificationRepository.CreateAsync(notification);
             //}
-            else if (offer.ConfirmedByTargetUser != true)
+            else
             {
                 offer.ConfirmedByTargetUser = true;
                 var notification = SystemNotification.OfferConfirmationNotification(offer.TargetItem.Title,
@@ -1184,7 +1189,7 @@ namespace Infrastructure.Offers
                 await _systemNotificationRepository.CreateAsync(notification);
                 if (offer.ConfirmedBySourceUser == true)
                 {
-                    notification.UserId = offer.SourceItem.CreatedByUserId;
+                    notification.UserId = offer.TargetItem.CreatedByUserId;
                     await _systemNotificationRepository.CreateAsync(notification);
                 }
             }

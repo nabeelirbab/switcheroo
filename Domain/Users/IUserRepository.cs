@@ -39,7 +39,8 @@ namespace Domain.Users
 
         Task<User> UpdateUserFCMToken(Guid id, string? fcmToken);
 
-        Task<bool> DeleteUser(List<Guid> ids,Guid deletedByUserId);
+        Task<bool> DeleteUser(List<Guid> ids, Guid deletedByUserId);
+        Task<bool> DeleteUserPermanently(List<Guid> ids);
         Task<bool> RestoreUser(List<Guid> userIds);
 
         Task<bool> CheckIfUserByEmail(string email);

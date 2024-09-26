@@ -1046,6 +1046,57 @@ namespace Infrastructure.Items
 
             return true;
         }
+        public async Task<bool> DeleteItemPermanentlyAsync(Guid itemId)
+        {
+            var strategy = db.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await db.Database.BeginTransactionAsync();
+                try
+                {
+                    // Fetch the offers related to the item
+                    var offersAgainstItem = await db.Offers
+                        .IgnoreQueryFilters()
+                        .Where(u => u.SourceItemId.Equals(itemId) || u.TargetItemId.Equals(itemId))
+                        .ToListAsync();
+
+                    if (offersAgainstItem.Count > 0)
+                    {
+                        var offerIds = offersAgainstItem.Select(offer => offer.Id).ToList();
+
+                        // Fetch and delete related messages
+                        var messagesToDelete = await db.Messages
+                            .IgnoreQueryFilters()
+                            .Where(message => offerIds.Contains(message.OfferId))
+                            .ToListAsync();
+                        db.Messages.RemoveRange(messagesToDelete);
+
+                        // Delete the offers
+                        db.Offers.RemoveRange(offersAgainstItem);
+                    }
+
+                    // Fetch and delete the item
+                    var items = await db.Items
+                        .IgnoreQueryFilters()
+                        .Where(u => u.Id == itemId)
+                        .ToListAsync();
+                    db.Items.RemoveRange(items);
+
+                    // Save all changes
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+
+            return true;
+        }
+
 
         public async Task<bool> RestoreItemAsync(Guid itemId)
         {

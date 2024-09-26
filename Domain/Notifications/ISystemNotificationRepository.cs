@@ -15,5 +15,7 @@ namespace Domain.Notifications
         Task<List<SystemNotification>> GetUnread();
         Task<List<SystemNotification>> GetByUserId(Guid userId);
         Task<List<SystemNotification>> GetUnreadByUserId(Guid userId);
+        Task<int> GetUnreadByUserCount(Guid userId);
+        Task<int> GetReadByUserCount(Guid userId);
     }
 }

@@ -151,8 +151,8 @@ namespace API.GraphQL
         {
             var requestUserId = userContextService.GetCurrentUserId();
             var todayAndYesturdaySwipesCount = await offerRepository.GetTodayAndYesturdaySwipesInfo(requestUserId);
-            var swipesInfo = new Offers.Models.SwipesInfo(10 - todayAndYesturdaySwipesCount.Item1, todayAndYesturdaySwipesCount.Item1);
-            if (todayAndYesturdaySwipesCount.Item2 == 10 && todayAndYesturdaySwipesCount.Item1 == 0) swipesInfo.WasLocked = true;
+            var swipesInfo = new Offers.Models.SwipesInfo(30 - todayAndYesturdaySwipesCount.Item1, todayAndYesturdaySwipesCount.Item1);
+            if (todayAndYesturdaySwipesCount.Item2 == 30 && todayAndYesturdaySwipesCount.Item1 == 0) swipesInfo.WasLocked = true;
             else swipesInfo.WasLocked = false;
 
             return swipesInfo;

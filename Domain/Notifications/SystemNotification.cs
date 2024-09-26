@@ -81,14 +81,14 @@ namespace Domain.Notifications
             if (!isCash)
             {
                 message = confirmedByOtherParty
-                    ? $"Offer for '{sourceItem}' against '{targetItem}' has been confirmed by {username}. Prepare to swap your items."
-                    : $"Offer for '{sourceItem}' against '{targetItem}' has been confirmed by {username}. Please confirm on your end to proceed with the swap.";
+                    ? $"Congrats on completing a Swap! Keep the fun going and get back to Swipin'!"
+                    : $"You're halfway there! Complete the swap for your {targetItem} now to finish the Swap and seal the deal";
             }
             else
             {
                 message = confirmedByOtherParty
-                    ? $"Offer of ${cash} for '{targetItem}' has been confirmed by {username}. Prepare to pick your item."
-                    : $"Offer of ${cash} for '{targetItem}' has been confirmed by {username}. Please confirm on your end to proceed with the pickup.";
+                    ? $"Congrats on completing a Swap! Keep the fun going and get back to Swipin'!"
+                    : $"You're halfway there! Complete the swap for your {targetItem} now to finish the Swap and seal the deal";
             }
 
             return new SystemNotification(null,
@@ -124,7 +124,7 @@ namespace Domain.Notifications
 
         public static SystemNotification OfferAcceptedNotification(string targetItem, int? cash, string username, Guid userId, string? data)
         {
-            string message = $"Your Offer of ${cash} for '{targetItem}', has been aceepted by {username}, please get ready to swap the item.";
+            string message = $"You savvy Switcher - your cash offer of ${cash} for {targetItem} was accepted!";
             return new SystemNotification(null,
                     "Offer Accepted",
                     message,
@@ -140,7 +140,7 @@ namespace Domain.Notifications
 
         public static SystemNotification NewCashOfferNotification(string targetItem, int? cash, Guid userId, string? data)
         {
-            string message = $"Your have a new cash cash offer  of ${cash} for '{targetItem}', please accept to swap the item.";
+            string message = $"Cha-ching! Someone wants to buy your {targetItem} for ${cash}!";
             return new SystemNotification(null,
                     "New Cash Offer",
                     message,
@@ -153,9 +153,9 @@ namespace Domain.Notifications
                 CreatedAt = DateTime.Now
             };
         }
-        public static SystemNotification ItemMatchedNotification(Guid userId, string? data)
+        public static SystemNotification ItemMatchedNotification(string sourceItem, string targetItem, Guid userId, string? data)
         {
-            string message = $"One of your product is matched.";
+            string message = $"Get ready to Swap - you've got a match! your {sourceItem} matches with {targetItem}";
             return new SystemNotification(null,
                     "Product Matched",
                     message,

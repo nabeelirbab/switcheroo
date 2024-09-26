@@ -15,6 +15,7 @@ namespace Domain.Items
 
         Task<bool> ArchiveItemAsync(Guid itemId, Guid updatedByUserId);
         Task<bool> DeleteItemAsync(Guid itemId,Guid deletedByUserId);
+        Task<bool> DeleteItemPermanentlyAsync(Guid itemId);
 
         Task<bool> DismissItemAsync(DismissedItem dismissedItem);
 
